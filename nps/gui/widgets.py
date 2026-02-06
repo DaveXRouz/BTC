@@ -877,3 +877,94 @@ def ask_master_password(parent, first_time=False):
 
     dialog.wait_window()
     return result["value"]
+
+
+def ask_change_password(parent):
+    """Show a modal dialog for changing the master encryption key.
+
+    Returns (old_key, new_key) tuple or None if cancelled.
+    """
+    result = {"value": None}
+    dialog = tk.Toplevel(parent)
+    dialog.title("Change Master Key")
+    dialog.geometry("400x260")
+    dialog.resizable(False, False)
+    dialog.transient(parent)
+    dialog.grab_set()
+    dialog.configure(bg=COLORS["bg_card"])
+
+    tk.Label(
+        dialog,
+        text="Change Master Key",
+        font=FONTS["subhead"],
+        fg=COLORS["text_bright"],
+        bg=COLORS["bg_card"],
+    ).pack(pady=(16, 8))
+
+    fields = []
+    for label_text in ["Current Key:", "New Key:", "Confirm New Key:"]:
+        tk.Label(
+            dialog,
+            text=label_text,
+            font=FONTS["small"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+        ).pack(anchor="w", padx=24)
+        entry = tk.Entry(
+            dialog,
+            font=FONTS["mono"],
+            show="*",
+            bg=COLORS["bg_input"],
+            fg=COLORS["text"],
+            insertbackground=COLORS["text"],
+            width=30,
+        )
+        entry.pack(padx=24, pady=(0, 4))
+        fields.append(entry)
+
+    fields[0].focus_set()
+    err_lbl = tk.Label(
+        dialog, text="", font=FONTS["small"], fg=COLORS["error"], bg=COLORS["bg_card"]
+    )
+    err_lbl.pack()
+    btn_f = tk.Frame(dialog, bg=COLORS["bg_card"])
+    btn_f.pack(pady=(4, 12))
+
+    def _ok():
+        old_v, new_v, cfm_v = (f.get() for f in fields)
+        if not old_v:
+            err_lbl.config(text="Current key is required")
+            return
+        if not new_v:
+            err_lbl.config(text="New key is required")
+            return
+        if new_v != cfm_v:
+            err_lbl.config(text="New keys do not match")
+            return
+        result["value"] = (old_v, new_v)
+        dialog.destroy()
+
+    tk.Button(
+        btn_f,
+        text="Change",
+        command=_ok,
+        bg=COLORS["bg_success"],
+        fg="white",
+        font=FONTS["small"],
+        padx=16,
+        pady=4,
+    ).pack(side="left", padx=4)
+    tk.Button(
+        btn_f,
+        text="Cancel",
+        command=dialog.destroy,
+        bg=COLORS["bg_input"],
+        fg=COLORS["text"],
+        font=FONTS["small"],
+        padx=16,
+        pady=4,
+    ).pack(side="left", padx=4)
+
+    fields[2].bind("<Return>", lambda e: _ok())
+    dialog.wait_window()
+    return result["value"]

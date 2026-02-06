@@ -70,6 +70,14 @@ class NPSApp:
         except Exception:
             pass
 
+        # Start health monitoring
+        try:
+            from engines.health import start_monitoring
+
+            start_monitoring()
+        except Exception:
+            pass
+
         self.active_solvers = []
         self.solver_registry = {}
 
@@ -147,10 +155,13 @@ class NPSApp:
             logging.getLogger(__name__).warning(f"Security init skipped: {e}")
 
     def _bind_shortcuts(self):
-        """Bind keyboard shortcuts: Cmd+1-5 switch tabs."""
+        """Bind keyboard shortcuts: Cmd+1-5 switch tabs, Ctrl+R refresh dashboard."""
         for i in range(1, 6):
             self.root.bind(f"<Command-{i}>", lambda e, idx=i - 1: self._switch_tab(idx))
             self.root.bind(f"<Control-{i}>", lambda e, idx=i - 1: self._switch_tab(idx))
+
+        self.root.bind("<Control-r>", lambda e: self._refresh_dashboard())
+        self.root.bind("<Command-r>", lambda e: self._refresh_dashboard())
 
     def _switch_tab(self, index):
         """Switch to a notebook tab by index."""
@@ -159,6 +170,12 @@ class NPSApp:
                 self.notebook.select(index)
         except Exception:
             pass
+
+    def _refresh_dashboard(self):
+        """Refresh dashboard tab (Ctrl+R shortcut)."""
+        if hasattr(self, "dashboard"):
+            self.dashboard.refresh_stats()
+            self.dashboard._refresh_terminals()
 
     def _create_tabs(self, COLORS):
         from gui.dashboard_tab import DashboardTab
@@ -477,6 +494,14 @@ class NPSApp:
     def _on_close(self):
         """Stop all running solvers and flush memory before closing."""
         self._tg_running = False
+
+        # Stop health monitoring
+        try:
+            from engines.health import stop_monitoring
+
+            stop_monitoring()
+        except Exception:
+            pass
 
         # Stop hunter tab solvers
         if hasattr(self, "hunter_tab"):

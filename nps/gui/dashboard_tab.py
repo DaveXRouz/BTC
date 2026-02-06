@@ -1,5 +1,6 @@
-"""Dashboard tab — V2 War Room overview."""
+"""Dashboard tab — V3 War Room overview."""
 
+import threading
 import tkinter as tk
 from datetime import datetime
 from gui.theme import COLORS, FONTS
@@ -36,6 +37,9 @@ class DashboardTab:
         mission_frame.pack(fill="x", pady=(0, 8))
         self._build_puzzle_status(mission_frame)
         self._build_scanner_status(mission_frame)
+
+        # ── Row 2.5: Terminal Cards ──
+        self._build_terminals_section(main)
 
         # ── Row 3: Quick Stats | AI Brain | Comms ──
         row3 = tk.Frame(main, bg=COLORS["bg"])
@@ -199,6 +203,245 @@ class DashboardTab:
             lbl.pack(side="right")
             self._scanner_labels[key] = lbl
 
+    # ─── Terminals Section ───
+    def _build_terminals_section(self, parent):
+        frame = tk.LabelFrame(
+            parent,
+            text="  Terminals  ",
+            font=FONTS["body"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+            bd=1,
+            relief="solid",
+            padx=8,
+            pady=4,
+        )
+        frame.pack(fill="x", pady=(0, 8))
+
+        # Header with New Terminal button
+        header = tk.Frame(frame, bg=COLORS["bg_card"])
+        header.pack(fill="x", pady=(0, 4))
+        StyledButton(
+            header,
+            text="New Terminal",
+            command=self._create_terminal,
+            bg=COLORS["bg_button"],
+            fg="white",
+            font=FONTS["small"],
+            padx=8,
+            pady=2,
+        ).pack(side="left")
+
+        self._terminal_count_label = tk.Label(
+            header,
+            text="0 terminals",
+            font=FONTS["small"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+        )
+        self._terminal_count_label.pack(side="right")
+
+        # Scrollable terminal cards area
+        self._terminals_frame = tk.Frame(frame, bg=COLORS["bg_card"])
+        self._terminals_frame.pack(fill="x")
+        self._terminal_widgets = {}
+
+        self._refresh_terminals()
+
+    def _refresh_terminals(self):
+        """Refresh terminal cards."""
+        try:
+            from engines.terminal_manager import list_terminals, get_terminal_stats
+        except ImportError:
+            return
+
+        terminals = list_terminals()
+        self._terminal_count_label.config(text=f"{len(terminals)} terminal(s)")
+
+        # Clear existing widgets
+        for widget in self._terminals_frame.winfo_children():
+            widget.destroy()
+        self._terminal_widgets = {}
+
+        if not terminals:
+            tk.Label(
+                self._terminals_frame,
+                text="No terminals. Click 'New Terminal' to create one.",
+                font=FONTS["small"],
+                fg=COLORS["text_dim"],
+                bg=COLORS["bg_card"],
+            ).pack(pady=4)
+            return
+
+        for term_info in terminals:
+            tid = term_info["id"]
+            status = term_info["status"]
+            stats = get_terminal_stats(tid) or {}
+
+            card = tk.Frame(
+                self._terminals_frame,
+                bg=COLORS["bg_input"],
+                bd=1,
+                relief="solid",
+                padx=8,
+                pady=4,
+            )
+            card.pack(fill="x", pady=2)
+
+            # Status dot + ID
+            info_row = tk.Frame(card, bg=COLORS["bg_input"])
+            info_row.pack(fill="x")
+
+            dot_color = {
+                "running": COLORS["success"],
+                "paused": COLORS["warning"],
+                "stopped": COLORS["error"],
+                "created": COLORS["text_dim"],
+            }.get(status, COLORS["text_dim"])
+
+            tk.Label(
+                info_row,
+                text="\u25cf",
+                font=FONTS["small"],
+                fg=dot_color,
+                bg=COLORS["bg_input"],
+            ).pack(side="left")
+
+            tk.Label(
+                info_row,
+                text=f" {tid}",
+                font=FONTS["mono_sm"],
+                fg=COLORS["text"],
+                bg=COLORS["bg_input"],
+            ).pack(side="left")
+
+            tk.Label(
+                info_row,
+                text=status.upper(),
+                font=FONTS["small"],
+                fg=dot_color,
+                bg=COLORS["bg_input"],
+            ).pack(side="left", padx=(8, 0))
+
+            # Stats
+            keys = stats.get("keys_tested", 0)
+            speed = stats.get("speed", 0)
+            mode = term_info.get("settings", {}).get("mode", "?")
+
+            tk.Label(
+                info_row,
+                text=f"Mode: {mode}  |  Keys: {keys:,}  |  {speed:,.0f}/s",
+                font=FONTS["mono_sm"],
+                fg=COLORS["text_dim"],
+                bg=COLORS["bg_input"],
+            ).pack(side="right")
+
+            # Control buttons
+            btn_row = tk.Frame(card, bg=COLORS["bg_input"])
+            btn_row.pack(fill="x", pady=(2, 0))
+
+            if status in ("created", "stopped"):
+                StyledButton(
+                    btn_row,
+                    text="Start",
+                    command=lambda t=tid: self._start_terminal(t),
+                    bg=COLORS["bg_success"],
+                    fg="white",
+                    font=FONTS["small"],
+                    padx=6,
+                    pady=1,
+                ).pack(side="left", padx=(0, 4))
+            elif status == "running":
+                StyledButton(
+                    btn_row,
+                    text="Pause",
+                    command=lambda t=tid: self._pause_terminal(t),
+                    bg=COLORS["warning"],
+                    fg="white",
+                    font=FONTS["small"],
+                    padx=6,
+                    pady=1,
+                ).pack(side="left", padx=(0, 4))
+                StyledButton(
+                    btn_row,
+                    text="Stop",
+                    command=lambda t=tid: self._stop_terminal(t),
+                    bg=COLORS["bg_danger"],
+                    fg="white",
+                    font=FONTS["small"],
+                    padx=6,
+                    pady=1,
+                ).pack(side="left", padx=(0, 4))
+            elif status == "paused":
+                StyledButton(
+                    btn_row,
+                    text="Resume",
+                    command=lambda t=tid: self._resume_terminal(t),
+                    bg=COLORS["bg_success"],
+                    fg="white",
+                    font=FONTS["small"],
+                    padx=6,
+                    pady=1,
+                ).pack(side="left", padx=(0, 4))
+                StyledButton(
+                    btn_row,
+                    text="Stop",
+                    command=lambda t=tid: self._stop_terminal(t),
+                    bg=COLORS["bg_danger"],
+                    fg="white",
+                    font=FONTS["small"],
+                    padx=6,
+                    pady=1,
+                ).pack(side="left", padx=(0, 4))
+
+        # Auto-refresh every 5 seconds
+        self.parent.after(5000, self._refresh_terminals)
+
+    def _create_terminal(self):
+        def _do():
+            from engines.terminal_manager import create_terminal
+
+            create_terminal()
+            self.parent.after(0, self._refresh_terminals)
+
+        threading.Thread(target=_do, daemon=True).start()
+
+    def _start_terminal(self, terminal_id):
+        def _do():
+            from engines.terminal_manager import start_terminal
+
+            start_terminal(terminal_id)
+            self.parent.after(0, self._refresh_terminals)
+
+        threading.Thread(target=_do, daemon=True).start()
+
+    def _stop_terminal(self, terminal_id):
+        def _do():
+            from engines.terminal_manager import stop_terminal
+
+            stop_terminal(terminal_id)
+            self.parent.after(0, self._refresh_terminals)
+
+        threading.Thread(target=_do, daemon=True).start()
+
+    def _pause_terminal(self, terminal_id):
+        def _do():
+            from engines.terminal_manager import pause_terminal
+
+            pause_terminal(terminal_id)
+            self.parent.after(0, self._refresh_terminals)
+
+        threading.Thread(target=_do, daemon=True).start()
+
+    def _resume_terminal(self, terminal_id):
+        def _do():
+            from engines.terminal_manager import resume_terminal
+
+            resume_terminal(terminal_id)
+            self.parent.after(0, self._refresh_terminals)
+
+        threading.Thread(target=_do, daemon=True).start()
+
     # ─── Quick Stats ───
     def _build_quick_stats(self, parent):
         frame = tk.LabelFrame(
@@ -307,6 +550,37 @@ class DashboardTab:
             )
             lbl.pack(side="right")
             self._comms_labels[key] = lbl
+
+        # Health dots row
+        health_row = tk.Frame(frame, bg=COLORS["bg_card"])
+        health_row.pack(fill="x", pady=(4, 0))
+        tk.Label(
+            health_row,
+            text="Endpoints:",
+            font=FONTS["small"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+        ).pack(side="left")
+
+        self._health_dots = {}
+        for endpoint in ["blockstream", "eth_rpc", "bsc", "polygon"]:
+            short = {
+                "blockstream": "BTC",
+                "eth_rpc": "ETH",
+                "bsc": "BSC",
+                "polygon": "POLY",
+            }.get(endpoint, endpoint)
+            dot_frame = tk.Frame(health_row, bg=COLORS["bg_card"])
+            dot_frame.pack(side="left", padx=(4, 0))
+            dot_label = tk.Label(
+                dot_frame,
+                text=f"\u25cf {short}",
+                font=FONTS["small"],
+                fg=COLORS["text_dim"],
+                bg=COLORS["bg_card"],
+            )
+            dot_label.pack()
+            self._health_dots[endpoint] = dot_label
 
         self._refresh_comms()
 
@@ -427,7 +701,7 @@ class DashboardTab:
             self._ai_label.config(text="\u2014")
 
     def _refresh_comms(self):
-        """Refresh comms card: AI, Telegram, Memory."""
+        """Refresh comms card: AI, Telegram, Memory, Health."""
         try:
             from engines.ai_engine import is_available
 
@@ -455,5 +729,28 @@ class DashboardTab:
             self._comms_labels["memory"].config(
                 text=f"{summary.get('total_sessions', 0)} sessions"
             )
+        except Exception:
+            pass
+
+        # Health dots
+        try:
+            from engines.health import get_status
+
+            status = get_status()
+            for endpoint, dot_label in self._health_dots.items():
+                info = status.get(endpoint)
+                if info is None:
+                    color = COLORS["text_dim"]  # gray = unchecked
+                elif info.get("healthy"):
+                    color = COLORS["success"]  # green
+                else:
+                    color = COLORS["error"]  # red
+                short = {
+                    "blockstream": "BTC",
+                    "eth_rpc": "ETH",
+                    "bsc": "BSC",
+                    "polygon": "POLY",
+                }.get(endpoint, endpoint)
+                dot_label.config(text=f"\u25cf {short}", fg=color)
         except Exception:
             pass

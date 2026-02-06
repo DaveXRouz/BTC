@@ -134,6 +134,44 @@ class OracleTab:
         self._time_entry.pack(side="left", padx=(4, 0))
         self._time_entry.insert(0, datetime.now().strftime("%H:%M"))
 
+        # Reading mode toggle
+        mode_row = tk.Frame(frame, bg=COLORS["bg_card"])
+        mode_row.pack(fill="x", pady=(4, 0))
+        tk.Label(
+            mode_row,
+            text="Mode:",
+            font=FONTS["small"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+            width=8,
+            anchor="e",
+        ).pack(side="left")
+        self._reading_mode = tk.StringVar(value="full")
+        tk.Radiobutton(
+            mode_row,
+            text="Full Reading",
+            variable=self._reading_mode,
+            value="full",
+            font=FONTS["small"],
+            fg=COLORS["text"],
+            bg=COLORS["bg_card"],
+            selectcolor=COLORS["bg_input"],
+            activebackground=COLORS["bg_card"],
+            activeforeground=COLORS["text"],
+        ).pack(side="left", padx=(4, 8))
+        tk.Radiobutton(
+            mode_row,
+            text="Quick Question",
+            variable=self._reading_mode,
+            value="question",
+            font=FONTS["small"],
+            fg=COLORS["text"],
+            bg=COLORS["bg_card"],
+            selectcolor=COLORS["bg_input"],
+            activebackground=COLORS["bg_card"],
+            activeforeground=COLORS["text"],
+        ).pack(side="left")
+
         # Read button
         row3 = tk.Frame(frame, bg=COLORS["bg_card"])
         row3.pack(fill="x", pady=(6, 0))
@@ -274,8 +312,79 @@ class OracleTab:
         self._name_card = OracleCard(parent, title="Name Reading")
         self._name_card.pack(fill="x", pady=(0, 4))
 
+    # ─── Daily Insight ───
+    def _build_daily_insight(self, parent):
+        frame = tk.LabelFrame(
+            parent,
+            text="  Daily Insight  ",
+            font=FONTS["body"],
+            fg=COLORS["oracle_accent"],
+            bg=COLORS["oracle_bg"],
+            bd=1,
+            relief="solid",
+            padx=12,
+            pady=8,
+        )
+        frame.pack(fill="x", pady=(0, 4))
+        frame.configure(
+            highlightbackground=COLORS["oracle_border"],
+            highlightthickness=1,
+        )
+
+        self._daily_insight_label = tk.Label(
+            frame,
+            text="Loading...",
+            font=FONTS["small"],
+            fg=COLORS["text"],
+            bg=COLORS["oracle_bg"],
+            wraplength=500,
+            justify="left",
+            anchor="nw",
+        )
+        self._daily_insight_label.pack(fill="x")
+
+        self._daily_lucky_label = tk.Label(
+            frame,
+            text="",
+            font=FONTS["mono_sm"],
+            fg=COLORS["gold"],
+            bg=COLORS["oracle_bg"],
+            anchor="w",
+        )
+        self._daily_lucky_label.pack(fill="x")
+
+        self._daily_energy_label = tk.Label(
+            frame,
+            text="",
+            font=FONTS["small"],
+            fg=COLORS["oracle_accent"],
+            bg=COLORS["oracle_bg"],
+            anchor="w",
+        )
+        self._daily_energy_label.pack(fill="x")
+
+        self._load_daily_insight()
+
+    def _load_daily_insight(self):
+        try:
+            from engines.oracle import daily_insight
+
+            result = daily_insight()
+            self._daily_insight_label.config(text=result.get("insight", ""))
+            lucky = result.get("lucky_numbers", [])
+            if lucky:
+                self._daily_lucky_label.config(
+                    text=f"Lucky numbers: {', '.join(str(n) for n in lucky)}"
+                )
+            energy = result.get("energy", "")
+            if energy:
+                self._daily_energy_label.config(text=f"Energy: {energy}")
+        except Exception:
+            self._daily_insight_label.config(text="Daily insight unavailable")
+
     # ─── AI Panel ───
     def _build_ai_panel(self, parent):
+        self._build_daily_insight(parent)
         self.ai_panel = AIInsightPanel(parent, title="AI Interpretation")
         self.ai_panel.pack(fill="x", pady=(0, 4))
         self.ai_panel.set_unavailable()
@@ -310,8 +419,14 @@ class OracleTab:
     # ═══ Actions ═══
 
     def _read_sign(self):
-        """Perform a sign reading."""
+        """Perform a sign reading (Full or Quick Question mode)."""
         sign = self._sign_entry.get().strip()
+        mode = self._reading_mode.get()
+
+        if mode == "question":
+            self._read_question_sign(sign)
+            return
+
         date = self._date_entry.get().strip() or None
         time_str = self._time_entry.get().strip() or None
 
@@ -359,6 +474,86 @@ class OracleTab:
 
         # AI interpretation
         self._ask_ai_interpretation(f"Sign reading for '{sign}': {interp}")
+
+    def _read_question_sign(self, question):
+        """Perform a Quick Question sign reading."""
+        if not question:
+            self._interp_label.config(
+                text="Enter a question or sign text", fg=COLORS["warning"]
+            )
+            return
+
+        try:
+            from engines.oracle import question_sign
+
+            result = question_sign(question)
+        except Exception as e:
+            self._interp_label.config(text=f"Error: {e}", fg=COLORS["error"])
+            return
+
+        # Display reading + advice in interpretation label
+        reading = result.get("reading", "")
+        advice = result.get("advice", "")
+        interp_text = reading
+        if advice:
+            interp_text += f"\n\nAdvice: {advice}"
+        self._interp_label.config(text=interp_text, fg=COLORS["text"])
+
+        # Populate relevant cards from question_sign result
+        for key, card in self._sign_cards.items():
+            card.clear_sections()
+
+        # Numerology card
+        numer = result.get("numerology", {})
+        if numer and "pythagorean" in self._sign_cards:
+            card = self._sign_cards["pythagorean"]
+            numbers = numer.get("numbers", [])
+            reduced = numer.get("reduced", [])
+            meanings = numer.get("meanings", [])
+            for i, n in enumerate(numbers):
+                r = reduced[i] if i < len(reduced) else "?"
+                m = meanings[i] if i < len(meanings) else ""
+                card.add_section(f"n_{i}", f"{n} -> {r}", m)
+
+        # FC60 card
+        fc60_data = result.get("fc60", {})
+        if fc60_data and "fc60" in self._sign_cards:
+            card = self._sign_cards["fc60"]
+            code = fc60_data.get("code", "")
+            meaning = fc60_data.get("meaning", "")
+            if code:
+                card.add_section("code", "Code", code)
+            if meaning:
+                card.add_section("meaning", "Meaning", meaning)
+
+        # Moon card
+        moon_data = result.get("moon", {})
+        if moon_data and "moon" in self._sign_cards:
+            card = self._sign_cards["moon"]
+            phase = moon_data.get("phase", "")
+            m_meaning = moon_data.get("meaning", "")
+            illum = moon_data.get("illumination", 0)
+            if phase:
+                card.add_section("phase", "Phase", f"{phase} ({illum}%)")
+            if m_meaning:
+                card.add_section("meaning", "Energy", m_meaning)
+
+        # Clear sync card
+        self._sync_card.clear_sections()
+
+        # Save to history
+        self._save_reading(
+            "question",
+            {
+                "sign": question,
+                "interpretation": reading[:200],
+            },
+        )
+
+        # AI interpretation
+        self._ask_ai_interpretation(
+            f"Quick question reading for '{question}': {reading}"
+        )
 
     def _read_name(self):
         """Perform a name reading."""

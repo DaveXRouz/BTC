@@ -2,7 +2,10 @@
   "telegram": {
     "bot_token": "",
     "chat_id": "",
-    "enabled": true
+    "enabled": true,
+    "notify_balance": true,
+    "notify_error": true,
+    "notify_daily": true
   },
   "balance_check": {
     "btc_rpc_endpoints": [

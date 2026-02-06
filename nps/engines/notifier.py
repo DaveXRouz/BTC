@@ -301,6 +301,14 @@ def notify_balance_found(address, balance_btc, source="unknown"):
     if not is_configured():
         return False
 
+    try:
+        from engines.config import get
+
+        if not get("telegram.notify_balance", True):
+            return False
+    except Exception:
+        pass
+
     text = (
         f"<b>BALANCE FOUND!</b>\n\n"
         f"Address: <code>{address}</code>\n"
@@ -316,6 +324,14 @@ def notify_error(error_msg, context=""):
     """Notify about an error. Rate-limited to 10/hour."""
     if not is_configured():
         return False
+
+    try:
+        from engines.config import get
+
+        if not get("telegram.notify_error", True):
+            return False
+    except Exception:
+        pass
 
     with _lock:
         if _error_count >= _MAX_ERRORS_PER_HOUR:
@@ -335,6 +351,14 @@ def notify_daily_status(stats):
     """Send daily status summary."""
     if not is_configured():
         return False
+
+    try:
+        from engines.config import get
+
+        if not get("telegram.notify_daily", True):
+            return False
+    except Exception:
+        pass
 
     keys_tested = stats.get("keys_tested", 0)
     seeds_tested = stats.get("seeds_tested", 0)
@@ -359,6 +383,14 @@ def notify_scanner_hit(address_dict, private_key, balances, method="unknown"):
     """Notify about a scanner hit (multi-chain version)."""
     if not is_configured():
         return False
+
+    try:
+        from engines.config import get
+
+        if not get("telegram.notify_balance", True):
+            return False
+    except Exception:
+        pass
 
     key_hex = hex(private_key) if isinstance(private_key, int) else str(private_key)
     btc_addr = address_dict.get("btc", "N/A")
@@ -551,6 +583,14 @@ def notify_balance_found_multi(address_dict, balances, source="unknown"):
     """
     if not is_configured():
         return False
+
+    try:
+        from engines.config import get
+
+        if not get("telegram.notify_balance", True):
+            return False
+    except Exception:
+        pass
 
     # Build address lines
     addr_lines = []

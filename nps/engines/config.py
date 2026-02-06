@@ -22,6 +22,9 @@ DEFAULT_CONFIG = {
         "bot_token": "",
         "chat_id": "",
         "enabled": True,
+        "notify_balance": True,
+        "notify_error": True,
+        "notify_daily": True,
     },
     "balance_check": {
         "btc_rpc_endpoints": ["https://blockstream.info/api"],

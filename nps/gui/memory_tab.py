@@ -2,8 +2,9 @@
 
 import csv
 import json
+import threading
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import ttk, filedialog
 from datetime import datetime
 from gui.theme import COLORS, FONTS
 from gui.widgets import StyledButton, StatsCard, AIInsightPanel
@@ -29,6 +30,60 @@ class MemoryTab:
             fg=COLORS["accent"],
             bg=COLORS["bg"],
         ).pack(anchor="w", pady=(0, 6))
+
+        # Row 0: XP / Level display
+        level_frame = tk.LabelFrame(
+            main,
+            text="  AI Level  ",
+            font=FONTS["body"],
+            fg=COLORS["ai_accent"],
+            bg=COLORS["ai_bg"],
+            bd=1,
+            relief="solid",
+            padx=12,
+            pady=6,
+        )
+        level_frame.pack(fill="x", pady=(0, 8))
+        level_frame.configure(
+            highlightbackground=COLORS["ai_border"], highlightthickness=1
+        )
+
+        level_info_row = tk.Frame(level_frame, bg=COLORS["ai_bg"])
+        level_info_row.pack(fill="x")
+
+        self._level_name_label = tk.Label(
+            level_info_row,
+            text="Level 1 — Novice",
+            font=FONTS["subhead"],
+            fg=COLORS["ai_text"],
+            bg=COLORS["ai_bg"],
+        )
+        self._level_name_label.pack(side="left")
+
+        self._xp_label = tk.Label(
+            level_info_row,
+            text="XP: 0",
+            font=FONTS["mono_sm"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["ai_bg"],
+        )
+        self._xp_label.pack(side="right")
+
+        # XP progress bar
+        self._xp_bar = tk.Canvas(
+            level_frame, height=12, bg=COLORS["bg_input"], highlightthickness=0
+        )
+        self._xp_bar.pack(fill="x", pady=(4, 2))
+
+        self._capabilities_label = tk.Label(
+            level_frame,
+            text="",
+            font=FONTS["small"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["ai_bg"],
+            anchor="w",
+        )
+        self._capabilities_label.pack(fill="x")
 
         # Row 1: Lifetime Stats cards
         stats_row = tk.Frame(main, bg=COLORS["bg"])
@@ -189,6 +244,40 @@ class MemoryTab:
         )
         frame.pack(fill="x", pady=(0, 6))
 
+        # Model dropdown
+        model_row = tk.Frame(frame, bg=COLORS["bg_card"])
+        model_row.pack(fill="x", pady=2)
+        tk.Label(
+            model_row,
+            text="AI Model:",
+            font=FONTS["small"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+        ).pack(side="left")
+        self._model_var = tk.StringVar(value="sonnet")
+        model_combo = ttk.Combobox(
+            model_row,
+            textvariable=self._model_var,
+            values=["haiku", "sonnet", "opus"],
+            state="readonly",
+            width=10,
+            font=FONTS["small"],
+        )
+        model_combo.pack(side="left", padx=(4, 0))
+
+        # Learn Now button
+        self._learn_btn = StyledButton(
+            frame,
+            text="Learn Now",
+            command=self._learn_now,
+            bg=COLORS["ai_accent"],
+            fg="white",
+            font=FONTS["small"],
+            padx=10,
+            pady=4,
+        )
+        self._learn_btn.pack(fill="x", pady=2)
+
         StyledButton(
             frame,
             text="Recalculate Weights",
@@ -241,6 +330,7 @@ class MemoryTab:
         self._refresh_scoring()
         self._refresh_sessions()
         self._refresh_recommendations()
+        self._refresh_level()
 
         # Auto-refresh every 30s
         self.parent.after(30000, self._refresh)
@@ -315,6 +405,27 @@ class MemoryTab:
             pass
 
     def _refresh_recommendations(self):
+        # Try learner recommendations first, fall back to legacy memory
+        try:
+            from engines.learner import get_recommendations, get_insights
+
+            recs = get_recommendations()
+            insights = get_insights(limit=5)
+
+            parts = []
+            if insights:
+                parts.append("Recent Insights:")
+                parts.extend(f"  \u2022 {i}" for i in insights)
+            if recs:
+                parts.append("\nRecommendations:")
+                parts.extend(f"  \u2022 {r}" for r in recs)
+
+            if parts:
+                self.ai_panel.set_result("\n".join(parts))
+                return
+        except Exception:
+            pass
+
         try:
             from engines.memory import get_recommendations
 
@@ -327,7 +438,101 @@ class MemoryTab:
         except Exception:
             self.ai_panel.set_result("Memory engine unavailable.")
 
+    def _refresh_level(self):
+        """Refresh XP/Level display from learner engine."""
+        try:
+            from engines.learner import get_level
+
+            level = get_level()
+            lvl = level.get("level", 1)
+            name = level.get("name", "Novice")
+            xp = level.get("xp", 0)
+            xp_next = level.get("xp_next")
+            caps = level.get("capabilities", [])
+
+            self._level_name_label.config(text=f"Level {lvl} \u2014 {name}")
+            xp_text = f"XP: {xp}"
+            if xp_next:
+                xp_text += f" / {xp_next}"
+            self._xp_label.config(text=xp_text)
+
+            # Draw XP bar
+            self._xp_bar.delete("all")
+            w = self._xp_bar.winfo_width() or 200
+            self._xp_bar.create_rectangle(
+                0, 0, w, 12, fill=COLORS["bg_input"], outline=""
+            )
+            if xp_next and xp_next > 0:
+                progress = min(1.0, xp / xp_next)
+                fill_w = int(w * progress)
+                if fill_w > 0:
+                    self._xp_bar.create_rectangle(
+                        0, 0, fill_w, 12, fill=COLORS["ai_accent"], outline=""
+                    )
+
+            if caps:
+                self._capabilities_label.config(text=" | ".join(caps))
+        except Exception:
+            pass
+
     # ═══ Actions ═══
+
+    def _learn_now(self):
+        """Trigger AI learning in a background thread."""
+        model = self._model_var.get()
+        self._learn_btn.config(state="disabled", text="Learning...")
+        self.ai_panel.set_loading(f"AI learning with {model}...")
+
+        def _do_learn():
+            try:
+                from engines.learner import learn
+                from engines.session_manager import get_session_stats
+            except ImportError:
+                self.parent.after(
+                    0,
+                    self._handle_learn_result,
+                    {
+                        "insights": ["Learner engine not available"],
+                        "recommendations": [],
+                    },
+                )
+                return
+
+            try:
+                session_data = get_session_stats()
+            except Exception:
+                session_data = {}
+
+            try:
+                result = learn(session_data, model=model)
+            except Exception as e:
+                result = {"insights": [f"Learning failed: {e}"], "recommendations": []}
+
+            self.parent.after(0, self._handle_learn_result, result)
+
+        threading.Thread(target=_do_learn, daemon=True).start()
+
+    def _handle_learn_result(self, result):
+        """Handle learn result on main thread."""
+        self._learn_btn.config(state="normal", text="Learn Now")
+
+        insights = result.get("insights", [])
+        recs = result.get("recommendations", [])
+
+        parts = []
+        if insights:
+            parts.append("Insights:")
+            parts.extend(f"  \u2022 {i}" for i in insights)
+        if recs:
+            parts.append("\nRecommendations:")
+            parts.extend(f"  \u2022 {r}" for r in recs)
+
+        if parts:
+            self.ai_panel.set_result("\n".join(parts))
+        else:
+            self.ai_panel.set_result("No insights generated.")
+
+        self._refresh_level()
 
     def _recalculate(self):
         try:
