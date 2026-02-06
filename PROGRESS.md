@@ -12,6 +12,7 @@
 | 7     | Settings & Connections           | Complete | 238/238 | 2026-02-07 |
 | Final | Documentation & Verification     | Complete | 238/238 | 2026-02-07 |
 | Audit | V3 Full Audit                    | PASSED   | 238/238 | 2026-02-07 |
+| GUI   | Wire 19 GUI Integration Items    | Complete | 238/238 | 2026-02-07 |
 
 ## V3 AUDIT: PASSED — 2026-02-07
 
@@ -19,7 +20,7 @@
 
 | Section               | Result       | Details                                     |
 | --------------------- | ------------ | ------------------------------------------- |
-| Checklist (118 items) | 98/117 PASS  | 19 GUI integration gaps (Phases 4-7)        |
+| Checklist (118 items) | 117/117 PASS | 19 GUI gaps resolved — all items wired      |
 | Test Suite            | 238/238 PASS | 0 failures                                  |
 | Import Chain          | 42/42 clean  | All .py files import cleanly                |
 | Security Audit        | PASS         | Hardcoded token removed, scanner encrypts   |
@@ -44,14 +45,18 @@
 
 **INFO (3 fixed):** 11. CLAUDE.md test count 19 → 25 12. README.md stuck at V2 → updated with all V3 features 13. CHANGELOG.md missing V3 entry → added comprehensive V3 section
 
-### Known Remaining Items (GUI Integration — Not Backend)
+### GUI Integration — COMPLETE (19/19 items wired)
 
-19 checklist items for GUI tab wiring (Phases 4-7) are not wired in the GUI yet. The backend engines all work correctly (verified by integration tests). These are UI-only tasks:
+All 19 GUI integration gaps identified by the audit have been resolved. Backend engines are now fully connected to their GUI tabs:
 
-- Phase 4: oracle_tab question_sign toggle
-- Phase 5: memory_tab Learn Now button, model dropdown, insights display
-- Phase 6: dashboard_tab terminal cards, health dots, shortcuts
-- Phase 7: settings_tab Change Password, deployment, notification toggles
+- **Oracle Tab (2):** question_sign toggle (Full Reading / Quick Question radio buttons), daily insight panel with lucky numbers and energy level
+- **Memory Tab (5):** model dropdown (haiku/sonnet/opus), Learn Now button with threaded execution, XP/level display with progress bar, insights display, recommendations from learner
+- **Dashboard Tab (5):** terminal cards with per-terminal Start/Stop/Pause/Resume controls (auto-refresh 5s), health dots for 4 endpoints (blockstream/eth_rpc/bsc/polygon), health monitoring start/stop in main.py, Ctrl+R dashboard refresh shortcut
+- **Settings Tab (4):** Change Master Key dialog (old + new + confirm), Deployment (Headless) section with auto_start/mode/interval/daily toggles, notification enable toggle, per-type notification toggles (balance/error/daily)
+- **Config + Notifier (3):** notify_balance/notify_error/notify_daily added to DEFAULT_CONFIG, per-type checks in 5 notifier functions, config export/import buttons
+
+**Files modified (9):** oracle_tab.py, memory_tab.py, dashboard_tab.py, settings_tab.py, widgets.py, main.py, config.py, notifier.py, config.json
+**Verification:** 238/238 tests pass, 0 hardcoded colors outside theme.py
 
 ## Phase 7 Checklist
 
