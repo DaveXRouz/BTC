@@ -270,7 +270,7 @@ class NPSApp:
 
             enc_text = "Encrypted" if is_encrypted_mode() else "Not Encrypted"
             enc_fg = (
-                COLORS["text_dim"]
+                COLORS["success"]
                 if is_encrypted_mode()
                 else COLORS.get("warning", "#FFA500")
             )

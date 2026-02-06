@@ -140,8 +140,8 @@ class SettingsTab:
             btn_frame,
             text="Test Connection",
             command=self._test_telegram,
-            bg=C["bg_input"],
-            fg=C["text"],
+            bg=C["accent"],
+            fg=C["text_bright"],
             font=F["small"],
         ).pack(side="left", padx=4)
 
@@ -150,7 +150,7 @@ class SettingsTab:
             text="Save",
             command=self._save_telegram,
             bg=C["bg_success"],
-            fg="white",
+            fg=C["text_bright"],
             font=F["small"],
         ).pack(side="left", padx=4)
 
@@ -186,7 +186,7 @@ class SettingsTab:
             text="Change Master Key",
             command=self._change_master_key,
             bg=C["bg_button"],
-            fg="white",
+            fg=C["text_bright"],
             font=F["small"],
         ).pack(anchor="w", padx=8, pady=4)
 
@@ -229,7 +229,7 @@ class SettingsTab:
             text="Save Scanner Settings",
             command=self._save_scanner_settings,
             bg=C["bg_success"],
-            fg="white",
+            fg=C["text_bright"],
             font=F["small"],
         ).grid(row=len(settings), column=0, columnspan=2, pady=8)
 
@@ -313,7 +313,7 @@ class SettingsTab:
             text="Save Deployment Settings",
             command=self._save_deployment_settings,
             bg=C["bg_success"],
-            fg="white",
+            fg=C["text_bright"],
             font=F["small"],
         ).grid(row=4, column=0, columnspan=2, pady=8)
 
@@ -328,7 +328,7 @@ class SettingsTab:
             text="Reset to Defaults",
             command=self._reset_defaults,
             bg=C["bg_danger"],
-            fg="white",
+            fg=C["text_bright"],
             font=F["small"],
         ).pack(padx=8, pady=8)
 
@@ -369,7 +369,7 @@ class SettingsTab:
             text="Export Config",
             command=self._export_config,
             bg=C["bg_button"],
-            fg="white",
+            fg=C["text_bright"],
             font=F["small"],
         ).pack(side="left", padx=4)
 
@@ -378,7 +378,7 @@ class SettingsTab:
             text="Import Config",
             command=self._import_config,
             bg=C["bg_button"],
-            fg="white",
+            fg=C["text_bright"],
             font=F["small"],
         ).pack(side="left", padx=4)
 
@@ -391,7 +391,7 @@ class SettingsTab:
         tk.Label(
             self.content,
             text=text,
-            font=F.get("card_title", F["small"]),
+            font=F["subhead"],
             fg=C["text_bright"],
             bg=C["bg"],
         ).pack(anchor="w", padx=16, pady=(12, 2))

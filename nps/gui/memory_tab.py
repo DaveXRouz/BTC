@@ -64,7 +64,7 @@ class MemoryTab:
             level_info_row,
             text="XP: 0",
             font=FONTS["mono_sm"],
-            fg=COLORS["text_dim"],
+            fg=COLORS["ai_text"],
             bg=COLORS["ai_bg"],
         )
         self._xp_label.pack(side="right")
@@ -79,7 +79,7 @@ class MemoryTab:
             level_frame,
             text="",
             font=FONTS["small"],
-            fg=COLORS["text_dim"],
+            fg=COLORS["ai_text"],
             bg=COLORS["ai_bg"],
             anchor="w",
         )

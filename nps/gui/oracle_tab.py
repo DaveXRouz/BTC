@@ -319,7 +319,7 @@ class OracleTab:
             text="  Daily Insight  ",
             font=FONTS["body"],
             fg=COLORS["oracle_accent"],
-            bg=COLORS["oracle_bg"],
+            bg=COLORS["bg_card"],
             bd=1,
             relief="solid",
             padx=12,
@@ -336,7 +336,7 @@ class OracleTab:
             text="Loading...",
             font=FONTS["small"],
             fg=COLORS["text"],
-            bg=COLORS["oracle_bg"],
+            bg=COLORS["bg_card"],
             wraplength=500,
             justify="left",
             anchor="nw",
@@ -348,7 +348,7 @@ class OracleTab:
             text="",
             font=FONTS["mono_sm"],
             fg=COLORS["gold"],
-            bg=COLORS["oracle_bg"],
+            bg=COLORS["bg_card"],
             anchor="w",
         )
         self._daily_lucky_label.pack(fill="x")
@@ -358,7 +358,7 @@ class OracleTab:
             text="",
             font=FONTS["small"],
             fg=COLORS["oracle_accent"],
-            bg=COLORS["oracle_bg"],
+            bg=COLORS["bg_card"],
             anchor="w",
         )
         self._daily_energy_label.pack(fill="x")

@@ -226,7 +226,7 @@ class DashboardTab:
             text="New Terminal",
             command=self._create_terminal,
             bg=COLORS["bg_button"],
-            fg="white",
+            fg=COLORS["text_bright"],
             font=FONTS["small"],
             padx=8,
             pady=2,
@@ -296,7 +296,7 @@ class DashboardTab:
                 "running": COLORS["success"],
                 "paused": COLORS["warning"],
                 "stopped": COLORS["error"],
-                "created": COLORS["text_dim"],
+                "created": COLORS["accent"],
             }.get(status, COLORS["text_dim"])
 
             tk.Label(
@@ -332,7 +332,7 @@ class DashboardTab:
                 info_row,
                 text=f"Mode: {mode}  |  Keys: {keys:,}  |  {speed:,.0f}/s",
                 font=FONTS["mono_sm"],
-                fg=COLORS["text_dim"],
+                fg=COLORS["text"],
                 bg=COLORS["bg_input"],
             ).pack(side="right")
 
@@ -346,7 +346,7 @@ class DashboardTab:
                     text="Start",
                     command=lambda t=tid: self._start_terminal(t),
                     bg=COLORS["bg_success"],
-                    fg="white",
+                    fg=COLORS["text_bright"],
                     font=FONTS["small"],
                     padx=6,
                     pady=1,
@@ -357,7 +357,7 @@ class DashboardTab:
                     text="Pause",
                     command=lambda t=tid: self._pause_terminal(t),
                     bg=COLORS["warning"],
-                    fg="white",
+                    fg=COLORS["text_bright"],
                     font=FONTS["small"],
                     padx=6,
                     pady=1,
@@ -367,7 +367,7 @@ class DashboardTab:
                     text="Stop",
                     command=lambda t=tid: self._stop_terminal(t),
                     bg=COLORS["bg_danger"],
-                    fg="white",
+                    fg=COLORS["text_bright"],
                     font=FONTS["small"],
                     padx=6,
                     pady=1,
@@ -378,7 +378,7 @@ class DashboardTab:
                     text="Resume",
                     command=lambda t=tid: self._resume_terminal(t),
                     bg=COLORS["bg_success"],
-                    fg="white",
+                    fg=COLORS["text_bright"],
                     font=FONTS["small"],
                     padx=6,
                     pady=1,
@@ -388,7 +388,7 @@ class DashboardTab:
                     text="Stop",
                     command=lambda t=tid: self._stop_terminal(t),
                     bg=COLORS["bg_danger"],
-                    fg="white",
+                    fg=COLORS["text_bright"],
                     font=FONTS["small"],
                     padx=6,
                     pady=1,
@@ -575,7 +575,7 @@ class DashboardTab:
             dot_label = tk.Label(
                 dot_frame,
                 text=f"\u25cf {short}",
-                font=FONTS["small"],
+                font=FONTS["body"],
                 fg=COLORS["text_dim"],
                 bg=COLORS["bg_card"],
             )
