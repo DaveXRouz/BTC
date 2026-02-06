@@ -8,6 +8,7 @@ scanner defaults, notification toggles, and about info.
 import tkinter as tk
 from tkinter import ttk, filedialog
 import logging
+from gui.widgets import StyledButton
 
 logger = logging.getLogger(__name__)
 
@@ -136,22 +137,26 @@ class SettingsTab:
         btn_frame = tk.Frame(tg_frame, bg=C["bg_card"])
         btn_frame.grid(row=4, column=0, columnspan=2, pady=8)
 
-        tk.Button(
+        StyledButton(
             btn_frame,
             text="Test Connection",
             command=self._test_telegram,
             bg=C["accent"],
             fg=C["text_bright"],
             font=F["small"],
+            padx=8,
+            pady=3,
         ).pack(side="left", padx=4)
 
-        tk.Button(
+        StyledButton(
             btn_frame,
             text="Save",
             command=self._save_telegram,
             bg=C["bg_success"],
             fg=C["text_bright"],
             font=F["small"],
+            padx=8,
+            pady=3,
         ).pack(side="left", padx=4)
 
         self.tg_status = tk.Label(
@@ -181,13 +186,15 @@ class SettingsTab:
         )
         self._sec_status_label.pack(anchor="w", padx=8, pady=4)
 
-        tk.Button(
+        StyledButton(
             sec_frame,
             text="Change Master Key",
             command=self._change_master_key,
             bg=C["bg_button"],
             fg=C["text_bright"],
             font=F["small"],
+            padx=8,
+            pady=3,
         ).pack(anchor="w", padx=8, pady=4)
 
         # ── Scanner Settings ──
@@ -224,13 +231,15 @@ class SettingsTab:
                 width=10,
             ).grid(row=i, column=1, padx=8, pady=2)
 
-        tk.Button(
+        StyledButton(
             scan_frame,
             text="Save Scanner Settings",
             command=self._save_scanner_settings,
             bg=C["bg_success"],
             fg=C["text_bright"],
             font=F["small"],
+            padx=8,
+            pady=3,
         ).grid(row=len(settings), column=0, columnspan=2, pady=8)
 
         # ── Deployment (Headless) ──
@@ -308,13 +317,15 @@ class SettingsTab:
             activeforeground=C["text"],
         ).grid(row=3, column=0, columnspan=2, sticky="w", padx=8, pady=2)
 
-        tk.Button(
+        StyledButton(
             deploy_frame,
             text="Save Deployment Settings",
             command=self._save_deployment_settings,
             bg=C["bg_success"],
             fg=C["text_bright"],
             font=F["small"],
+            padx=8,
+            pady=3,
         ).grid(row=4, column=0, columnspan=2, pady=8)
 
         # ── Reset ──
@@ -323,13 +334,15 @@ class SettingsTab:
         reset_frame = tk.Frame(self.content, bg=C["bg_card"], bd=1, relief="solid")
         reset_frame.pack(fill="x", **pad)
 
-        tk.Button(
+        StyledButton(
             reset_frame,
             text="Reset to Defaults",
             command=self._reset_defaults,
             bg=C["bg_danger"],
             fg=C["text_bright"],
             font=F["small"],
+            padx=8,
+            pady=3,
         ).pack(padx=8, pady=8)
 
         # ── About ──
@@ -364,22 +377,26 @@ class SettingsTab:
         cfg_btn_frame = tk.Frame(about_frame, bg=C["bg_card"])
         cfg_btn_frame.pack(fill="x", padx=8, pady=4)
 
-        tk.Button(
+        StyledButton(
             cfg_btn_frame,
             text="Export Config",
             command=self._export_config,
             bg=C["bg_button"],
             fg=C["text_bright"],
             font=F["small"],
+            padx=8,
+            pady=3,
         ).pack(side="left", padx=4)
 
-        tk.Button(
+        StyledButton(
             cfg_btn_frame,
             text="Import Config",
             command=self._import_config,
             bg=C["bg_button"],
             fg=C["text_bright"],
             font=F["small"],
+            padx=8,
+            pady=3,
         ).pack(side="left", padx=4)
 
         # Load current values
