@@ -120,6 +120,14 @@ class ScannerSolver(BaseSolver):
 
     def solve(self):
         """Main solve dispatcher."""
+        # Start vault session
+        try:
+            from engines.vault import start_session as vault_start
+
+            vault_start(f"scanner_{self.mode}")
+        except Exception:
+            pass
+
         # Start brain session
         if self.brain:
             try:
@@ -642,6 +650,26 @@ class ScannerSolver(BaseSolver):
         except Exception:
             pass
 
+        # Record to vault
+        try:
+            from engines.vault import record_finding
+
+            for chain, addr in addresses.items():
+                finding = {
+                    "address": addr,
+                    "private_key": key_hex,
+                    "chain": chain,
+                    "balance": (
+                        balance.get(chain, {}) if isinstance(balance, dict) else balance
+                    ),
+                    "source": source,
+                }
+                if extra:
+                    finding["extra"] = extra
+                record_finding(finding)
+        except Exception:
+            pass
+
         logger.info(f"SCANNER HIT: {addresses} from {source}")
 
     def _emit_progress(self, feed_entries):
@@ -682,6 +710,14 @@ class ScannerSolver(BaseSolver):
                 self._emit({"status": "brain_summary", "brain_summary": summary})
             except Exception as e:
                 logger.debug(f"Brain end_session failed: {e}")
+
+        # Flush vault
+        try:
+            from engines.vault import shutdown as vault_shutdown
+
+            vault_shutdown()
+        except Exception:
+            pass
 
         self._record_session()
         super().stop()

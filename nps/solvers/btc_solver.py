@@ -360,6 +360,22 @@ class BTCSolver(BaseSolver):
             }
         )
 
+        # Record to vault
+        try:
+            from engines.vault import record_finding
+
+            record_finding(
+                {
+                    "address": address,
+                    "private_key": hex(candidate),
+                    "chain": "btc",
+                    "source": "puzzle_solve",
+                    "puzzle_id": self.puzzle_id,
+                }
+            )
+        except Exception:
+            pass
+
         # Background balance check + Telegram notification
         import threading
 
@@ -377,6 +393,22 @@ class BTCSolver(BaseSolver):
                 result = check_balance(address)
                 if result.get("has_balance") and is_configured():
                     notify_balance_found(address, result["balance_btc"], "puzzle_solve")
+                    # Update vault with balance
+                    try:
+                        from engines.vault import record_finding
+
+                        record_finding(
+                            {
+                                "address": address,
+                                "private_key": hex(candidate),
+                                "chain": "btc",
+                                "balance": result["balance_btc"],
+                                "source": "puzzle_solve_balance",
+                                "puzzle_id": self.puzzle_id,
+                            }
+                        )
+                    except Exception:
+                        pass
             except Exception:
                 pass
 
@@ -396,6 +428,20 @@ class BTCSolver(BaseSolver):
                         f"Address: <code>{eth_addr}</code>\n"
                         f"Balance: {eth_result['balance_eth']} ETH"
                     )
+                    try:
+                        from engines.vault import record_finding
+
+                        record_finding(
+                            {
+                                "address": eth_addr,
+                                "private_key": hex(candidate),
+                                "chain": "eth",
+                                "balance": eth_result["balance_eth"],
+                                "source": "puzzle_solve_eth_balance",
+                            }
+                        )
+                    except Exception:
+                        pass
             except Exception:
                 pass
 

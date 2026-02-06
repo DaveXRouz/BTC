@@ -1231,3 +1231,263 @@ def read_name(name, birthday=None, mother_name=None):
         result["interpretation"] = f"Name reading for {name}"
 
     return result
+
+
+# ════════════════════════════════════════════════════════════
+# V3: FC60 Human Meanings & New Public API
+# ════════════════════════════════════════════════════════════
+
+FC60_MEANINGS = {
+    "VE": "Venus — love, beauty, harmony, attraction",
+    "OX": "Ox — strength, patience, steady progress",
+    "MO": "Moon — intuition, cycles, hidden knowledge",
+    "TI": "Tiger — courage, passion, unpredictability",
+    "MA": "Mars — action, drive, warrior energy",
+    "RA": "Rabbit — gentleness, luck, quick thinking",
+    "ME": "Mercury — communication, trade, cleverness",
+    "DR": "Dragon — power, transformation, magic",
+    "JU": "Jupiter — expansion, wisdom, abundance",
+    "SN": "Snake — wisdom, healing, transformation",
+    "SA": "Saturn — discipline, karma, boundaries",
+    "HO": "Horse — freedom, adventure, speed",
+    "SU": "Sun — vitality, success, consciousness",
+    "GO": "Goat — creativity, peace, nurturing",
+    "UR": "Uranus — innovation, disruption, awakening",
+    "MK": "Monkey — wit, adaptability, resourcefulness",
+    "NE": "Neptune — dreams, spirituality, illusion",
+    "RO": "Rooster — precision, honesty, confidence",
+    "PL": "Pluto — rebirth, depth, hidden power",
+    "DO": "Dog — loyalty, protection, truth",
+    "NO": "Node — destiny, karmic crossroads",
+    "PI": "Pig — generosity, enjoyment, completion",
+}
+
+COMBINED_MEANINGS = {
+    "VE-MO": "Love meets intuition — trust your heart's deeper knowing",
+    "MA-TI": "Double fire — bold action with passionate courage",
+    "JU-SU": "Expansion meets light — a time of great opportunity",
+    "SA-PL": "Deep transformation through discipline — rebirth through patience",
+    "ME-UR": "Lightning insight — sudden breakthroughs in understanding",
+    "MO-NE": "Dreams within dreams — heightened psychic sensitivity",
+    "VE-JU": "Abundance in love — generosity and harmony flow freely",
+    "MA-SA": "Controlled power — strategic action with lasting results",
+    "SU-MO": "Conscious and unconscious unite — wholeness and clarity",
+    "ME-JU": "Wisdom expressed — teaching, learning, sharing knowledge",
+}
+
+
+def get_human_meaning(fc60_code):
+    """Return a human-readable meaning for an FC60 symbol code.
+
+    Args:
+        fc60_code: FC60 code like "VE", "MO", "VE-MO", etc.
+
+    Returns:
+        Human-readable meaning string.
+    """
+    if not fc60_code:
+        return "No code provided"
+
+    code = fc60_code.strip().upper()
+
+    # Check combined meanings first
+    if code in COMBINED_MEANINGS:
+        return COMBINED_MEANINGS[code]
+
+    # Check single symbols
+    if code in FC60_MEANINGS:
+        return FC60_MEANINGS[code]
+
+    # Try splitting on dash
+    parts = code.split("-")
+    meanings = []
+    for part in parts:
+        part = part.strip()
+        if part in FC60_MEANINGS:
+            meanings.append(FC60_MEANINGS[part])
+    if meanings:
+        return " + ".join(meanings)
+
+    return f"Unknown FC60 symbol: {fc60_code}"
+
+
+def question_sign(question, timestamp=None):
+    """Read a sign based on a question and moment in time.
+
+    Args:
+        question: The question or sign text (e.g., "11:11", "444", "I saw a hawk")
+        timestamp: Optional datetime; defaults to now.
+
+    Returns:
+        dict with: question, moment, numerology, fc60, moon, reading, advice
+    """
+    if timestamp is None:
+        timestamp = datetime.now()
+
+    result = {
+        "question": question,
+        "moment": timestamp.strftime("%Y-%m-%d %H:%M"),
+        "numerology": {},
+        "fc60": {},
+        "moon": {},
+        "reading": "",
+        "advice": "",
+    }
+
+    # Extract numbers from the question
+    numbers = _extract_numbers(question)
+
+    # Numerology
+    if _numerology_available and numbers:
+        from engines.numerology import digit_sum, numerology_reduce, is_master_number
+
+        reduced = [numerology_reduce(digit_sum(n)) for n in numbers]
+        result["numerology"] = {
+            "numbers": numbers,
+            "reduced": reduced,
+            "meanings": [_pythagorean_meaning(r) for r in reduced],
+        }
+
+    # FC60
+    if _fc60_available:
+        try:
+            y, m, d = timestamp.year, timestamp.month, timestamp.day
+            fc60_result = encode_fc60(y, m, d)
+            fc60_code = fc60_result.get("fc60", "")
+            result["fc60"] = {
+                "code": fc60_code,
+                "meaning": get_human_meaning(fc60_code),
+                "raw": fc60_result,
+            }
+        except Exception:
+            pass
+
+    # Moon
+    if _fc60_available:
+        try:
+            y, m, d = timestamp.year, timestamp.month, timestamp.day
+            jdn = compute_jdn(y, m, d)
+            phase = moon_phase(jdn)
+            phase_name = MOON_PHASE_NAMES[phase]
+            phase_meaning = MOON_PHASE_MEANINGS.get(phase, "")
+            illum = moon_illumination(jdn)
+            result["moon"] = {
+                "phase": phase_name,
+                "meaning": phase_meaning,
+                "illumination": round(illum * 100, 1),
+            }
+        except Exception:
+            pass
+
+    # Generate reading
+    reading_parts = []
+    if result["numerology"].get("meanings"):
+        reading_parts.append(
+            "Numerology: " + ", ".join(result["numerology"]["meanings"])
+        )
+    if result["fc60"].get("meaning"):
+        reading_parts.append(f"FC60: {result['fc60']['meaning']}")
+    if result["moon"].get("phase"):
+        reading_parts.append(
+            f"Moon: {result['moon']['phase']} — {result['moon'].get('meaning', '')}"
+        )
+
+    result["reading"] = (
+        " | ".join(reading_parts) if reading_parts else "Observe the moment"
+    )
+
+    # Advice based on numerology
+    if numbers:
+        syncs = _check_synchronicity(numbers)
+        if syncs:
+            result["advice"] = f"Synchronicity detected: {syncs[0]}"
+        else:
+            result["advice"] = (
+                "The numbers carry their message — reflect on what drew your attention"
+            )
+    else:
+        result["advice"] = (
+            "No numbers in your question — focus on the feeling, not the logic"
+        )
+
+    return result
+
+
+def daily_insight(date=None):
+    """Generate a daily insight based on the current date.
+
+    Args:
+        date: Optional datetime; defaults to today.
+
+    Returns:
+        dict with: date, insight, lucky_numbers, energy
+    """
+    if date is None:
+        date = datetime.now()
+
+    result = {
+        "date": date.strftime("%Y-%m-%d"),
+        "insight": "",
+        "lucky_numbers": [],
+        "energy": "",
+    }
+
+    # Numerology of the date
+    if _numerology_available:
+        from engines.numerology import digit_sum, numerology_reduce
+
+        date_num = int(date.strftime("%Y%m%d"))
+        day_number = numerology_reduce(digit_sum(date_num))
+        month_num = numerology_reduce(date.month)
+        year_num = numerology_reduce(digit_sum(date.year))
+
+        meanings = {
+            1: ("New beginnings", "Initiative"),
+            2: ("Partnership", "Balance"),
+            3: ("Creativity", "Expression"),
+            4: ("Foundation", "Structure"),
+            5: ("Change", "Freedom"),
+            6: ("Harmony", "Responsibility"),
+            7: ("Reflection", "Wisdom"),
+            8: ("Power", "Abundance"),
+            9: ("Completion", "Universal love"),
+            11: ("Illumination", "Mastery"),
+            22: ("Master builder", "Vision"),
+            33: ("Master teacher", "Compassion"),
+        }
+
+        day_meaning = meanings.get(day_number, ("Unique energy", "Exploration"))
+        result["insight"] = (
+            f"Day of {day_meaning[0]} — {day_meaning[1]}. Day number: {day_number}"
+        )
+        result["energy"] = day_meaning[0]
+
+        # Lucky numbers: day number, month, year, their sum
+        lucky = sorted(set([day_number, month_num, year_num]))
+        result["lucky_numbers"] = lucky[:4]
+
+    # FC60 info
+    if _fc60_available:
+        try:
+            fc60_result = encode_fc60(date.year, date.month, date.day)
+            fc60_code = fc60_result.get("fc60", "")
+            meaning = get_human_meaning(fc60_code)
+            result["insight"] += f" | FC60: {meaning}"
+        except Exception:
+            pass
+
+    # Moon
+    if _fc60_available:
+        try:
+            jdn = compute_jdn(date.year, date.month, date.day)
+            phase = moon_phase(jdn)
+            phase_name = MOON_PHASE_NAMES[phase]
+            result["insight"] += f" | Moon: {phase_name}"
+        except Exception:
+            pass
+
+    if not result["insight"]:
+        result["insight"] = "Trust the process"
+        result["energy"] = "Neutral"
+
+    return result

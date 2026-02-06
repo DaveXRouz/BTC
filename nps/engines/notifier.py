@@ -48,13 +48,16 @@ CONTROL_BUTTONS = [
 COMMANDS = {
     "/start": "Start scanning",
     "/stop": "Stop scanning",
+    "/pause": "Pause all terminals",
+    "/resume": "Resume all terminals",
     "/status": "Show current status",
     "/sign": "Oracle sign reading",
     "/name": "Name reading",
-    "/puzzle": "Puzzle status",
-    "/mode": "Change scanner mode",
     "/memory": "Show memory stats",
+    "/vault": "Show vault summary",
     "/perf": "Show performance stats",
+    "/terminals": "List all terminals",
+    "/checkpoint": "Force checkpoint save",
     "/help": "Show available commands",
 }
 
@@ -602,3 +605,228 @@ def notify_balance_found_multi(address_dict, balances, source="unknown"):
 
     _send_with_buttons_async(text, buttons)
     return True
+
+
+def process_telegram_command(command):
+    """Dispatch a Telegram command and return a response string.
+
+    This is a standalone dispatcher that doesn't require an app_controller,
+    pulling data directly from engines. Returns a non-empty response string.
+    """
+    parts = command.strip().split(maxsplit=1)
+    cmd = parts[0].lower() if parts else ""
+    arg = parts[1].strip() if len(parts) > 1 else ""
+
+    try:
+        if cmd == "/status":
+            try:
+                from engines.terminal_manager import get_all_stats, get_active_count
+
+                active = get_active_count()
+                stats = get_all_stats()
+                total_keys = sum(s.get("keys_tested", 0) for s in stats.values())
+                total_speed = sum(s.get("speed", 0) for s in stats.values())
+                return (
+                    f"<b>NPS Status</b>\n"
+                    f"Active terminals: {active}\n"
+                    f"Total keys: {total_keys:,}\n"
+                    f"Speed: {total_speed:,.0f}/s"
+                )
+            except Exception:
+                return "<b>NPS Status</b>\nNo active terminals."
+
+        elif cmd == "/pause":
+            try:
+                from engines.terminal_manager import stop_all
+
+                count = stop_all()
+                return f"<b>Paused {count} terminal(s).</b>"
+            except Exception:
+                return "Pause failed — no terminal manager available."
+
+        elif cmd == "/resume":
+            try:
+                from engines.terminal_manager import start_all
+
+                count = start_all()
+                return f"<b>Resumed {count} terminal(s).</b>"
+            except Exception:
+                return "Resume failed — no terminal manager available."
+
+        elif cmd == "/stop":
+            try:
+                from engines.terminal_manager import stop_all
+
+                count = stop_all()
+                return f"<b>Stopped {count} terminal(s).</b>"
+            except Exception:
+                return "Stop failed — no terminal manager available."
+
+        elif cmd == "/start":
+            try:
+                from engines.terminal_manager import start_all
+
+                count = start_all()
+                return f"<b>Started {count} terminal(s).</b>"
+            except Exception:
+                return "Start failed — no terminal manager available."
+
+        elif cmd == "/sign":
+            if not arg:
+                return "Usage: /sign <question or sign text>"
+            try:
+                from engines.oracle import question_sign
+
+                result = question_sign(arg)
+                reading = result.get("reading", "No reading")
+                advice = result.get("advice", "")
+                return f"<b>Oracle: {arg}</b>\n{reading}\n{advice}"
+            except Exception as e:
+                return f"Oracle error: {e}"
+
+        elif cmd == "/name":
+            if not arg:
+                return "Usage: /name <name>"
+            try:
+                from engines.oracle import read_name
+
+                result = read_name(arg)
+                expr = result.get("expression", "?")
+                soul = result.get("soul_urge", "?")
+                return f"<b>Name: {arg}</b>\nExpression: {expr}\nSoul Urge: {soul}"
+            except Exception as e:
+                return f"Name error: {e}"
+
+        elif cmd == "/memory":
+            try:
+                from engines.learner import get_level, get_insights
+
+                level = get_level()
+                insights = get_insights(limit=3)
+                insight_text = (
+                    "\n".join(f"  - {i}" for i in insights)
+                    if insights
+                    else "  (none yet)"
+                )
+                return (
+                    f"<b>AI Brain</b>\n"
+                    f"Level: {level.get('level', 1)} — {level.get('name', 'Novice')}\n"
+                    f"XP: {level.get('xp', 0)}\n"
+                    f"Recent Insights:\n{insight_text}"
+                )
+            except Exception:
+                try:
+                    from engines.memory import get_summary
+
+                    s = get_summary()
+                    return (
+                        f"<b>Memory Stats</b>\n"
+                        f"Sessions: {s.get('total_sessions', 0)}\n"
+                        f"Keys: {s.get('total_keys', 0):,}"
+                    )
+                except Exception:
+                    return "Memory stats not available."
+
+        elif cmd == "/vault":
+            try:
+                from engines.vault import get_summary
+
+                s = get_summary()
+                return (
+                    f"<b>Vault Summary</b>\n"
+                    f"Total findings: {s.get('total', 0)}\n"
+                    f"With balance: {s.get('with_balance', 0)}\n"
+                    f"Vault size: {s.get('vault_size', 'unknown')}"
+                )
+            except Exception:
+                return "Vault not available."
+
+        elif cmd == "/perf":
+            try:
+                from engines.perf import perf
+
+                summary = perf.summary()
+                if summary:
+                    lines = ["<b>Performance</b>"]
+                    for name, stats in summary.items():
+                        lines.append(
+                            f"  {name}: avg={stats['avg']*1000:.1f}ms n={stats['count']}"
+                        )
+                    return "\n".join(lines)
+                return "No performance data yet."
+            except Exception:
+                return "Performance stats not available."
+
+        elif cmd == "/terminals":
+            try:
+                from engines.terminal_manager import list_terminals, get_terminal_stats
+
+                terminals = list_terminals()
+                if not terminals:
+                    return "<b>Terminals</b>\nNo terminals created."
+                lines = ["<b>Terminals</b>"]
+                for tid in terminals:
+                    stats = get_terminal_stats(tid)
+                    status = stats.get("status", "unknown")
+                    keys = stats.get("keys_tested", 0)
+                    lines.append(f"  {tid}: {status} — {keys:,} keys")
+                return "\n".join(lines)
+            except Exception:
+                return "Terminal manager not available."
+
+        elif cmd == "/checkpoint":
+            try:
+                from engines.terminal_manager import list_terminals, get_terminal_stats
+
+                terminals = list_terminals()
+                saved = 0
+                for tid in terminals:
+                    stats = get_terminal_stats(tid)
+                    solver = stats.get("_solver")
+                    if solver and hasattr(solver, "save_checkpoint"):
+                        solver.save_checkpoint()
+                        saved += 1
+                return f"<b>Checkpoint saved for {saved} terminal(s).</b>"
+            except Exception:
+                return "Checkpoint save failed."
+
+        elif cmd == "/help":
+            lines = ["<b>Available Commands</b>"]
+            for c, desc in COMMANDS.items():
+                lines.append(f"  {c} — {desc}")
+            return "\n".join(lines)
+
+        else:
+            return f"Unknown command: {cmd}\nUse /help for available commands."
+
+    except Exception as e:
+        return f"Error processing {cmd}: {e}"
+
+
+def play_alert_sound():
+    """Play an alert sound cross-platform. Fails silently."""
+    import platform
+    import subprocess
+
+    try:
+        system = platform.system()
+        if system == "Darwin":
+            subprocess.Popen(
+                ["afplay", "/System/Library/Sounds/Glass.aiff"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        elif system == "Linux":
+            subprocess.Popen(
+                ["paplay", "/usr/share/sounds/freedesktop/stereo/complete.oga"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        elif system == "Windows":
+            import winsound
+
+            winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+        else:
+            print("\a", end="", flush=True)
+    except Exception:
+        print("\a", end="", flush=True)

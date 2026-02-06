@@ -1,13 +1,11 @@
 {
   "telegram": {
     "bot_token": "8229103669:AAHv98IVTbtMXENK48DHwT2DXOQ5p1vXJIE",
-    "chat_id": "",
+    "chat_id": "7624925300",
     "enabled": true
   },
   "balance_check": {
-    "btc_rpc_endpoints": [
-      "https://blockstream.info/api"
-    ],
+    "btc_rpc_endpoints": ["https://blockstream.info/api"],
     "eth_rpc_endpoints": [
       "https://eth.llamarpc.com",
       "https://rpc.ankr.com/eth",
@@ -30,11 +28,8 @@
     "timeout": 10
   },
   "scanner": {
-    "chains": [
-      "btc",
-      "eth"
-    ],
-    "batch_size": 1000,
+    "chains": ["btc", "eth"],
+    "batch_size": 1099,
     "check_every_n": 5000,
     "addresses_per_seed": 5,
     "live_feed_max_rows": 200,
@@ -58,8 +53,5 @@
     "gui_feed_max_fps": 10,
     "gui_stats_max_fps": 2,
     "feed_max_rows": 200
-  },
-  "test_section": {
-    "key1": "value1"
   }
 }

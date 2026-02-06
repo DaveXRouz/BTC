@@ -51,13 +51,24 @@ class NPSApp:
 
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("NPS — Numerology Puzzle Solver")
+        self.root.title("NPS — Numerology Puzzle Solver V3")
         self.root.geometry("1200x800")
         self.root.minsize(1000, 700)
         # Theme imports (before configure so COLORS is available)
         from gui.theme import COLORS, FONTS
 
         self.root.configure(bg=COLORS["bg"])
+
+        # Security: prompt for master key before loading data
+        self._init_security()
+
+        # Initialize vault
+        try:
+            from engines.vault import init_vault
+
+            init_vault()
+        except Exception:
+            pass
 
         self.active_solvers = []
         self.solver_registry = {}
@@ -108,15 +119,53 @@ class NPSApp:
         # Status bar
         self._create_status_bar(COLORS, FONTS)
 
+        # Keyboard shortcuts
+        self._bind_shortcuts()
+
         # Telegram command poller
         self._tg_running = False
         self._start_telegram_poller()
+
+    def _init_security(self):
+        """Prompt for master password at startup (encryption at rest)."""
+        try:
+            from engines.security import (
+                has_salt,
+                set_master_password,
+                is_encrypted_mode,
+            )
+            from gui.widgets import ask_master_password
+
+            first_time = not has_salt()
+            password = ask_master_password(self.root, first_time=first_time)
+            if password:
+                set_master_password(password)
+                logging.getLogger(__name__).info("Encryption enabled")
+            else:
+                logging.getLogger(__name__).info("Running without encryption")
+        except Exception as e:
+            logging.getLogger(__name__).warning(f"Security init skipped: {e}")
+
+    def _bind_shortcuts(self):
+        """Bind keyboard shortcuts: Cmd+1-5 switch tabs."""
+        for i in range(1, 6):
+            self.root.bind(f"<Command-{i}>", lambda e, idx=i - 1: self._switch_tab(idx))
+            self.root.bind(f"<Control-{i}>", lambda e, idx=i - 1: self._switch_tab(idx))
+
+    def _switch_tab(self, index):
+        """Switch to a notebook tab by index."""
+        try:
+            if index < self.notebook.index("end"):
+                self.notebook.select(index)
+        except Exception:
+            pass
 
     def _create_tabs(self, COLORS):
         from gui.dashboard_tab import DashboardTab
         from gui.hunter_tab import HunterTab
         from gui.oracle_tab import OracleTab
         from gui.memory_tab import MemoryTab
+        from gui.settings_tab import SettingsTab
 
         # Tab 1: Dashboard (War Room)
         dash_frame = tk.Frame(self.notebook, bg=COLORS["bg"])
@@ -137,6 +186,11 @@ class NPSApp:
         memory_frame = tk.Frame(self.notebook, bg=COLORS["bg"])
         self.notebook.add(memory_frame, text="  Memory  ")
         self.memory_tab = MemoryTab(memory_frame, app=self)
+
+        # Tab 5: Settings & Connections
+        settings_frame = tk.Frame(self.notebook, bg=COLORS["bg"])
+        self.notebook.add(settings_frame, text="  Settings  ")
+        self.settings_tab = SettingsTab(settings_frame, app=self)
 
     def _create_status_bar(self, COLORS, FONTS):
         status = tk.Frame(self.root, bg=COLORS["bg_card"], bd=1, relief="solid")
@@ -192,6 +246,30 @@ class NPSApp:
             pady=4,
         )
         self.telegram_label.pack(side="right")
+
+        # Encryption status
+        try:
+            from engines.security import is_encrypted_mode
+
+            enc_text = "Encrypted" if is_encrypted_mode() else "Not Encrypted"
+            enc_fg = (
+                COLORS["text_dim"]
+                if is_encrypted_mode()
+                else COLORS.get("warning", "#FFA500")
+            )
+        except Exception:
+            enc_text = "Not Encrypted"
+            enc_fg = COLORS.get("warning", "#FFA500")
+        self.enc_label = tk.Label(
+            status,
+            text=enc_text,
+            font=FONTS["small"],
+            fg=enc_fg,
+            bg=COLORS["bg_card"],
+            padx=12,
+            pady=4,
+        )
+        self.enc_label.pack(side="right")
 
         # AI status indicator
         from gui.widgets import AIStatusIndicator
@@ -416,6 +494,14 @@ class NPSApp:
                 remaining = max(0.1, deadline - time.time())
                 solver._thread.join(timeout=remaining)
 
+        # Flush vault
+        try:
+            from engines.vault import shutdown as vault_shutdown
+
+            vault_shutdown()
+        except Exception:
+            pass
+
         # Flush memory to disk
         try:
             from engines.memory import shutdown as memory_shutdown
@@ -441,6 +527,27 @@ def run_headless(config_path=None):
         load_config(path=config_path)
     else:
         load_config()
+
+    # Security: check for master password in env
+    try:
+        from engines.security import set_master_password, is_encrypted_mode
+
+        master_pw = os.environ.get("NPS_MASTER_PASSWORD")
+        if master_pw:
+            set_master_password(master_pw)
+            logger.info("Encryption enabled via NPS_MASTER_PASSWORD")
+        else:
+            logger.info("No NPS_MASTER_PASSWORD set — running without encryption")
+    except Exception as e:
+        logger.warning(f"Security init skipped: {e}")
+
+    # Initialize vault
+    try:
+        from engines.vault import init_vault
+
+        init_vault()
+    except Exception:
+        pass
 
     print("=" * 60)
     print("NPS — Headless Scanner Mode")
@@ -594,6 +701,14 @@ def run_headless(config_path=None):
         f"Final stats: {stats.get('keys_tested', 0):,} keys, "
         f"{stats.get('seeds_tested', 0):,} seeds, {stats.get('hits', 0)} hits"
     )
+
+    # Flush vault
+    try:
+        from engines.vault import shutdown as vault_shutdown
+
+        vault_shutdown()
+    except Exception:
+        pass
 
     # Flush memory to disk
     try:

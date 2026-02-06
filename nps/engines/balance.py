@@ -171,6 +171,39 @@ ERC20_TOKENS = {
     },
 }
 
+# ════════════════════════════════════════════════════════════
+# BSC Balance Checking (BNB Smart Chain)
+# ════════════════════════════════════════════════════════════
+
+BSC_RPC_ENDPOINTS = [
+    "https://bsc-dataseed.binance.org",
+    "https://bsc-dataseed1.defibit.io",
+    "https://bsc.publicnode.com",
+]
+
+BSC_TOKENS = {
+    "BUSD": {
+        "contract": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+        "name": "Binance USD",
+        "decimals": 18,
+    },
+    "CAKE": {
+        "contract": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+        "name": "PancakeSwap",
+        "decimals": 18,
+    },
+}
+
+# ════════════════════════════════════════════════════════════
+# Polygon Balance Checking
+# ════════════════════════════════════════════════════════════
+
+POLYGON_RPC_ENDPOINTS = [
+    "https://polygon-rpc.com",
+    "https://polygon.publicnode.com",
+    "https://rpc.ankr.com/polygon",
+]
+
 _eth_rpc_index = 0
 _eth_last_call = 0.0
 
@@ -323,7 +356,76 @@ def check_erc20_balance(address, token_symbol):
 # ════════════════════════════════════════════════════════════
 
 
-def check_all_balances(btc_address=None, eth_address=None, tokens=None):
+def _evm_rpc_call(method, params, endpoints, timeout=10):
+    """Make a JSON-RPC call to an EVM-compatible chain."""
+    if not endpoints:
+        return None
+
+    endpoint = endpoints[0]
+    payload = json.dumps(
+        {"jsonrpc": "2.0", "method": method, "params": params, "id": 1}
+    ).encode("utf-8")
+
+    req = urllib.request.Request(
+        endpoint,
+        data=payload,
+        headers={"Content-Type": "application/json", "User-Agent": "NPS/1.0"},
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=timeout, context=_ssl_ctx) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+            return result.get("result")
+    except Exception as e:
+        logger.debug(f"EVM RPC failed ({endpoint}): {e}")
+        return None
+
+
+def check_bsc_balance(address):
+    """Check BNB balance on BSC. Returns result dict."""
+    _eth_rate_limit()
+    raw = _evm_rpc_call("eth_getBalance", [address, "latest"], BSC_RPC_ENDPOINTS)
+    if raw is None:
+        return {"success": False, "error": "BSC RPC failed", "address": address}
+
+    try:
+        balance_wei = int(raw, 16)
+        balance_bnb = balance_wei / 1e18
+        return {
+            "success": True,
+            "address": address,
+            "balance_wei": balance_wei,
+            "balance_bnb": balance_bnb,
+            "has_balance": balance_wei > 0,
+            "error": None,
+        }
+    except (ValueError, TypeError):
+        return {"success": False, "error": "Invalid response", "address": address}
+
+
+def check_polygon_balance(address):
+    """Check MATIC/POL balance on Polygon. Returns result dict."""
+    _eth_rate_limit()
+    raw = _evm_rpc_call("eth_getBalance", [address, "latest"], POLYGON_RPC_ENDPOINTS)
+    if raw is None:
+        return {"success": False, "error": "Polygon RPC failed", "address": address}
+
+    try:
+        balance_wei = int(raw, 16)
+        balance_matic = balance_wei / 1e18
+        return {
+            "success": True,
+            "address": address,
+            "balance_wei": balance_wei,
+            "balance_matic": balance_matic,
+            "has_balance": balance_wei > 0,
+            "error": None,
+        }
+    except (ValueError, TypeError):
+        return {"success": False, "error": "Invalid response", "address": address}
+
+
+def check_all_balances(btc_address=None, eth_address=None, tokens=None, chains=None):
     """Check balances across all configured chains. Returns combined result dict."""
     if tokens is None:
         try:
@@ -333,21 +435,26 @@ def check_all_balances(btc_address=None, eth_address=None, tokens=None):
         except Exception:
             tokens = ["USDT", "USDC"]
 
+    if chains is None:
+        chains = ["btc", "eth"]
+
     result = {
         "success": True,
         "btc": None,
         "eth": None,
+        "bsc": None,
+        "polygon": None,
         "tokens": {},
         "has_any_balance": False,
     }
 
-    if btc_address:
+    if btc_address and "btc" in chains:
         btc_result = check_balance(btc_address)
         result["btc"] = btc_result
         if btc_result.get("has_balance"):
             result["has_any_balance"] = True
 
-    if eth_address:
+    if eth_address and "eth" in chains:
         eth_result = check_eth_balance(eth_address)
         result["eth"] = eth_result
         if eth_result.get("has_balance"):
@@ -359,6 +466,18 @@ def check_all_balances(btc_address=None, eth_address=None, tokens=None):
             result["tokens"][token] = token_result
             if token_result.get("has_balance"):
                 result["has_any_balance"] = True
+
+    if eth_address and "bsc" in chains:
+        bsc_result = check_bsc_balance(eth_address)
+        result["bsc"] = bsc_result
+        if bsc_result.get("has_balance"):
+            result["has_any_balance"] = True
+
+    if eth_address and "polygon" in chains:
+        polygon_result = check_polygon_balance(eth_address)
+        result["polygon"] = polygon_result
+        if polygon_result.get("has_balance"):
+            result["has_any_balance"] = True
 
     return result
 

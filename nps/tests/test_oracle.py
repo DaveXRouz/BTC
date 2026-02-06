@@ -6,7 +6,13 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from engines.oracle import read_sign, read_name
+from engines.oracle import (
+    read_sign,
+    read_name,
+    get_human_meaning,
+    question_sign,
+    daily_insight,
+)
 
 
 class TestOracle(unittest.TestCase):
@@ -88,6 +94,57 @@ class TestOracle(unittest.TestCase):
         self.assertIsInstance(result, dict)
         self.assertIn("numbers", result)
         self.assertEqual(result["numbers"], [])
+
+    # ── V3 Tests ──
+
+    def test_get_human_meaning_known(self):
+        """get_human_meaning returns non-empty for known FC60 codes."""
+        result = get_human_meaning("VE")
+        self.assertIsInstance(result, str)
+        self.assertIn("Venus", result)
+
+    def test_get_human_meaning_combined(self):
+        """get_human_meaning handles combined codes."""
+        result = get_human_meaning("VE-MO")
+        self.assertIsInstance(result, str)
+        self.assertNotIn("Unknown", result)
+
+    def test_get_human_meaning_unknown(self):
+        """get_human_meaning returns fallback for unknown codes."""
+        result = get_human_meaning("ZZ")
+        self.assertIn("Unknown", result)
+
+    def test_question_sign_complete(self):
+        """question_sign returns complete dict with all keys."""
+        from datetime import datetime
+
+        result = question_sign("11:11", timestamp=datetime(2026, 2, 7, 11, 11))
+        self.assertIsInstance(result, dict)
+        for key in ("question", "moment", "numerology", "reading", "advice"):
+            self.assertIn(key, result, f"Missing key: {key}")
+        self.assertEqual(result["question"], "11:11")
+
+    def test_daily_insight_shape(self):
+        """daily_insight returns dict with date, insight, lucky_numbers, energy."""
+        from datetime import datetime
+
+        result = daily_insight(date=datetime(2026, 2, 7))
+        self.assertIsInstance(result, dict)
+        for key in ("date", "insight", "lucky_numbers", "energy"):
+            self.assertIn(key, result, f"Missing key: {key}")
+        self.assertEqual(result["date"], "2026-02-07")
+        self.assertIsInstance(result["lucky_numbers"], list)
+
+    def test_question_sign_empty(self):
+        """question_sign handles empty question gracefully."""
+        result = question_sign("")
+        self.assertIsInstance(result, dict)
+        self.assertIn("advice", result)
+
+    def test_question_sign_unicode(self):
+        """question_sign handles unicode input."""
+        result = question_sign("ثلاثة 333")
+        self.assertIsInstance(result, dict)
 
 
 if __name__ == "__main__":

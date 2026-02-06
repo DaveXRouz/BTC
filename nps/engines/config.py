@@ -160,6 +160,60 @@ def set(key_path, value, path=None):
     save_config(path=path)
 
 
+def save_config_updates(updates: dict, path=None):
+    """Merge updates into current config and save. Atomic write."""
+    global _config
+    if _config is None:
+        load_config()
+
+    with _lock:
+        _config = _deep_merge(_config, updates)
+        config_path = Path(path) if path else _CONFIG_PATH
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = config_path.with_suffix(".tmp")
+        with open(tmp_path, "w") as f:
+            json.dump(_config, f, indent=2)
+        import os
+
+        os.replace(str(tmp_path), str(config_path))
+
+
+def reset_defaults(path=None):
+    """Reset config to factory defaults."""
+    global _config
+    with _lock:
+        _config = copy.deepcopy(DEFAULT_CONFIG)
+        config_path = Path(path) if path else _CONFIG_PATH
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(config_path, "w") as f:
+            json.dump(_config, f, indent=2)
+
+
+def get_config_path() -> str:
+    """Return the absolute path to the config file."""
+    return str(_CONFIG_PATH)
+
+
+def get_bot_token() -> str:
+    """Get Telegram bot token (env var NPS_BOT_TOKEN takes priority)."""
+    try:
+        from engines.security import get_env_or_config
+
+        return get_env_or_config("bot_token", get("telegram.bot_token", ""))
+    except ImportError:
+        return get("telegram.bot_token", "")
+
+
+def get_chat_id() -> str:
+    """Get Telegram chat ID (env var NPS_CHAT_ID takes priority)."""
+    try:
+        from engines.security import get_env_or_config
+
+        return get_env_or_config("chat_id", get("telegram.chat_id", ""))
+    except ImportError:
+        return get("telegram.chat_id", "")
+
+
 def validate():
     """Validate config, warn about common issues. Returns list of warnings."""
     global _config

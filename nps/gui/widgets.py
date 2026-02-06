@@ -754,3 +754,126 @@ class OracleCard(tk.LabelFrame):
             if isinstance(widget, tk.Frame):
                 widget.destroy()
         self._sections = {}
+
+
+def ask_master_password(parent, first_time=False):
+    """Show a modal dialog for master encryption setup.
+
+    Returns the entered string or None if skipped.
+    """
+    result = {"value": None}
+
+    dialog = tk.Toplevel(parent)
+    dialog.title("NPS Security")
+    dialog.geometry("400x220" if first_time else "400x180")
+    dialog.resizable(False, False)
+    dialog.transient(parent)
+    dialog.grab_set()
+
+    dialog.configure(bg=COLORS["bg_card"])
+
+    title = "Set Master Key" if first_time else "Enter Master Key"
+    tk.Label(
+        dialog,
+        text=title,
+        font=FONTS["subhead"],
+        fg=COLORS["text_bright"],
+        bg=COLORS["bg_card"],
+    ).pack(pady=(16, 8))
+
+    tk.Label(
+        dialog,
+        text="Key:",
+        font=FONTS["small"],
+        fg=COLORS["text_dim"],
+        bg=COLORS["bg_card"],
+    ).pack(anchor="w", padx=24)
+    pw_entry = tk.Entry(
+        dialog,
+        font=FONTS["mono"],
+        show="*",
+        bg=COLORS["bg_input"],
+        fg=COLORS["text"],
+        insertbackground=COLORS["text"],
+        width=30,
+    )
+    pw_entry.pack(padx=24, pady=(0, 4))
+    pw_entry.focus_set()
+
+    confirm_entry = None
+    if first_time:
+        tk.Label(
+            dialog,
+            text="Confirm:",
+            font=FONTS["small"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+        ).pack(anchor="w", padx=24)
+        confirm_entry = tk.Entry(
+            dialog,
+            font=FONTS["mono"],
+            show="*",
+            bg=COLORS["bg_input"],
+            fg=COLORS["text"],
+            insertbackground=COLORS["text"],
+            width=30,
+        )
+        confirm_entry.pack(padx=24, pady=(0, 4))
+
+    error_label = tk.Label(
+        dialog,
+        text="",
+        font=FONTS["small"],
+        fg=COLORS["error"],
+        bg=COLORS["bg_card"],
+    )
+    error_label.pack()
+
+    btn_frame = tk.Frame(dialog, bg=COLORS["bg_card"])
+    btn_frame.pack(pady=(8, 12))
+
+    def _on_ok():
+        pw = pw_entry.get()
+        if not pw:
+            error_label.config(text="Entry cannot be empty")
+            return
+        if first_time and confirm_entry:
+            if pw != confirm_entry.get():
+                error_label.config(text="Entries do not match")
+                return
+        result["value"] = pw
+        dialog.destroy()
+
+    def _on_skip():
+        dialog.destroy()
+
+    ok_btn = tk.Button(
+        btn_frame,
+        text="OK",
+        command=_on_ok,
+        bg=COLORS["bg_success"],
+        fg="white",
+        font=FONTS["small"],
+        padx=16,
+        pady=4,
+    )
+    ok_btn.pack(side="left", padx=4)
+
+    skip_btn = tk.Button(
+        btn_frame,
+        text="Skip (No Encryption)",
+        command=_on_skip,
+        bg=COLORS["bg_input"],
+        fg=COLORS["text"],
+        font=FONTS["small"],
+        padx=16,
+        pady=4,
+    )
+    skip_btn.pack(side="left", padx=4)
+
+    pw_entry.bind("<Return>", lambda e: _on_ok())
+    if confirm_entry:
+        confirm_entry.bind("<Return>", lambda e: _on_ok())
+
+    dialog.wait_window()
+    return result["value"]
