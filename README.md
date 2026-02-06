@@ -1,6 +1,6 @@
 # NPS — Numerology Puzzle Solver
 
-A Python/Tkinter desktop application that combines **FC60 numerology**, **Pythagorean analysis**, **Chinese Calendar cycles**, and **mathematical pattern detection** to explore and solve puzzles. Features multi-chain cryptocurrency scanning, adaptive learning, Telegram remote control, BIP39 seed generation, and headless deployment.
+A Python/Tkinter desktop application that combines **FC60 numerology**, **Pythagorean analysis**, **Chinese Calendar cycles**, and **mathematical pattern detection** to explore and solve puzzles. Features encryption at rest, findings vault, multi-chain cryptocurrency scanning (BTC, ETH, BSC, Polygon), adaptive AI learning with levels, multi-terminal dashboard, Telegram remote control, BIP39 seed generation, and headless deployment.
 
 **Zero external dependencies** — runs on Python 3.8+ standard library only.
 
@@ -31,14 +31,53 @@ sudo apt install python3-tk
 
 ## Features
 
-### 4-Tab Interface
+### 5-Tab Interface
 
-| Tab           | Purpose                                                                                               |
-| ------------- | ----------------------------------------------------------------------------------------------------- |
-| **Dashboard** | War room overview — current FC60 moment reading, solve stats, learning confidence, live activity feed |
-| **Hunter**    | Bitcoin puzzle solver (4 strategies) + multi-chain address scanner with unified live feed             |
-| **Oracle**    | Multi-system sign reader + Pythagorean name cipher + birth date numerology                            |
-| **Memory**    | Learning engine dashboard — solve history, weight evolution, pattern discovery validation             |
+| Tab           | Purpose                                                                                      |
+| ------------- | -------------------------------------------------------------------------------------------- |
+| **Dashboard** | Multi-terminal command center — terminal cards, health dots, daily insight, vault quick view |
+| **Hunter**    | Unified scanner controls — random keys, seed phrases, or both + puzzle toggle + checkpoints  |
+| **Oracle**    | Question mode + name cipher + daily insights with FC60 meanings                              |
+| **Memory**    | AI learning center — XP/levels, insights, recommendations, Learn Now                         |
+| **Settings**  | Telegram config, security status, scanner defaults, deployment, reset                        |
+
+### Multi-Chain Scanner
+
+- **Bitcoin** — Random key generation with balance checking via Blockstream API
+- **Ethereum** — Address scanning with ERC-20 token support (USDT, USDC, DAI, WBTC, WETH, UNI, LINK, SHIB)
+- **BSC** — Binance Smart Chain scanning
+- **Polygon** — Polygon network scanning
+- **BIP39** — Seed phrase generation and derivation
+- **Modes** — Random keys, seed phrases, or both
+- **Checkpoints** — Resume scanning after crashes
+
+### Encryption at Rest
+
+- PBKDF2 key derivation (600K iterations, SHA-256)
+- HMAC-SHA256 stream cipher for sensitive data
+- `encrypt_dict` / `decrypt_dict` for vault records
+- Environment variable override (`NPS_MASTER_PASSWORD`, `NPS_BOT_TOKEN`, `NPS_CHAT_ID`)
+
+### Findings Vault
+
+- Append-only JSONL storage with encrypted sensitive fields
+- Per-session tracking with auto-summaries
+- CSV and JSON export
+- Thread-safe writes with atomic file operations
+
+### AI Learning System
+
+- 5 levels: Novice → Student → Apprentice → Expert → Master
+- XP earned from scanning sessions
+- Claude CLI integration for session analysis
+- Auto-parameter adjustment at Level 4+
+- Persistent state across sessions
+
+### Multi-Terminal Dashboard
+
+- Up to 10 concurrent scan terminals
+- Per-terminal health monitoring
+- Endpoint health dots (blockstream, ETH RPC, BSC, Polygon)
 
 ### Puzzle-Solving Strategies
 
@@ -46,13 +85,6 @@ sudo apt install python3-tk
 - **Mystic** — Score candidates first, explore high-scoring regions
 - **Hybrid** — Combines scoring with Pollard's Kangaroo algorithm
 - **Oracle** — AI-guided candidate selection via Claude CLI
-
-### Multi-Chain Scanner
-
-- **Bitcoin** — Random key generation with balance checking via Blockstream API
-- **Ethereum** — Address scanning with ERC-20 token support (USDT, USDC, DAI, WBTC, WETH, UNI, LINK, SHIB)
-- **BIP39** — Seed phrase generation and derivation
-- **Modes** — Random keys, seed phrases, or both
 
 ### Adaptive Learning
 
@@ -74,6 +106,8 @@ Remote control and notifications via Telegram bot:
 | `/name <name>`       | Name numerology          |
 | `/memory`            | Memory stats             |
 | `/perf`              | Performance profiling    |
+| `/daily`             | Daily insight            |
+| `/vault`             | Vault summary            |
 
 ---
 
@@ -104,38 +138,46 @@ BTC/
 ├── nps/                      # The application
 │   ├── main.py               # Entry point (GUI + headless)
 │   ├── config.json           # Runtime configuration
-│   ├── engines/              # Core computation (20 modules)
+│   ├── engines/              # Core computation (23 modules)
 │   │   ├── fc60.py           # FrankenChron-60 encoding
 │   │   ├── numerology.py     # Pythagorean numerology
 │   │   ├── scoring.py        # Hybrid scoring engine
 │   │   ├── learning.py       # Adaptive weight adjustment
+│   │   ├── learner.py        # XP/Level AI learning (5 levels)
+│   │   ├── security.py       # Encryption at rest (PBKDF2+HMAC)
+│   │   ├── vault.py          # Findings vault (JSONL, encrypted)
+│   │   ├── session_manager.py # Session tracking
+│   │   ├── terminal_manager.py # Multi-terminal (max 10)
+│   │   ├── health.py         # Endpoint health monitoring
 │   │   ├── memory.py         # Session caching
 │   │   ├── scanner_brain.py  # Adaptive strategy selection
 │   │   ├── ai_engine.py      # Claude CLI integration
 │   │   ├── crypto.py         # secp256k1, Pollard's Kangaroo
 │   │   ├── bip39.py          # BIP39 mnemonic generation
 │   │   ├── balance.py        # Multi-chain balance checking
-│   │   ├── oracle.py         # Sign reader + name cipher
+│   │   ├── oracle.py         # Sign reader + daily insight
 │   │   ├── notifier.py       # Telegram integration
 │   │   ├── math_analysis.py  # Entropy, primes, digit patterns
 │   │   ├── keccak.py         # Keccak-256 (Ethereum)
-│   │   ├── config.py         # Config loader
+│   │   ├── config.py         # Config loader with env var support
 │   │   └── perf.py           # Performance profiler
-│   ├── solvers/              # Puzzle solvers (6 modules)
+│   ├── solvers/              # Puzzle solvers (7 modules)
 │   │   ├── base_solver.py    # Abstract base with threading
+│   │   ├── unified_solver.py # V3 unified hunter (3 modes)
 │   │   ├── btc_solver.py     # 4 Bitcoin strategies
 │   │   ├── scanner_solver.py # Multi-chain scanner
 │   │   ├── number_solver.py  # Sequence prediction
 │   │   ├── name_solver.py    # Name numerology
 │   │   └── date_solver.py    # Date analysis
 │   ├── gui/                  # Tkinter interface (8 modules)
-│   │   ├── dashboard_tab.py  # War room overview
-│   │   ├── hunter_tab.py     # Puzzle + scanner
-│   │   ├── oracle_tab.py     # Sign reader + name cipher
-│   │   ├── memory_tab.py     # Learning visualization
+│   │   ├── dashboard_tab.py  # Multi-terminal command center
+│   │   ├── hunter_tab.py     # Unified scanner controls
+│   │   ├── oracle_tab.py     # Question mode + name cipher
+│   │   ├── memory_tab.py     # AI learning center
+│   │   ├── settings_tab.py   # Settings & connections
 │   │   ├── widgets.py        # Custom components
 │   │   └── theme.py          # Dark theme
-│   ├── tests/                # Test suite (18 files)
+│   ├── tests/                # Test suite (25 files, 238 tests)
 │   └── data/                 # Runtime JSON data (gitignored)
 ├── scripts/
 │   └── setup.sh              # Environment verification
@@ -148,32 +190,36 @@ BTC/
 
 ```
 ┌──────────────────────────────────────────────┐
-│  GUI Layer — Tkinter (4 tabs + theme)        │
+│  GUI Layer — Tkinter (5 tabs + theme)        │
 └──────────────────┬───────────────────────────┘
                    │
 ┌──────────────────▼───────────────────────────┐
 │  Solver Layer — Orchestration + threading     │
-│  (BTC, Scanner, Number, Name, Date)          │
+│  (Unified, BTC, Scanner, Number, Name, Date) │
 └──────────────────┬───────────────────────────┘
                    │
 ┌──────────────────▼───────────────────────────┐
-│  Engine Layer — Stateless computation         │
+│  Engine Layer — Computation + services        │
 │  (FC60, Scoring, Learning, Crypto, BIP39,    │
-│   Balance, Oracle, AI, Notifier)             │
+│   Balance, Oracle, AI, Notifier, Security,   │
+│   Vault, Learner, Health, Session Manager)   │
 └──────────────────┬───────────────────────────┘
                    │
 ┌──────────────────▼───────────────────────────┐
-│  Data Layer — JSON persistence (gitignored)   │
-│  (solve_history, factor_weights, scan_memory) │
+│  Data Layer — Encrypted persistence           │
+│  (vault JSONL, sessions, checkpoints,        │
+│   learning state, config.json)               │
 └──────────────────────────────────────────────┘
 ```
 
 **Principles:**
 
-- Engines are **stateless** — no GUI imports, no direct file I/O
+- Engines are **stateless computation** (exceptions: vault, session_manager, learner manage own files)
 - Solvers **orchestrate** — call engines, manage data, expose results via callbacks
 - GUI tabs are **independent** — each handles its own layout and state
 - All services **degrade gracefully** — works without Telegram, AI, or network
+- **Security first** — sensitive data encrypted at rest, env var overrides for secrets
+- **Thread safety** — shared mutable state protected with `threading.Lock`, atomic file writes
 
 ---
 
@@ -187,7 +233,7 @@ cd nps && python3 -m unittest discover tests/ -v
 cd nps && python3 -m unittest tests/test_fc60.py -v
 ```
 
-18 test files covering all engines and solvers. Tests run without network access or API keys.
+25 test files, 238 tests covering all engines and solvers. Tests run without network access or API keys.
 
 ---
 
@@ -212,9 +258,10 @@ Deployment files (`Procfile`, `railway.toml`) are inside `nps/`.
 All settings live in `nps/config.json`:
 
 - **telegram** — Bot token, chat ID, enable/disable
-- **balance_check** — RPC endpoints, token list, rate limits
-- **scanner** — Chains, batch size, thread count
+- **balance_check** — RPC endpoints (BTC, ETH, BSC, Polygon), token list, rate limits
+- **scanner** — Chains, batch size, thread count, addresses per seed
 - **headless** — Auto-start, scanner mode, status intervals
+- **oracle** — Reading history max
 - **memory** — Flush interval, max size (10 MB)
 - **performance** — GUI refresh rates
 

@@ -612,18 +612,28 @@ class ScannerSolver(BaseSolver):
         if extra:
             hit["extra"] = extra
 
-        # Write to scanner_hits.json
+        # Write to scanner_hits.json (encrypt sensitive fields)
         hits_path = Path(__file__).parent.parent / "data" / "scanner_hits.json"
         with self._hits_lock:
             try:
                 hits_path.parent.mkdir(parents=True, exist_ok=True)
+                # Encrypt sensitive fields before writing
+                safe_hit = dict(hit)
+                try:
+                    from engines.security import encrypt_dict
+
+                    safe_hit = encrypt_dict(safe_hit)
+                except ImportError:
+                    pass
                 existing = []
                 if hits_path.exists():
                     with open(hits_path) as f:
                         existing = json.load(f)
-                existing.append(hit)
-                with open(hits_path, "w") as f:
+                existing.append(safe_hit)
+                tmp_path = hits_path.with_suffix(".tmp")
+                with open(tmp_path, "w") as f:
                     json.dump(existing, f, indent=2)
+                os.replace(str(tmp_path), str(hits_path))
             except Exception as e:
                 logger.error(f"Failed to write hit: {e}")
 

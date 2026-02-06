@@ -19,7 +19,7 @@ _config = None
 
 DEFAULT_CONFIG = {
     "telegram": {
-        "bot_token": "8229103669:AAHv98IVTbtMXENK48DHwT2DXOQ5p1vXJIE",
+        "bot_token": "",
         "chat_id": "",
         "enabled": True,
     },
@@ -123,8 +123,12 @@ def save_config(config=None, path=None):
         if _config is None:
             _config = copy.deepcopy(DEFAULT_CONFIG)
         config_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(config_path, "w") as f:
+        tmp_path = config_path.with_suffix(".tmp")
+        with open(tmp_path, "w") as f:
             json.dump(_config, f, indent=2)
+        import os
+
+        os.replace(str(tmp_path), str(config_path))
 
 
 def get(key_path, default=None):
@@ -149,13 +153,14 @@ def set(key_path, value, path=None):
     if _config is None:
         load_config()
 
-    keys = key_path.split(".")
-    current = _config
-    for key in keys[:-1]:
-        if key not in current or not isinstance(current[key], dict):
-            current[key] = {}
-        current = current[key]
-    current[keys[-1]] = value
+    with _lock:
+        keys = key_path.split(".")
+        current = _config
+        for key in keys[:-1]:
+            if key not in current or not isinstance(current[key], dict):
+                current[key] = {}
+            current = current[key]
+        current[keys[-1]] = value
 
     save_config(path=path)
 
@@ -185,8 +190,12 @@ def reset_defaults(path=None):
         _config = copy.deepcopy(DEFAULT_CONFIG)
         config_path = Path(path) if path else _CONFIG_PATH
         config_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(config_path, "w") as f:
+        tmp_path = config_path.with_suffix(".tmp")
+        with open(tmp_path, "w") as f:
             json.dump(_config, f, indent=2)
+        import os
+
+        os.replace(str(tmp_path), str(config_path))
 
 
 def get_config_path() -> str:

@@ -7,10 +7,14 @@ aggregate session statistics.
 
 import json
 import logging
+import os
+import threading
 import time
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+_lock = threading.Lock()
 
 SESSIONS_DIR = Path(__file__).parent.parent / "data" / "sessions"
 
@@ -31,8 +35,11 @@ def start_session(terminal_id, settings=None):
     }
 
     path = SESSIONS_DIR / f"{session_id}.json"
-    with open(path, "w") as f:
-        json.dump(session, f, indent=2)
+    with _lock:
+        tmp_path = path.with_suffix(".tmp")
+        with open(tmp_path, "w") as f:
+            json.dump(session, f, indent=2)
+        os.replace(str(tmp_path), str(path))
 
     logger.info(f"Session started: {session_id}")
     return session_id
@@ -45,15 +52,18 @@ def end_session(session_id, stats=None):
         logger.warning(f"Session not found: {session_id}")
         return
 
-    with open(path) as f:
-        session = json.load(f)
+    with _lock:
+        with open(path) as f:
+            session = json.load(f)
 
-    session["ended"] = time.time()
-    session["duration"] = session["ended"] - session["started"]
-    session["stats"] = stats or {}
+        session["ended"] = time.time()
+        session["duration"] = session["ended"] - session["started"]
+        session["stats"] = stats or {}
 
-    with open(path, "w") as f:
-        json.dump(session, f, indent=2)
+        tmp_path = path.with_suffix(".tmp")
+        with open(tmp_path, "w") as f:
+            json.dump(session, f, indent=2)
+        os.replace(str(tmp_path), str(path))
 
     logger.info(f"Session ended: {session_id} ({session['duration']:.1f}s)")
 

@@ -7,6 +7,8 @@ provides auto-adjustment recommendations at higher levels.
 
 import json
 import logging
+import os
+import threading
 import time
 from pathlib import Path
 
@@ -14,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).parent.parent / "data" / "learning"
 STATE_FILE = DATA_DIR / "learning_state.json"
+_lock = threading.Lock()
 
 LEVELS = {
     1: {"name": "Novice", "xp": 0, "capabilities": ["Basic scanning"]},
@@ -77,26 +80,29 @@ def _default_state():
 def load_state():
     """Load learning state from disk."""
     global _state
-    if STATE_FILE.exists():
-        try:
-            with open(STATE_FILE) as f:
-                _state = json.load(f)
-        except (json.JSONDecodeError, IOError):
+    with _lock:
+        if STATE_FILE.exists():
+            try:
+                with open(STATE_FILE) as f:
+                    _state = json.load(f)
+            except (json.JSONDecodeError, IOError):
+                _state = _default_state()
+        else:
             _state = _default_state()
-    else:
-        _state = _default_state()
     return _state
 
 
 def save_state():
-    """Save learning state to disk."""
+    """Save learning state to disk. Atomic write."""
     global _state
     if _state is None:
         return
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     try:
-        with open(STATE_FILE, "w") as f:
+        tmp_path = STATE_FILE.with_suffix(".tmp")
+        with open(tmp_path, "w") as f:
             json.dump(_state, f, indent=2)
+        os.replace(str(tmp_path), str(STATE_FILE))
     except IOError as e:
         logger.error(f"Failed to save learning state: {e}")
 
@@ -139,18 +145,19 @@ def add_xp(amount, reason=""):
         reason: Description of why XP was earned
     """
     _ensure_state()
-    _state["xp"] += amount
+    with _lock:
+        _state["xp"] += amount
 
-    # Check for level up
-    for level_num in sorted(LEVELS.keys(), reverse=True):
-        if _state["xp"] >= LEVELS[level_num]["xp"]:
-            if level_num > _state["level"]:
-                old_level = _state["level"]
-                _state["level"] = level_num
-                logger.info(
-                    f"Level up! {old_level} -> {level_num} ({LEVELS[level_num]['name']})"
-                )
-            break
+        # Check for level up
+        for level_num in sorted(LEVELS.keys(), reverse=True):
+            if _state["xp"] >= LEVELS[level_num]["xp"]:
+                if level_num > _state["level"]:
+                    old_level = _state["level"]
+                    _state["level"] = level_num
+                    logger.info(
+                        f"Level up! {old_level} -> {level_num} ({LEVELS[level_num]['name']})"
+                    )
+                break
 
     save_state()
 
@@ -169,9 +176,10 @@ def learn(session_data, model="sonnet"):
         dict with: insights, recommendations, adjustments
     """
     _ensure_state()
-    _state["total_learn_calls"] += 1
-    _state["last_learn"] = time.time()
-    _state["model"] = model
+    with _lock:
+        _state["total_learn_calls"] += 1
+        _state["last_learn"] = time.time()
+        _state["model"] = model
 
     result = {
         "insights": [],
@@ -218,8 +226,11 @@ def learn(session_data, model="sonnet"):
                     result["insights"].append(line)
 
             # Store insights
-            _state["insights"] = (result["insights"] + _state.get("insights", []))[:50]
-            _state["recommendations"] = result["recommendations"]
+            with _lock:
+                _state["insights"] = (result["insights"] + _state.get("insights", []))[
+                    :50
+                ]
+                _state["recommendations"] = result["recommendations"]
         else:
             result["insights"] = ["AI analysis unavailable"]
 

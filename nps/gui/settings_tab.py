@@ -102,7 +102,7 @@ class SettingsTab:
             btn_frame,
             text="Save",
             command=self._save_telegram,
-            bg=C.get("bg_success", "#2e7d32"),
+            bg=C["bg_success"],
             fg="white",
             font=F["small"],
         ).pack(side="left", padx=4)
@@ -171,7 +171,7 @@ class SettingsTab:
             scan_frame,
             text="Save Scanner Settings",
             command=self._save_scanner_settings,
-            bg=C.get("bg_success", "#2e7d32"),
+            bg=C["bg_success"],
             fg="white",
             font=F["small"],
         ).grid(row=len(settings), column=0, columnspan=2, pady=8)
@@ -186,7 +186,7 @@ class SettingsTab:
             reset_frame,
             text="Reset to Defaults",
             command=self._reset_defaults,
-            bg="#c62828",
+            bg=C["bg_danger"],
             fg="white",
             font=F["small"],
         ).pack(padx=8, pady=8)
@@ -254,19 +254,24 @@ class SettingsTab:
 
     def _test_telegram(self):
         """Test Telegram connection."""
+        C = self.COLORS
         try:
             from engines.notifier import send_message, is_configured
 
             if is_configured():
                 result = send_message("NPS Settings Test — Connection OK")
                 if result:
-                    self.tg_status.config(text="Connection successful!", fg="#4caf50")
+                    self.tg_status.config(
+                        text="Connection successful!", fg=C["success"]
+                    )
                 else:
-                    self.tg_status.config(text="Send failed", fg="#f44336")
+                    self.tg_status.config(text="Send failed", fg=C["error"])
             else:
-                self.tg_status.config(text="Not configured (set chat_id)", fg="#ff9800")
+                self.tg_status.config(
+                    text="Not configured (set chat_id)", fg=C["warning"]
+                )
         except Exception as e:
-            self.tg_status.config(text=f"Error: {e}", fg="#f44336")
+            self.tg_status.config(text=f"Error: {e}", fg=C["error"])
 
     def _save_telegram(self):
         """Save Telegram settings."""
@@ -280,9 +285,9 @@ class SettingsTab:
                 }
             }
             save_config_updates(updates)
-            self.tg_status.config(text="Saved!", fg="#4caf50")
+            self.tg_status.config(text="Saved!", fg=self.COLORS["success"])
         except Exception as e:
-            self.tg_status.config(text=f"Save failed: {e}", fg="#f44336")
+            self.tg_status.config(text=f"Save failed: {e}", fg=self.COLORS["error"])
 
     def _save_scanner_settings(self):
         """Save scanner settings to config."""

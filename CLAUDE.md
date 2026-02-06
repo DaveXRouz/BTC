@@ -33,7 +33,7 @@ NPS (Numerology Puzzle Solver) V3 is a Python/tkinter desktop app that combines 
   - `memory_tab.py` — AI learning center
   - `settings_tab.py` — Telegram config, security, scanner defaults
   - `theme.py`, `widgets.py` — Shared UI components
-- `nps/tests/` — Test suite (19 test files, 238 tests)
+- `nps/tests/` — Test suite (25 test files, 238 tests)
 - `nps/data/` — Runtime data (gitignored)
   - `findings/`, `sessions/`, `learning/`, `checkpoints/`
 - `docs/` — Architecture specs

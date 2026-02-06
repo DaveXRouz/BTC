@@ -43,6 +43,20 @@ All notable changes to NPS are documented here. Derived from the original git hi
 
 ## 2026-02-07
 
+### NPS V3 — Full Architecture Upgrade
+
+- **Encryption at rest** — PBKDF2 + HMAC-SHA256 stream cipher via `engines/security.py`
+- **Findings vault** — Append-only JSONL with encrypted sensitive fields, CSV/JSON export
+- **Unified scanner** — 3 modes (random_key, seed_phrase, both), 4 chains (BTC, ETH, BSC, Polygon), checkpoints
+- **Human-readable oracle** — `daily_insight()`, `question_sign()` with FC60 meanings
+- **AI learning system** — XP/levels (Novice→Master), session insights, auto-adjustments at Level 4+
+- **Multi-terminal dashboard** — Up to 10 concurrent scan terminals with health monitoring
+- **5-tab GUI** — Dashboard, Hunter, Oracle, Memory, Settings
+- **Settings hub** — Telegram config, security status, scanner defaults, reset to defaults
+- **Thread safety audit** — All shared mutable state protected with `threading.Lock`
+- **Atomic writes** — All critical data files use `.tmp` + `os.replace`
+- **25 test files, 238 tests** — Full coverage of all V3 engines and solvers
+
 ### Project Reorganization
 
 - Reorganized repository: `BTC/` renamed to `nps/`, old `nps/` archived

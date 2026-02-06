@@ -35,7 +35,7 @@ class TestConfig(unittest.TestCase):
         self._cfg.load_config(path=self.config_path)
         token = self._cfg.get("telegram.bot_token")
         self.assertIsNotNone(token)
-        self.assertTrue(len(token) > 0)
+        self.assertIsInstance(token, str)
 
     def test_set_persists(self):
         """Set writes to file and is retrievable."""

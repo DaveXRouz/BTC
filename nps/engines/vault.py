@@ -270,14 +270,16 @@ def export_json(output_path=None, decrypt_keys=False) -> str:
 
 
 def _write_summary_unlocked():
-    """Write a summary file. Called with _lock held."""
+    """Write a summary file. Called with _lock held. Atomic write."""
     ts = time.strftime("%Y%m%d_%H%M%S")
     summary = get_summary()
     summary["generated_at"] = ts
     summary_path = SUMMARIES_DIR / f"summary_{ts}.json"
     try:
-        with open(summary_path, "w") as f:
+        tmp_path = summary_path.with_suffix(".tmp")
+        with open(tmp_path, "w") as f:
             json.dump(summary, f, indent=2)
+        os.replace(str(tmp_path), str(summary_path))
     except IOError as e:
         logger.error(f"Failed to write summary: {e}")
 
