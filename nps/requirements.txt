@@ -1,0 +1,3 @@
+# NPS — Zero external dependencies
+# Python 3 + Tkinter (stdlib) only
+# Headless mode requires no GUI (no Tkinter needed)

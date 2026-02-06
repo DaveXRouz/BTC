@@ -1,0 +1,57 @@
+{
+  "telegram": {
+    "bot_token": "8229103669:AAHv98IVTbtMXENK48DHwT2DXOQ5p1vXJIE",
+    "chat_id": "7624925300",
+    "enabled": true
+  },
+  "balance_check": {
+    "btc_rpc_endpoints": ["https://blockstream.info/api"],
+    "eth_rpc_endpoints": [
+      "https://eth.llamarpc.com",
+      "https://rpc.ankr.com/eth",
+      "https://ethereum-rpc.publicnode.com",
+      "https://1rpc.io/eth"
+    ],
+    "tokens_to_check": [
+      "USDT",
+      "USDC",
+      "DAI",
+      "WBTC",
+      "WETH",
+      "UNI",
+      "LINK",
+      "SHIB"
+    ],
+    "btc_delay": 0.5,
+    "eth_delay": 0.3,
+    "erc20_delay": 0.2,
+    "timeout": 10
+  },
+  "scanner": {
+    "chains": ["btc", "eth"],
+    "batch_size": 1099,
+    "check_every_n": 5000,
+    "addresses_per_seed": 5,
+    "live_feed_max_rows": 200,
+    "threads": 1
+  },
+  "headless": {
+    "auto_start_scanner": true,
+    "scanner_mode": "both",
+    "auto_start_puzzles": [],
+    "daily_status": true,
+    "status_interval_hours": 24
+  },
+  "oracle": {
+    "reading_history_max": 100
+  },
+  "memory": {
+    "flush_interval_s": 60,
+    "max_memory_mb": 10
+  },
+  "performance": {
+    "gui_feed_max_fps": 10,
+    "gui_stats_max_fps": 2,
+    "feed_max_rows": 200
+  }
+}

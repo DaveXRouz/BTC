@@ -1,0 +1,459 @@
+"""Dashboard tab — V2 War Room overview."""
+
+import tkinter as tk
+from datetime import datetime
+from gui.theme import COLORS, FONTS
+from gui.widgets import StatsCard, AIInsightPanel, StyledButton, LogPanel
+
+
+class DashboardTab:
+    """War Room: current moment, mission status, quick stats, live activity."""
+
+    def __init__(self, parent, app=None):
+        self.parent = parent
+        self.app = app
+        self._build_ui()
+        self._refresh_moment()
+
+    def _build_ui(self):
+        main = tk.Frame(self.parent, bg=COLORS["bg"], padx=16, pady=12)
+        main.pack(fill="both", expand=True)
+
+        # Header
+        tk.Label(
+            main,
+            text="War Room",
+            font=FONTS["heading"],
+            fg=COLORS["accent"],
+            bg=COLORS["bg"],
+        ).pack(anchor="w", pady=(0, 8))
+
+        # ── Row 1: Current Moment ──
+        self._build_moment_panel(main)
+
+        # ── Row 2: Mission Status (puzzle + scanner side by side) ──
+        mission_frame = tk.Frame(main, bg=COLORS["bg"])
+        mission_frame.pack(fill="x", pady=(0, 8))
+        self._build_puzzle_status(mission_frame)
+        self._build_scanner_status(mission_frame)
+
+        # ── Row 3: Quick Stats | AI Brain | Comms ──
+        row3 = tk.Frame(main, bg=COLORS["bg"])
+        row3.pack(fill="x", pady=(0, 8))
+        self._build_quick_stats(row3)
+        self._build_ai_brain(row3)
+        self._build_comms_card(row3)
+
+        # ── Row 4: Live Activity Feed ──
+        tk.Label(
+            main,
+            text="Live Activity",
+            font=FONTS["subhead"],
+            fg=COLORS["text"],
+            bg=COLORS["bg"],
+        ).pack(anchor="w", pady=(4, 2))
+        self.activity_log = LogPanel(main, height=8)
+        self.activity_log.pack(fill="both", expand=True)
+        self.activity_log.log("NPS V2 started. Awaiting missions.", "info")
+
+    # ─── Current Moment ───
+    def _build_moment_panel(self, parent):
+        frame = tk.LabelFrame(
+            parent,
+            text="  Current Moment  ",
+            font=FONTS["body"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+            bd=1,
+            relief="solid",
+            padx=12,
+            pady=6,
+        )
+        frame.pack(fill="x", pady=(0, 8))
+
+        row = tk.Frame(frame, bg=COLORS["bg_card"])
+        row.pack(fill="x")
+
+        self.fc60_label = tk.Label(
+            row,
+            text="FC60: loading...",
+            font=FONTS["mono_lg"],
+            fg=COLORS["gold"],
+            bg=COLORS["bg_card"],
+        )
+        self.fc60_label.pack(side="left")
+
+        self.moon_label = tk.Label(
+            row,
+            text="",
+            font=FONTS["body"],
+            fg=COLORS["purple"],
+            bg=COLORS["bg_card"],
+            padx=24,
+        )
+        self.moon_label.pack(side="left")
+
+        self.gz_label = tk.Label(
+            row,
+            text="",
+            font=FONTS["body"],
+            fg=COLORS["text"],
+            bg=COLORS["bg_card"],
+        )
+        self.gz_label.pack(side="left")
+
+        self.energy_label = tk.Label(
+            frame,
+            text="",
+            font=FONTS["small"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+            wraplength=800,
+            justify="left",
+        )
+        self.energy_label.pack(fill="x", pady=(2, 0))
+
+    # ─── Puzzle Status ───
+    def _build_puzzle_status(self, parent):
+        frame = tk.LabelFrame(
+            parent,
+            text="  Puzzle Mission  ",
+            font=FONTS["body"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+            bd=1,
+            relief="solid",
+            padx=12,
+            pady=6,
+        )
+        frame.pack(side="left", fill="both", expand=True, padx=(0, 4))
+
+        self._puzzle_labels = {}
+        for key, label, default in [
+            ("status", "Status:", "Idle"),
+            ("puzzle", "Puzzle:", "—"),
+            ("strategy", "Strategy:", "—"),
+            ("keys", "Keys Tested:", "0"),
+            ("speed", "Speed:", "0/s"),
+            ("best_score", "Best Score:", "—"),
+        ]:
+            row = tk.Frame(frame, bg=COLORS["bg_card"])
+            row.pack(fill="x", pady=1)
+            tk.Label(
+                row,
+                text=label,
+                font=FONTS["small"],
+                fg=COLORS["text_dim"],
+                bg=COLORS["bg_card"],
+            ).pack(side="left")
+            lbl = tk.Label(
+                row,
+                text=default,
+                font=FONTS["mono_sm"],
+                fg=COLORS["text"],
+                bg=COLORS["bg_card"],
+            )
+            lbl.pack(side="right")
+            self._puzzle_labels[key] = lbl
+
+    # ─── Scanner Status ───
+    def _build_scanner_status(self, parent):
+        frame = tk.LabelFrame(
+            parent,
+            text="  Scanner Mission  ",
+            font=FONTS["body"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+            bd=1,
+            relief="solid",
+            padx=12,
+            pady=6,
+        )
+        frame.pack(side="left", fill="both", expand=True, padx=(4, 0))
+
+        self._scanner_labels = {}
+        for key, label, default in [
+            ("status", "Status:", "Idle"),
+            ("mode", "Mode:", "—"),
+            ("keys", "Keys Tested:", "0"),
+            ("seeds", "Seeds Tested:", "0"),
+            ("speed", "Speed:", "0/s"),
+            ("hits", "Hits:", "0"),
+        ]:
+            row = tk.Frame(frame, bg=COLORS["bg_card"])
+            row.pack(fill="x", pady=1)
+            tk.Label(
+                row,
+                text=label,
+                font=FONTS["small"],
+                fg=COLORS["text_dim"],
+                bg=COLORS["bg_card"],
+            ).pack(side="left")
+            lbl = tk.Label(
+                row,
+                text=default,
+                font=FONTS["mono_sm"],
+                fg=COLORS["text"],
+                bg=COLORS["bg_card"],
+            )
+            lbl.pack(side="right")
+            self._scanner_labels[key] = lbl
+
+    # ─── Quick Stats ───
+    def _build_quick_stats(self, parent):
+        frame = tk.LabelFrame(
+            parent,
+            text="  Quick Stats  ",
+            font=FONTS["body"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+            bd=1,
+            relief="solid",
+            padx=12,
+            pady=6,
+        )
+        frame.pack(side="left", fill="both", expand=True, padx=(0, 4))
+
+        self._stat_labels = {}
+        for key, label, default in [
+            ("total_ops", "Total Operations:", "0"),
+            ("total_speed", "Combined Speed:", "0/s"),
+            ("learning", "Learning:", "0 solves"),
+            ("confidence", "Confidence:", "0%"),
+        ]:
+            row = tk.Frame(frame, bg=COLORS["bg_card"])
+            row.pack(fill="x", pady=1)
+            tk.Label(
+                row,
+                text=label,
+                font=FONTS["small"],
+                fg=COLORS["text_dim"],
+                bg=COLORS["bg_card"],
+            ).pack(side="left")
+            lbl = tk.Label(
+                row,
+                text=default,
+                font=FONTS["mono_sm"],
+                fg=COLORS["text"],
+                bg=COLORS["bg_card"],
+            )
+            lbl.pack(side="right")
+            self._stat_labels[key] = lbl
+
+    # ─── AI Brain ───
+    def _build_ai_brain(self, parent):
+        frame = tk.LabelFrame(
+            parent,
+            text="  AI Brain  ",
+            font=FONTS["body"],
+            fg=COLORS["ai_accent"],
+            bg=COLORS["ai_bg"],
+            bd=1,
+            relief="solid",
+            padx=12,
+            pady=6,
+        )
+        frame.pack(side="left", fill="both", expand=True, padx=(4, 4))
+        frame.configure(highlightbackground=COLORS["ai_border"], highlightthickness=1)
+
+        self._ai_label = tk.Label(
+            frame,
+            text="\u2014",
+            font=FONTS["small"],
+            fg=COLORS["ai_text"],
+            bg=COLORS["ai_bg"],
+            wraplength=300,
+            justify="left",
+            anchor="nw",
+        )
+        self._ai_label.pack(fill="both", expand=True)
+
+    # ─── Comms ───
+    def _build_comms_card(self, parent):
+        frame = tk.LabelFrame(
+            parent,
+            text="  Comms  ",
+            font=FONTS["body"],
+            fg=COLORS["text_dim"],
+            bg=COLORS["bg_card"],
+            bd=1,
+            relief="solid",
+            padx=12,
+            pady=6,
+        )
+        frame.pack(side="left", fill="both", expand=True, padx=(4, 0))
+
+        self._comms_labels = {}
+        for key, label, default in [
+            ("ai", "AI:", "OFF"),
+            ("telegram", "Telegram:", "OFF"),
+            ("memory", "Memory:", "0 sessions"),
+        ]:
+            row = tk.Frame(frame, bg=COLORS["bg_card"])
+            row.pack(fill="x", pady=1)
+            tk.Label(
+                row,
+                text=label,
+                font=FONTS["small"],
+                fg=COLORS["text_dim"],
+                bg=COLORS["bg_card"],
+            ).pack(side="left")
+            lbl = tk.Label(
+                row,
+                text=default,
+                font=FONTS["mono_sm"],
+                fg=COLORS["text"],
+                bg=COLORS["bg_card"],
+            )
+            lbl.pack(side="right")
+            self._comms_labels[key] = lbl
+
+        self._refresh_comms()
+
+    # ═══ Public update methods (called from Hunter tab / main) ═══
+
+    def update_puzzle_status(self, data):
+        """Update puzzle mission status from Hunter tab callback."""
+        mapping = {
+            "status": data.get("status", ""),
+            "puzzle": str(data.get("puzzle", "")),
+            "strategy": data.get("strategy", ""),
+            "keys": f"{data.get('keys_tested', 0):,}",
+            "speed": f"{data.get('speed', 0):,.0f}/s",
+            "best_score": (
+                f"{data.get('best_score', 0):.3f}"
+                if data.get("best_score")
+                else "\u2014"
+            ),
+        }
+        for k, v in mapping.items():
+            if k in self._puzzle_labels:
+                self._puzzle_labels[k].config(text=v)
+                if k == "status":
+                    color = COLORS["success"] if v == "Running" else COLORS["text"]
+                    self._puzzle_labels[k].config(fg=color)
+
+    def update_scanner_status(self, data):
+        """Update scanner mission status from Hunter tab callback."""
+        mapping = {
+            "status": data.get("status", ""),
+            "mode": data.get("mode", ""),
+            "keys": f"{data.get('keys_tested', 0):,}",
+            "seeds": f"{data.get('seeds_tested', 0):,}",
+            "speed": f"{data.get('speed', 0):,.0f}/s",
+            "hits": str(data.get("hits", 0)),
+        }
+        for k, v in mapping.items():
+            if k in self._scanner_labels:
+                self._scanner_labels[k].config(text=v)
+                if k == "status":
+                    color = COLORS["success"] if v == "Running" else COLORS["text"]
+                    self._scanner_labels[k].config(fg=color)
+
+    def update_live_activity(self, entry):
+        """Add an entry to the live activity feed."""
+        tag = "info"
+        if entry.get("type") == "hit":
+            tag = "success"
+        elif entry.get("type") == "high_score":
+            tag = "gold"
+        elif entry.get("type") == "error":
+            tag = "error"
+        self.activity_log.log(entry.get("text", str(entry)), tag)
+
+    def refresh_stats(self):
+        """Refresh quick stats + comms from current app state."""
+        if self.app and hasattr(self.app, "get_solver_stats"):
+            stats = self.app.get_solver_stats()
+            self._stat_labels["total_ops"].config(
+                text=f"{stats.get('total_operations', 0):,}"
+            )
+            self._stat_labels["total_speed"].config(
+                text=f"{stats.get('total_speed', 0):,.0f}/s"
+            )
+
+        try:
+            from engines.learning import get_solve_stats, confidence_level
+
+            ss = get_solve_stats()
+            conf = confidence_level()
+            self._stat_labels["learning"].config(text=f"{ss['total_attempts']} solves")
+            bars = int(conf * 5)
+            bar_str = "\u25a0" * bars + "\u25a1" * (5 - bars)
+            self._stat_labels["confidence"].config(text=f"{bar_str} {conf:.0%}")
+        except Exception:
+            pass
+
+        self._refresh_comms()
+
+    # ═══ Internal refresh ═══
+
+    def _refresh_moment(self):
+        """Refresh the current FC60 moment display."""
+        try:
+            from engines.fc60 import encode_fc60, get_time_context
+
+            now = datetime.now()
+            result = encode_fc60(
+                now.year, now.month, now.day, now.hour, now.minute, now.second
+            )
+            self.fc60_label.config(text=f"FC60: {result['stamp']}")
+            self.moon_label.config(
+                text=f"{result['moon_phase']} {result['moon_name']} "
+                f"({result['moon_illumination']:.0f}%)"
+            )
+            self.gz_label.config(text=f"GZ: {result['gz_name']}")
+            self.energy_label.config(
+                text=f"{result['moon_meaning']}  |  {get_time_context(now.hour)}"
+            )
+        except Exception:
+            self.fc60_label.config(text="FC60: (loading...)")
+
+        self.refresh_stats()
+        self._refresh_ai_brain()
+        self.parent.after(60000, self._refresh_moment)
+
+    def _refresh_ai_brain(self):
+        """Show last AI insight or dash."""
+        try:
+            from engines.ai_engine import is_available, _last_insight
+
+            if is_available():
+                text = _last_insight if _last_insight else "\u2014"
+                self._ai_label.config(text=text)
+            else:
+                self._ai_label.config(text="AI offline")
+        except Exception:
+            self._ai_label.config(text="\u2014")
+
+    def _refresh_comms(self):
+        """Refresh comms card: AI, Telegram, Memory."""
+        try:
+            from engines.ai_engine import is_available
+
+            self._comms_labels["ai"].config(
+                text="ON" if is_available() else "OFF",
+                fg=COLORS["success"] if is_available() else COLORS["text_dim"],
+            )
+        except Exception:
+            pass
+
+        try:
+            from engines.notifier import is_configured
+
+            self._comms_labels["telegram"].config(
+                text="ON" if is_configured() else "OFF",
+                fg=COLORS["success"] if is_configured() else COLORS["text_dim"],
+            )
+        except Exception:
+            pass
+
+        try:
+            from engines.memory import get_summary
+
+            summary = get_summary()
+            self._comms_labels["memory"].config(
+                text=f"{summary.get('total_sessions', 0)} sessions"
+            )
+        except Exception:
+            pass
