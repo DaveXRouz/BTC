@@ -1,0 +1,207 @@
+syntax = "proto3";
+
+package nps.oracle;
+
+option go_package = "nps/oracle";
+
+// Oracle Service — FC60 numerology, readings, timing, and AI analysis.
+service OracleService {
+  // Get a full oracle reading for a date/time
+  rpc GetReading(ReadingRequest) returns (ReadingResponse);
+
+  // Get a name cipher reading
+  rpc GetNameReading(NameRequest) returns (NameResponse);
+
+  // Get a question sign (yes/no + numerological context)
+  rpc GetQuestionSign(QuestionRequest) returns (QuestionResponse);
+
+  // Get daily insight for a date
+  rpc GetDailyInsight(DateRequest) returns (DailyResponse);
+
+  // Suggest optimal scan range based on timing + coverage
+  rpc SuggestRange(RangeRequest) returns (RangeResponse);
+
+  // Analyze a completed session (AI learning)
+  rpc AnalyzeSession(SessionData) returns (AnalysisResponse);
+
+  // Get cosmic timing alignment
+  rpc GetTimingAlignment(TimingRequest) returns (TimingResponse);
+
+  // Health check
+  rpc HealthCheck(Empty) returns (HealthResponse);
+}
+
+message Empty {}
+
+// ─── Reading ───
+
+message ReadingRequest {
+  // Optional: specific datetime (ISO 8601). Defaults to now.
+  string datetime = 1;
+  // Optional: include extended FC60 details
+  bool extended = 2;
+}
+
+message ReadingResponse {
+  FC60Reading fc60 = 1;
+  NumerologyReading numerology = 2;
+  ZodiacInfo zodiac = 3;
+  ChineseCalendar chinese = 4;
+  string summary = 5;
+  int64 generated_at = 6;
+}
+
+message FC60Reading {
+  int32 cycle = 1;
+  string element = 2;
+  string polarity = 3;
+  string stem = 4;
+  string branch = 5;
+  int32 year_number = 6;
+  int32 month_number = 7;
+  int32 day_number = 8;
+  double energy_level = 9;
+  map<string, double> element_balance = 10;
+}
+
+message NumerologyReading {
+  int32 life_path = 1;
+  int32 day_vibration = 2;
+  int32 personal_year = 3;
+  int32 personal_month = 4;
+  int32 personal_day = 5;
+  string interpretation = 6;
+}
+
+message ZodiacInfo {
+  string sign = 1;
+  string element = 2;
+  string ruling_planet = 3;
+}
+
+message ChineseCalendar {
+  string animal = 1;
+  string element = 2;
+  string yin_yang = 3;
+}
+
+// ─── Name ───
+
+message NameRequest {
+  string name = 1;
+}
+
+message NameResponse {
+  string name = 1;
+  int32 destiny_number = 2;
+  int32 soul_urge = 3;
+  int32 personality = 4;
+  repeated LetterAnalysis letters = 5;
+  string interpretation = 6;
+}
+
+message LetterAnalysis {
+  string letter = 1;
+  int32 value = 2;
+  string element = 3;
+}
+
+// ─── Question ───
+
+message QuestionRequest {
+  string question = 1;
+  // Optional: seed for deterministic testing
+  int64 seed = 2;
+}
+
+message QuestionResponse {
+  string question = 1;
+  string answer = 2;  // "yes", "no", "maybe", etc.
+  int32 sign_number = 3;
+  string interpretation = 4;
+  double confidence = 5;
+}
+
+// ─── Daily ───
+
+message DateRequest {
+  string date = 1;  // YYYY-MM-DD
+}
+
+message DailyResponse {
+  string date = 1;
+  string insight = 2;
+  FC60Reading fc60 = 3;
+  NumerologyReading numerology = 4;
+  repeated string lucky_numbers = 5;
+  string optimal_activity = 6;
+}
+
+// ─── Range ───
+
+message RangeRequest {
+  // Current coverage data (hex ranges already scanned)
+  repeated string scanned_ranges = 1;
+  // Puzzle number (0 = no puzzle constraint)
+  uint32 puzzle_number = 2;
+  // Current AI level (affects strategy aggressiveness)
+  uint32 ai_level = 3;
+}
+
+message RangeResponse {
+  string range_start = 1;  // hex
+  string range_end = 2;    // hex
+  string strategy = 3;     // "random", "sequential", "cosmic", "gap_fill"
+  double confidence = 4;
+  string reasoning = 5;
+}
+
+// ─── Session Analysis ───
+
+message SessionData {
+  string session_id = 1;
+  uint64 keys_tested = 2;
+  uint64 seeds_tested = 3;
+  uint32 hits = 4;
+  double speed = 5;
+  double elapsed = 6;
+  string mode = 7;
+  string model = 8;  // AI model to use
+  map<string, string> extra = 9;
+}
+
+message AnalysisResponse {
+  repeated string insights = 1;
+  repeated string recommendations = 2;
+  map<string, double> adjustments = 3;
+  int32 xp_earned = 4;
+}
+
+// ─── Timing ───
+
+message TimingRequest {
+  string datetime = 1;  // ISO 8601, defaults to now
+}
+
+message TimingResponse {
+  double alignment_score = 1;  // 0.0 - 1.0
+  string quality = 2;          // "poor", "fair", "good", "excellent"
+  repeated OptimalHour optimal_hours = 3;
+  string moon_phase = 4;
+  map<string, double> factors = 5;
+}
+
+message OptimalHour {
+  int32 hour = 1;
+  double score = 2;
+  string reason = 3;
+}
+
+// ─── Health ───
+
+message HealthResponse {
+  string status = 1;  // "healthy", "degraded", "unhealthy"
+  string version = 2;
+  int64 uptime_seconds = 3;
+  map<string, string> checks = 4;
+}

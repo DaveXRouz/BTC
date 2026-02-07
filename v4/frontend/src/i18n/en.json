@@ -1,0 +1,63 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "scanner": "Scanner",
+    "oracle": "Oracle",
+    "vault": "Vault",
+    "learning": "Learning",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "keys_tested": "Keys Tested",
+    "seeds_tested": "Seeds Tested",
+    "hits": "Hits",
+    "speed": "Speed"
+  },
+  "scanner": {
+    "title": "Scanner",
+    "start": "Start Scan",
+    "stop": "Stop",
+    "pause": "Pause",
+    "resume": "Resume",
+    "mode": "Mode",
+    "chains": "Chains",
+    "batch_size": "Batch Size",
+    "threads": "Threads"
+  },
+  "oracle": {
+    "title": "Oracle",
+    "current_reading": "Current Reading",
+    "ask_question": "Ask a Question",
+    "name_cipher": "Name Cipher",
+    "daily_insight": "Daily Insight"
+  },
+  "vault": {
+    "title": "Vault",
+    "findings": "Findings",
+    "summary": "Summary",
+    "export": "Export",
+    "search": "Search findings..."
+  },
+  "learning": {
+    "title": "AI Learning",
+    "level": "Level",
+    "xp": "XP",
+    "insights": "Insights",
+    "recommendations": "Recommendations"
+  },
+  "settings": {
+    "title": "Settings",
+    "telegram": "Telegram",
+    "security": "Security",
+    "scanner_defaults": "Scanner Defaults",
+    "language": "Language"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  }
+}

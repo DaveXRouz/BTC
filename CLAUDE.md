@@ -97,3 +97,79 @@ Tests live in `nps/tests/`. Each engine and solver has its own test file. Tests 
 - `nps/.gitignore` additionally excludes `data/` and `__pycache__/` at the app level
 - Deployment files (`Procfile`, `railway.toml`) stay inside `nps/`
 - Remote: `https://github.com/DaveXRouz/BTC.git`
+
+---
+
+## V4 Architecture (In Progress)
+
+V4 is a distributed microservices architecture targeting web deployment. The scaffolding lives in `v4/`.
+
+### V4 Repository Layout
+
+- `v4/frontend/` — React + TypeScript + Tailwind (Vite build)
+  - `src/pages/` — 6 pages: Dashboard, Scanner, Oracle, Vault, Learning, Settings
+  - `src/components/` — Shared UI components (Layout, StatsCard, LogPanel)
+  - `src/services/` — API client (`api.ts`) and WebSocket client (`websocket.ts`)
+  - `src/types/` — TypeScript types mirroring API Pydantic models
+  - `src/i18n/` — Internationalization (EN, stubs for ES/FR)
+- `v4/api/` — FastAPI REST + WebSocket gateway
+  - `app/routers/` — 6 routers: health, auth, scanner, oracle, vault, learning
+  - `app/models/` — Pydantic request/response schemas
+  - `app/middleware/` — Auth (JWT + API keys), rate limiting
+  - `app/services/` — WebSocket manager, security (AES-256-GCM + V3 legacy decrypt)
+- `v4/services/scanner/` — Rust high-performance scanner (Cargo project)
+  - `src/crypto/` — secp256k1, bip39, address derivation
+  - `src/scanner/` — Multi-threaded scan loop with checkpoints
+  - `src/balance/` — Async balance checking via reqwest
+  - `src/scoring/` — Scoring engine (must match Python Oracle weights)
+  - `src/grpc/` — gRPC server implementing scanner.proto
+- `v4/services/oracle/` — Python Oracle service (gRPC)
+  - `oracle_service/engines/` — V3 engines copied as-is: fc60, numerology, oracle
+  - `oracle_service/logic/` — V3 logic: timing_advisor, strategy_engine
+- `v4/proto/` — Shared protobuf contracts (scanner.proto, oracle.proto)
+- `v4/database/` — PostgreSQL schema (`init.sql`) and V3->V4 migration scripts
+- `v4/infrastructure/` — Nginx config, Prometheus monitoring
+- `v4/scripts/` — deploy.sh, backup.sh, restore.sh, rollback.sh
+- `v4/docker-compose.yml` — 7-container orchestration
+
+### V4 Key Commands
+
+```bash
+# Start all services
+cd v4 && make up
+
+# Development servers
+cd v4 && make dev-api      # FastAPI on :8000
+cd v4 && make dev-frontend  # Vite on :5173
+
+# Run tests
+cd v4 && make test
+
+# Generate gRPC stubs from proto files
+cd v4 && make proto
+
+# Database backup
+cd v4 && make backup
+```
+
+### V4 Architecture Rules
+
+- **API is the gateway** — Frontend and Telegram bot only talk to FastAPI; never directly to scanner/oracle gRPC.
+- **Proto contracts are source of truth** — scanner.proto and oracle.proto define all service interfaces. Generate client/server code from these.
+- **Scoring consistency** — Rust scanner and Python Oracle must produce identical scores for the same input. Shared test vectors required.
+- **V3 engines are portable** — fc60.py, numerology.py, oracle.py, timing_advisor.py are pure computation and copy directly into Oracle service.
+- **Environment over config files** — V4 uses environment variables (`.env`), not `config.json`.
+- **AES-256-GCM for encryption** — V4 uses `ENC4:` prefix. V3 `ENC:` decrypt is kept as legacy fallback for migration.
+
+### V4 Phase Status
+
+| Phase | Description                                 | Status      |
+| ----- | ------------------------------------------- | ----------- |
+| 0     | Full scaffolding                            | Done        |
+| 1     | Foundation (DB + API skeleton + encryption) | Not started |
+| 2     | Python Oracle service                       | Not started |
+| 3     | API layer (all endpoints)                   | Not started |
+| 4     | Rust scanner                                | Not started |
+| 5     | React frontend                              | Not started |
+| 6     | Infrastructure + DevOps                     | Not started |
+| 7     | Integration testing + polish                | Not started |

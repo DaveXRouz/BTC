@@ -1,0 +1,37 @@
+# NPS V4 .gitignore
+
+# Environment
+.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node.js
+node_modules/
+frontend/dist/
+
+# Rust
+services/scanner/target/
+
+# Docker
+backups/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Generated gRPC stubs
+api/app/grpc_gen/*.py
+!api/app/grpc_gen/__init__.py
+services/oracle/oracle_service/grpc_gen/*.py
+!services/oracle/oracle_service/grpc_gen/__init__.py
+
+# SSL certificates
+infrastructure/nginx/ssl/

@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package nps.scanner;
+
+option go_package = "nps/scanner";
+
+// Scanner Service — Controls the Rust high-performance key scanner.
+service ScannerService {
+  // Start a new scan session
+  rpc StartScan(ScanConfig) returns (ScanSession);
+
+  // Stop a running scan
+  rpc StopScan(SessionId) returns (ScanStatus);
+
+  // Pause a running scan
+  rpc PauseScan(SessionId) returns (ScanStatus);
+
+  // Resume a paused scan
+  rpc ResumeScan(SessionId) returns (ScanStatus);
+
+  // Get current stats for a session
+  rpc GetStats(SessionId) returns (ScanStats);
+
+  // Save checkpoint for a session
+  rpc SaveCheckpoint(SessionId) returns (CheckpointInfo);
+
+  // Resume from checkpoint
+  rpc ResumeFromCheckpoint(CheckpointId) returns (ScanSession);
+
+  // List all active sessions
+  rpc ListSessions(Empty) returns (SessionList);
+
+  // Stream real-time scan events (findings, high scores, stats updates)
+  rpc StreamEvents(SessionId) returns (stream ScanEvent);
+}
+
+message Empty {}
+
+message ScanConfig {
+  // Scan mode: "random_key", "seed_phrase", or "both"
+  string mode = 1;
+
+  // Chains to scan: ["btc", "eth"]
+  repeated string chains = 2;
+
+  // Keys per batch
+  uint32 batch_size = 3;
+
+  // Check balance every N keys
+  uint32 check_every_n = 4;
+
+  // Number of worker threads
+  uint32 threads = 5;
+
+  // Checkpoint save interval (keys)
+  uint64 checkpoint_interval = 6;
+
+  // Optional: puzzle mode (restrict to puzzle range)
+  PuzzleConfig puzzle = 7;
+
+  // Optional: resume from checkpoint
+  string checkpoint_id = 8;
+
+  // Addresses to derive per seed phrase
+  uint32 addresses_per_seed = 9;
+
+  // Scoring threshold for balance check
+  float score_threshold = 10;
+}
+
+message PuzzleConfig {
+  uint32 puzzle_number = 1;
+  string range_start = 2;  // hex
+  string range_end = 3;    // hex
+}
+
+message SessionId {
+  string id = 1;
+}
+
+message CheckpointId {
+  string id = 1;
+}
+
+message ScanSession {
+  string session_id = 1;
+  string status = 2;  // "running", "paused", "stopped"
+  ScanConfig config = 3;
+  int64 started_at = 4;  // unix timestamp
+}
+
+message ScanStatus {
+  string session_id = 1;
+  string status = 2;
+  string message = 3;
+}
+
+message ScanStats {
+  string session_id = 1;
+  uint64 keys_tested = 2;
+  uint64 seeds_tested = 3;
+  uint32 hits = 4;
+  double keys_per_second = 5;
+  double elapsed_seconds = 6;
+  uint64 checkpoint_count = 7;
+  string current_mode = 8;
+  double highest_score = 9;
+}
+
+message CheckpointInfo {
+  string checkpoint_id = 1;
+  string session_id = 2;
+  uint64 keys_at_checkpoint = 3;
+  int64 saved_at = 4;
+}
+
+message SessionList {
+  repeated ScanSession sessions = 1;
+}
+
+message ScanEvent {
+  string event_type = 1;  // "finding", "high_score", "stats_update", "checkpoint", "error"
+  int64 timestamp = 2;
+
+  oneof payload {
+    Finding finding = 3;
+    HighScore high_score = 4;
+    ScanStats stats_update = 5;
+    CheckpointInfo checkpoint = 6;
+    ErrorInfo error = 7;
+  }
+}
+
+message Finding {
+  string address = 1;
+  string chain = 2;
+  double balance = 3;
+  // Sensitive fields — encrypted by API layer before storage
+  string private_key_encrypted = 4;
+  string seed_phrase_encrypted = 5;
+  string wif_encrypted = 6;
+  double score = 7;
+  map<string, string> metadata = 8;
+}
+
+message HighScore {
+  string address = 1;
+  string chain = 2;
+  double score = 3;
+  map<string, double> score_breakdown = 4;
+}
+
+message ErrorInfo {
+  string code = 1;
+  string message = 2;
+}
