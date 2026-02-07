@@ -43,7 +43,7 @@ NPS (Numerology Puzzle Solver) V3 is a Python/tkinter desktop app that combines 
   - `memory_tab.py` — AI learning center
   - `settings_tab.py` — Telegram config, security, scanner defaults
   - `theme.py`, `widgets.py` — Shared UI components (ToolTip, StyledButton with tooltips)
-- `nps/tests/` — Test suite (33 test files, 361 tests)
+- `nps/tests/` — Test suite (50 test files, 598 tests)
 - `nps/data/` — Runtime data (gitignored)
   - `findings/`, `sessions/`, `learning/`, `checkpoints/`
 - `docs/` — Architecture specs
@@ -89,7 +89,7 @@ cd nps && python3 -m unittest tests/test_fc60.py -v
 
 ## Testing
 
-Tests live in `nps/tests/`. Each engine and solver has its own test file. Tests should be runnable without network access or API keys (mock external calls). Current: 361 tests across 33 files.
+Tests live in `nps/tests/`. Each engine and solver has its own test file. Tests should be runnable without network access or API keys (mock external calls). Current: 598 tests across 50 files (361 unit + 237 battle/integration/performance tests). Battle tests use `_battle.py` suffix. 8 Telegram live tests skip automatically without `NPS_BOT_TOKEN`/`NPS_CHAT_ID` env vars.
 
 ## Git Workflow
 

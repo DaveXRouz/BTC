@@ -5,7 +5,8 @@
     "enabled": true,
     "notify_balance": true,
     "notify_error": true,
-    "notify_daily": true
+    "notify_daily": true,
+    "notify_balance_hit": true
   },
   "balance_check": {
     "btc_rpc_endpoints": [
@@ -41,7 +42,9 @@
     "check_every_n": 5000,
     "addresses_per_seed": 5,
     "live_feed_max_rows": 200,
-    "threads": 1
+    "threads": 1,
+    "mode": "both",
+    "checkpoint_interval": 100000
   },
   "headless": {
     "auto_start_scanner": true,
@@ -61,6 +64,24 @@
     "gui_feed_max_fps": 10,
     "gui_stats_max_fps": 2,
     "feed_max_rows": 200
+  },
+  "security": {
+    "encryption_enabled": false
+  },
+  "vault": {
+    "auto_record": true,
+    "summary_interval": 100
+  },
+  "terminals": {
+    "max_terminals": 10
+  },
+  "learning": {
+    "auto_adapt": true,
+    "default_model": "sonnet"
+  },
+  "health": {
+    "enabled": true,
+    "interval_seconds": 60
   },
   "test_section": {
     "key1": "value1"

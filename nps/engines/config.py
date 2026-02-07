@@ -25,6 +25,7 @@ DEFAULT_CONFIG = {
         "notify_balance": True,
         "notify_error": True,
         "notify_daily": True,
+        "notify_balance_hit": True,
     },
     "balance_check": {
         "btc_rpc_endpoints": ["https://blockstream.info/api"],
@@ -56,6 +57,8 @@ DEFAULT_CONFIG = {
         "addresses_per_seed": 5,
         "live_feed_max_rows": 200,
         "threads": 1,
+        "mode": "both",
+        "checkpoint_interval": 100000,
     },
     "headless": {
         "auto_start_scanner": True,
@@ -75,6 +78,24 @@ DEFAULT_CONFIG = {
         "gui_feed_max_fps": 10,
         "gui_stats_max_fps": 2,
         "feed_max_rows": 200,
+    },
+    "security": {
+        "encryption_enabled": False,
+    },
+    "vault": {
+        "auto_record": True,
+        "summary_interval": 100,
+    },
+    "terminals": {
+        "max_terminals": 10,
+    },
+    "learning": {
+        "auto_adapt": True,
+        "default_model": "sonnet",
+    },
+    "health": {
+        "enabled": True,
+        "interval_seconds": 60,
     },
 }
 
@@ -294,6 +315,27 @@ def validate():
         warnings.append(f"scanner.threads={threads} out of range [1,16] — reset to 1")
         _config.setdefault("scanner", {})["threads"] = 1
 
+    # --- Scanner mode ---
+    scanner_mode = get("scanner.mode", "both")
+    valid_modes = {"random_key", "seed_phrase", "both"}
+    if scanner_mode not in valid_modes:
+        warnings.append(
+            f"scanner.mode='{scanner_mode}' invalid — must be one of {valid_modes} — reset to 'both'"
+        )
+        _config.setdefault("scanner", {})["mode"] = "both"
+
+    # --- Scanner checkpoint_interval ---
+    cp_interval = get("scanner.checkpoint_interval", 100000)
+    if (
+        not isinstance(cp_interval, int)
+        or cp_interval < 1000
+        or cp_interval > 10_000_000
+    ):
+        warnings.append(
+            f"scanner.checkpoint_interval={cp_interval} out of range [1000,10000000] — reset to 100000"
+        )
+        _config.setdefault("scanner", {})["checkpoint_interval"] = 100000
+
     # --- Headless ---
     status_hours = get("headless.status_interval_hours", 24)
     if (
@@ -305,6 +347,26 @@ def validate():
             f"headless.status_interval_hours={status_hours} out of range [1,168] — reset to 24"
         )
         _config.setdefault("headless", {})["status_interval_hours"] = 24
+
+    # --- Terminals ---
+    max_terminals = get("terminals.max_terminals", 10)
+    if not isinstance(max_terminals, int) or max_terminals < 1 or max_terminals > 20:
+        warnings.append(
+            f"terminals.max_terminals={max_terminals} out of range [1,20] — reset to 10"
+        )
+        _config.setdefault("terminals", {})["max_terminals"] = 10
+
+    # --- Health ---
+    health_interval = get("health.interval_seconds", 60)
+    if (
+        not isinstance(health_interval, int)
+        or health_interval < 10
+        or health_interval > 3600
+    ):
+        warnings.append(
+            f"health.interval_seconds={health_interval} out of range [10,3600] — reset to 60"
+        )
+        _config.setdefault("health", {})["interval_seconds"] = 60
 
     for w in warnings:
         logger.warning(f"Config: {w}")
