@@ -32,3 +32,5 @@ htmlcov/
 
 # Archive (old copies, not tracked)
 archive/nps_old/
+.workflow/
+.sessions/
