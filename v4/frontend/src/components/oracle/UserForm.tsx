@@ -78,6 +78,9 @@ export function UserForm({
   return (
     <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={isEdit ? t("oracle.edit_profile") : t("oracle.new_profile")}
       onClick={onCancel}
     >
       <div
@@ -214,22 +217,33 @@ function Field({
   dir?: string;
   required?: boolean;
 }) {
+  const fieldId = label.toLowerCase().replace(/[^a-z0-9]/g, "-");
+  const errorId = `${fieldId}-error`;
+
   return (
     <div>
-      <label className="block text-sm text-nps-text-dim mb-1">
+      <label htmlFor={fieldId} className="block text-sm text-nps-text-dim mb-1">
         {label}
         {required && <span className="text-nps-error ml-1">*</span>}
       </label>
       <input
+        id={fieldId}
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         dir={dir}
+        aria-required={required}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
         className={`w-full bg-nps-bg-input border rounded px-3 py-2 text-sm text-nps-text focus:outline-none focus:border-nps-oracle-accent ${
           error ? "border-nps-error" : "border-nps-border"
         }`}
       />
-      {error && <p className="text-nps-error text-xs mt-1">{error}</p>}
+      {error && (
+        <p id={errorId} className="text-nps-error text-xs mt-1" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

@@ -131,12 +131,19 @@ export function OracleConsultationForm({
       <button
         type="submit"
         disabled={isSubmitting}
+        aria-busy={isSubmitting}
         className="w-full px-4 py-2 text-sm bg-nps-oracle-accent text-nps-bg font-medium rounded hover:bg-nps-oracle-accent/80 transition-colors disabled:opacity-50"
       >
         {isSubmitting ? t("common.loading") : t("oracle.submit_reading")}
       </button>
 
-      {error && <p className="text-xs text-nps-bg-danger">{error}</p>}
+      <div aria-live="polite">
+        {error && (
+          <p className="text-xs text-nps-bg-danger" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
     </form>
   );
 }

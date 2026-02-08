@@ -26,11 +26,15 @@ export function ReadingResults({ result }: ReadingResultsProps) {
     <div className="space-y-3">
       {/* Tab bar + export */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-1">
+        <div className="flex gap-1" role="tablist" aria-label="Reading results">
           {TABS.map((tab) => (
             <button
               key={tab}
               type="button"
+              role="tab"
+              id={`tab-${tab}`}
+              aria-selected={activeTab === tab}
+              aria-controls={`tabpanel-${tab}`}
               onClick={() => setActiveTab(tab)}
               className={`px-3 py-1 text-xs rounded transition-colors ${
                 activeTab === tab
@@ -46,13 +50,28 @@ export function ReadingResults({ result }: ReadingResultsProps) {
       </div>
 
       {/* Tab content — eagerly rendered, hidden via CSS */}
-      <div className={activeTab === "summary" ? "" : "hidden"}>
+      <div
+        id="tabpanel-summary"
+        role="tabpanel"
+        aria-labelledby="tab-summary"
+        className={activeTab === "summary" ? "" : "hidden"}
+      >
         <SummaryTab result={result} />
       </div>
-      <div className={activeTab === "details" ? "" : "hidden"}>
+      <div
+        id="tabpanel-details"
+        role="tabpanel"
+        aria-labelledby="tab-details"
+        className={activeTab === "details" ? "" : "hidden"}
+      >
         <DetailsTab result={result} />
       </div>
-      <div className={activeTab === "history" ? "" : "hidden"}>
+      <div
+        id="tabpanel-history"
+        role="tabpanel"
+        aria-labelledby="tab-history"
+        className={activeTab === "history" ? "" : "hidden"}
+      >
         <ReadingHistory />
       </div>
     </div>

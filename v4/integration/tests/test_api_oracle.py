@@ -324,3 +324,74 @@ class TestAuthLegacyFallback:
         """Legacy Bearer <API_SECRET_KEY> should grant admin access."""
         resp = api_client.get(api_url("/api/oracle/users"))
         assert resp.status_code == 200
+
+
+@pytest.mark.api
+class TestSoftDeleteVerification:
+    """Verify soft-delete works correctly through API layer."""
+
+    def test_deleted_user_not_in_list(self, api_client):
+        """After DELETE, user should not appear in GET /users."""
+        # Create user
+        create_resp = api_client.post(
+            api_url("/api/oracle/users"),
+            json={
+                "name": "IntTest_SoftDelAPI",
+                "birthday": "1990-06-15",
+                "mother_name": "SoftDelMom",
+            },
+        )
+        assert create_resp.status_code == 201
+        user_id = create_resp.json()["id"]
+
+        # Delete
+        del_resp = api_client.delete(api_url(f"/api/oracle/users/{user_id}"))
+        assert del_resp.status_code == 200
+
+        # Verify not in list
+        list_resp = api_client.get(
+            api_url("/api/oracle/users?search=IntTest_SoftDelAPI")
+        )
+        users = list_resp.json().get("users", [])
+        assert all(u["id"] != user_id for u in users)
+
+        # Verify GET by ID returns 404
+        get_resp = api_client.get(api_url(f"/api/oracle/users/{user_id}"))
+        assert get_resp.status_code == 404
+
+    def test_deleted_user_cannot_be_updated(self, api_client):
+        """After DELETE, PUT should return 404."""
+        create_resp = api_client.post(
+            api_url("/api/oracle/users"),
+            json={
+                "name": "IntTest_SoftDelUpd",
+                "birthday": "1990-06-15",
+                "mother_name": "SoftDelMom",
+            },
+        )
+        user_id = create_resp.json()["id"]
+        api_client.delete(api_url(f"/api/oracle/users/{user_id}"))
+
+        # Try to update deleted user
+        resp = api_client.put(
+            api_url(f"/api/oracle/users/{user_id}"),
+            json={"city": "Ghost City"},
+        )
+        assert resp.status_code == 404
+
+    def test_can_recreate_after_soft_delete(self, api_client):
+        """After soft-delete, creating user with same name+birthday should succeed."""
+        payload = {
+            "name": "IntTest_SoftDelRecreate",
+            "birthday": "1990-06-15",
+            "mother_name": "RecreateMom",
+        }
+        # Create and delete
+        create_resp = api_client.post(api_url("/api/oracle/users"), json=payload)
+        user_id = create_resp.json()["id"]
+        api_client.delete(api_url(f"/api/oracle/users/{user_id}"))
+
+        # Recreate with same name+birthday should work (soft-deleted != active)
+        recreate_resp = api_client.post(api_url("/api/oracle/users"), json=payload)
+        assert recreate_resp.status_code == 201
+        assert recreate_resp.json()["id"] != user_id

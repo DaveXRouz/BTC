@@ -20,6 +20,7 @@ TARGETS = {
     "single_reading": 200,
     "user_update": 500,
     "user_delete": 500,
+    "multi_user_reading": 8000,
 }
 
 
@@ -153,13 +154,43 @@ class TestEndToEndFlow:
         timings["user_update"] = ms
         print(f"  9. Update user:     {ms:.1f}ms (target: <{TARGETS['user_update']}ms)")
 
-        # 10. Delete user (cleanup)
+        # 10. Multi-user reading
+        resp, ms = timed_request(
+            api_client,
+            "post",
+            api_url("/api/oracle/reading/multi-user"),
+            json={
+                "users": [
+                    {
+                        "name": "E2E_A",
+                        "birth_year": 1990,
+                        "birth_month": 3,
+                        "birth_day": 15,
+                    },
+                    {
+                        "name": "E2E_B",
+                        "birth_year": 1985,
+                        "birth_month": 7,
+                        "birth_day": 22,
+                    },
+                ],
+                "primary_user_index": 0,
+                "include_interpretation": False,
+            },
+        )
+        assert resp.status_code == 200, f"Multi-user reading failed: {resp.text}"
+        timings["multi_user_reading"] = ms
+        print(
+            f"  10. Multi-user:     {ms:.1f}ms (target: <{TARGETS['multi_user_reading']}ms)"
+        )
+
+        # 11. Delete user (cleanup)
         resp, ms = timed_request(
             api_client, "delete", api_url(f"/api/oracle/users/{user_id}")
         )
         assert resp.status_code == 200
         timings["user_delete"] = ms
-        print(f"  10. Delete user:    {ms:.1f}ms (target: <{TARGETS['user_delete']}ms)")
+        print(f"  11. Delete user:    {ms:.1f}ms (target: <{TARGETS['user_delete']}ms)")
 
         # Save performance baseline
         baseline = {

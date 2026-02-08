@@ -222,6 +222,7 @@ CREATE TABLE IF NOT EXISTS oracle_users (
     coordinates POINT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ,
     CONSTRAINT oracle_users_birthday_check CHECK (birthday <= CURRENT_DATE),
     CONSTRAINT oracle_users_name_check CHECK (LENGTH(name) >= 2)
 );
@@ -249,9 +250,9 @@ CREATE TABLE IF NOT EXISTS oracle_readings (
     compatibility_matrix JSONB,
     combined_energy JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT oracle_readings_sign_type_check CHECK (sign_type IN ('time', 'name', 'question')),
+    CONSTRAINT oracle_readings_sign_type_check CHECK (sign_type IN ('time', 'name', 'question', 'reading', 'multi_user', 'daily')),
     CONSTRAINT oracle_readings_user_check CHECK (
-        (is_multi_user = FALSE AND user_id IS NOT NULL) OR
+        (is_multi_user = FALSE) OR
         (is_multi_user = TRUE AND primary_user_id IS NOT NULL)
     )
 );
@@ -302,6 +303,7 @@ CREATE INDEX IF NOT EXISTS idx_oracle_audit_success ON oracle_audit_log(success)
 CREATE INDEX IF NOT EXISTS idx_oracle_users_created_at ON oracle_users(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_oracle_users_name ON oracle_users(name);
 CREATE INDEX IF NOT EXISTS idx_oracle_users_coordinates ON oracle_users USING GIST(coordinates);
+CREATE INDEX IF NOT EXISTS idx_oracle_users_active ON oracle_users(deleted_at) WHERE deleted_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_oracle_readings_user_id ON oracle_readings(user_id);
 CREATE INDEX IF NOT EXISTS idx_oracle_readings_primary_user_id ON oracle_readings(primary_user_id);

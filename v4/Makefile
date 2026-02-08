@@ -61,6 +61,12 @@ test-scanner: ## Run Scanner (Rust) tests only
 test-frontend: ## Run frontend tests only
 	cd frontend && npm test
 
+test-e2e: ## Run Playwright E2E tests
+	cd frontend && npx playwright install chromium && npx playwright test
+
+test-integration: ## Run integration tests
+	python3 -m pytest integration/tests/ -v -s
+
 # ─── Code Quality ───
 
 lint: ## Run linters
