@@ -5,6 +5,26 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- ─── Schema Migrations Tracking ───
+
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    version     VARCHAR(20) PRIMARY KEY,
+    name        VARCHAR(200) NOT NULL,
+    applied_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE schema_migrations IS 'Tracks applied database migrations for version control';
+
+-- ─── Functions ───
+
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- ─── Users & Auth ───
 
 CREATE TABLE IF NOT EXISTS users (
@@ -88,7 +108,7 @@ CREATE INDEX idx_findings_session ON findings(session_id);
 CREATE INDEX idx_findings_found_at ON findings(found_at);
 CREATE INDEX idx_findings_score ON findings(score);
 
--- ─── Oracle Readings ───
+-- ─── Oracle Readings (main V4 schema) ───
 
 CREATE TABLE IF NOT EXISTS readings (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -176,18 +196,143 @@ CREATE INDEX idx_audit_user ON audit_log(user_id);
 CREATE INDEX idx_audit_action ON audit_log(action);
 CREATE INDEX idx_audit_created ON audit_log(created_at);
 
--- ─── Functions ───
-
-CREATE OR REPLACE FUNCTION update_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- ─── Triggers (main V4 tables) ───
 
 CREATE TRIGGER users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 CREATE TRIGGER learning_data_updated_at BEFORE UPDATE ON learning_data
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ═══════════════════════════════════════════════════════════════════
+-- Oracle Domain Tables (dedicated schema for Oracle service)
+-- ═══════════════════════════════════════════════════════════════════
+
+-- ─── Oracle Users ───
+
+CREATE TABLE IF NOT EXISTS oracle_users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    name_persian VARCHAR(200),
+    birthday DATE NOT NULL,
+    mother_name VARCHAR(200) NOT NULL,
+    mother_name_persian VARCHAR(200),
+    country VARCHAR(100),
+    city VARCHAR(100),
+    coordinates POINT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT oracle_users_birthday_check CHECK (birthday <= CURRENT_DATE),
+    CONSTRAINT oracle_users_name_check CHECK (LENGTH(name) >= 2)
+);
+
+COMMENT ON TABLE oracle_users IS 'User profiles for Oracle readings with English and Persian name support';
+COMMENT ON COLUMN oracle_users.coordinates IS 'PostgreSQL geometric POINT type: (longitude, latitude)';
+COMMENT ON COLUMN oracle_users.name_persian IS 'Persian/Farsi name (RTL text, UTF-8)';
+COMMENT ON COLUMN oracle_users.mother_name IS 'Mother name for numerology calculations';
+
+-- ─── Oracle Readings ───
+
+CREATE TABLE IF NOT EXISTS oracle_readings (
+    id BIGSERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES oracle_users(id) ON DELETE CASCADE,
+    is_multi_user BOOLEAN NOT NULL DEFAULT FALSE,
+    primary_user_id INTEGER REFERENCES oracle_users(id) ON DELETE SET NULL,
+    question TEXT NOT NULL,
+    question_persian TEXT,
+    sign_type VARCHAR(20) NOT NULL,
+    sign_value VARCHAR(100) NOT NULL,
+    reading_result JSONB,
+    ai_interpretation TEXT,
+    ai_interpretation_persian TEXT,
+    individual_results JSONB,
+    compatibility_matrix JSONB,
+    combined_energy JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT oracle_readings_sign_type_check CHECK (sign_type IN ('time', 'name', 'question')),
+    CONSTRAINT oracle_readings_user_check CHECK (
+        (is_multi_user = FALSE AND user_id IS NOT NULL) OR
+        (is_multi_user = TRUE AND primary_user_id IS NOT NULL)
+    )
+);
+
+COMMENT ON TABLE oracle_readings IS 'Oracle readings with FC60, numerology, and AI interpretations';
+COMMENT ON COLUMN oracle_readings.reading_result IS 'Full FC60 calculation results as JSONB';
+COMMENT ON COLUMN oracle_readings.individual_results IS 'Per-user results for multi-user readings (JSONB array)';
+COMMENT ON COLUMN oracle_readings.compatibility_matrix IS 'User compatibility scores (JSONB)';
+COMMENT ON COLUMN oracle_readings.sign_type IS 'Type of sign: time, name, or question';
+
+-- ─── Oracle Reading Users (junction for multi-user) ───
+
+CREATE TABLE IF NOT EXISTS oracle_reading_users (
+    reading_id BIGINT NOT NULL REFERENCES oracle_readings(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES oracle_users(id) ON DELETE CASCADE,
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (reading_id, user_id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE oracle_reading_users IS 'Junction table for multi-user readings (many-to-many)';
+COMMENT ON COLUMN oracle_reading_users.is_primary IS 'TRUE if this user is the primary asker';
+
+-- ─── Oracle Audit Log ───
+
+CREATE TABLE IF NOT EXISTS oracle_audit_log (
+    id BIGSERIAL PRIMARY KEY,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    user_id INTEGER REFERENCES oracle_users(id) ON DELETE SET NULL,
+    action VARCHAR(100) NOT NULL,
+    resource_type VARCHAR(50),
+    resource_id BIGINT,
+    success BOOLEAN NOT NULL DEFAULT TRUE,
+    ip_address VARCHAR(45),
+    api_key_hash VARCHAR(64),
+    details JSONB
+);
+
+COMMENT ON TABLE oracle_audit_log IS 'Audit trail for Oracle security events';
+
+CREATE INDEX IF NOT EXISTS idx_oracle_audit_timestamp ON oracle_audit_log(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_oracle_audit_user ON oracle_audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_oracle_audit_action ON oracle_audit_log(action);
+CREATE INDEX IF NOT EXISTS idx_oracle_audit_success ON oracle_audit_log(success);
+
+-- ─── Oracle Indexes ───
+
+CREATE INDEX IF NOT EXISTS idx_oracle_users_created_at ON oracle_users(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_oracle_users_name ON oracle_users(name);
+CREATE INDEX IF NOT EXISTS idx_oracle_users_coordinates ON oracle_users USING GIST(coordinates);
+
+CREATE INDEX IF NOT EXISTS idx_oracle_readings_user_id ON oracle_readings(user_id);
+CREATE INDEX IF NOT EXISTS idx_oracle_readings_primary_user_id ON oracle_readings(primary_user_id);
+CREATE INDEX IF NOT EXISTS idx_oracle_readings_created_at ON oracle_readings(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_oracle_readings_sign_type ON oracle_readings(sign_type);
+CREATE INDEX IF NOT EXISTS idx_oracle_readings_is_multi_user ON oracle_readings(is_multi_user);
+CREATE INDEX IF NOT EXISTS idx_oracle_readings_result_gin ON oracle_readings USING GIN(reading_result);
+CREATE INDEX IF NOT EXISTS idx_oracle_readings_individual_gin ON oracle_readings USING GIN(individual_results);
+CREATE INDEX IF NOT EXISTS idx_oracle_readings_compatibility_gin ON oracle_readings USING GIN(compatibility_matrix);
+
+CREATE INDEX IF NOT EXISTS idx_oracle_reading_users_user_id ON oracle_reading_users(user_id);
+CREATE INDEX IF NOT EXISTS idx_oracle_reading_users_reading_id ON oracle_reading_users(reading_id);
+
+-- ─── Oracle Index Comments ───
+
+COMMENT ON INDEX idx_oracle_users_created_at IS 'B-tree DESC for recent-first user listing';
+COMMENT ON INDEX idx_oracle_users_name IS 'B-tree for name lookup and search';
+COMMENT ON INDEX idx_oracle_users_coordinates IS 'GiST for spatial distance queries on native POINT type';
+COMMENT ON INDEX idx_oracle_readings_user_id IS 'B-tree FK lookup for single-user readings';
+COMMENT ON INDEX idx_oracle_readings_primary_user_id IS 'B-tree FK lookup for multi-user primary asker';
+COMMENT ON INDEX idx_oracle_readings_created_at IS 'B-tree DESC for chronological reading history';
+COMMENT ON INDEX idx_oracle_readings_sign_type IS 'B-tree for filtering by sign type (time/name/question)';
+COMMENT ON INDEX idx_oracle_readings_is_multi_user IS 'B-tree for filtering single vs multi-user readings';
+COMMENT ON INDEX idx_oracle_readings_result_gin IS 'GIN for JSONB containment queries on reading results';
+COMMENT ON INDEX idx_oracle_readings_individual_gin IS 'GIN for JSONB containment queries on per-user results';
+COMMENT ON INDEX idx_oracle_readings_compatibility_gin IS 'GIN for JSONB containment queries on compatibility matrix';
+COMMENT ON INDEX idx_oracle_reading_users_user_id IS 'B-tree for finding all readings a user participates in';
+COMMENT ON INDEX idx_oracle_reading_users_reading_id IS 'B-tree for finding all users in a reading';
+
+-- ─── Oracle Trigger ───
+
+CREATE TRIGGER oracle_users_updated_at
+    BEFORE UPDATE ON oracle_users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
