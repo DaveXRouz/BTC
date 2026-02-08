@@ -20,8 +20,6 @@ vi.mock("react-i18next", () => ({
         "oracle.add_new_profile": "Add New Profile",
         "oracle.edit_profile": "Edit Profile",
         "oracle.select_to_begin": "Select a profile to begin readings.",
-        "oracle.reading_ready":
-          "Profile selected. Oracle readings coming in T1-S2.",
         "oracle.results_placeholder":
           "Results will appear here after a reading.",
         "oracle.history_placeholder": "Past readings will appear here.",

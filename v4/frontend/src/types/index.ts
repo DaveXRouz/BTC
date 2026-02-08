@@ -116,6 +116,29 @@ export interface OracleUserCreate {
 
 export type OracleUserUpdate = Partial<OracleUserCreate>;
 
+// ─── Oracle Consultation ───
+
+export type SignType = "time" | "number" | "carplate" | "custom";
+
+export interface SignData {
+  type: SignType;
+  value: string;
+}
+
+export interface LocationData {
+  lat: number;
+  lon: number;
+  country?: string;
+  city?: string;
+}
+
+export interface OracleConsultationData {
+  userId: number;
+  question: string;
+  sign: SignData;
+  location: LocationData | null;
+}
+
 // ─── Vault ───
 
 export interface Finding {

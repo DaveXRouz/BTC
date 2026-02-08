@@ -8,6 +8,7 @@ import {
   useUpdateOracleUser,
   useDeleteOracleUser,
 } from "@/hooks/useOracleUsers";
+import { OracleConsultationForm } from "@/components/oracle/OracleConsultationForm";
 import type { OracleUserCreate } from "@/types";
 
 const SELECTED_USER_KEY = "nps_selected_oracle_user";
@@ -102,16 +103,21 @@ export function Oracle() {
         )}
       </section>
 
-      {/* Oracle Reading Placeholder */}
+      {/* Oracle Consultation */}
       <section className="bg-nps-oracle-bg border border-nps-oracle-border rounded-lg p-4">
         <h3 className="text-sm font-semibold text-nps-oracle-accent mb-3">
           {t("oracle.current_reading")}
         </h3>
-        <p className="text-nps-text-dim text-sm">
-          {selectedUser
-            ? t("oracle.reading_ready")
-            : t("oracle.select_to_begin")}
-        </p>
+        {selectedUser ? (
+          <OracleConsultationForm
+            userId={selectedUser.id}
+            userName={selectedUser.name}
+          />
+        ) : (
+          <p className="text-nps-text-dim text-sm">
+            {t("oracle.select_to_begin")}
+          </p>
+        )}
       </section>
 
       {/* Reading Results Placeholder */}

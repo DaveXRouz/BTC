@@ -59,7 +59,46 @@
     "error_mother_name_required": "Mother's name must be at least 2 characters",
     "profile_created": "Profile created",
     "profile_updated": "Profile updated",
-    "profile_deleted": "Profile deleted"
+    "profile_deleted": "Profile deleted",
+
+    "consulting_for": "Consulting for {{name}}",
+    "question_label": "Question",
+    "question_placeholder": "Type your question here...",
+    "date_label": "Date",
+    "submit_reading": "Submit Reading",
+
+    "keyboard_toggle": "Toggle Persian keyboard",
+    "keyboard_persian": "Persian Keyboard",
+    "keyboard_close": "Close keyboard",
+    "keyboard_space": "Space",
+    "keyboard_backspace": "Backspace",
+
+    "calendar_select_date": "Select a date",
+    "calendar_gregorian": "Gregorian",
+    "calendar_jalaali": "Solar Hijri",
+
+    "sign_label": "Sign",
+    "sign_type_label": "Sign type",
+    "sign_type_time": "Time",
+    "sign_type_number": "Number",
+    "sign_type_carplate": "Car Plate",
+    "sign_type_custom": "Custom",
+    "sign_placeholder_number": "Enter a number",
+    "sign_placeholder_carplate": "12A345-67",
+    "sign_placeholder_custom": "Enter your sign",
+
+    "location_label": "Location",
+    "location_auto_detect": "Auto-Detect Location",
+    "location_detecting": "Detecting...",
+    "location_detect_error": "Could not detect location. Please select manually.",
+    "location_country": "Country",
+    "location_city": "City",
+    "location_coordinates": "Coordinates",
+
+    "error_sign_required": "Sign value is required",
+    "error_time_format": "Invalid time format (HH:MM)",
+    "error_number_format": "Must be a valid number",
+    "error_carplate_format": "Invalid car plate format"
   },
   "vault": {
     "title": "Vault",
