@@ -2,13 +2,30 @@
 __pycache__/
 *.pyc
 *.pyo
+*.py[cod]
 *.egg-info/
 dist/
 build/
 *.egg
+.pytest_cache/
+.ruff_cache/
+
+# Node.js
+node_modules/
+frontend/dist/
+
+# Rust
+services/scanner/target/
+
+# Docker
+backups/
+
+# Environment
+.env
+!.env.example
 
 # Runtime data
-nps/data/
+api/data/
 
 # IDE
 .vscode/
@@ -22,7 +39,6 @@ nps/data/
 Thumbs.db
 
 # Testing
-.pytest_cache/
 htmlcov/
 .coverage
 
@@ -30,8 +46,14 @@ htmlcov/
 .claude/
 .mcp.json
 
-# Archive (old copies, not tracked)
-archive/nps_old/
-.workflow/
-.sessions/
-v4/api/data/
+# Generated gRPC stubs
+api/app/grpc_gen/*.py
+!api/app/grpc_gen/__init__.py
+services/oracle/oracle_service/grpc_gen/*.py
+!services/oracle/oracle_service/grpc_gen/__init__.py
+
+# SSL certificates
+infrastructure/nginx/ssl/
+
+# Archive (V2 data not tracked)
+.archive/v2/
