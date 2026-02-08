@@ -1,9 +1,18 @@
-"""Oracle endpoints — proxies to Python Oracle gRPC service + user management."""
+"""Oracle endpoints — reading computation, history, user management."""
 
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -20,6 +29,8 @@ from app.models.oracle import (
     RangeResponse,
     ReadingRequest,
     ReadingResponse,
+    StoredReadingListResponse,
+    StoredReadingResponse,
 )
 from app.models.oracle_user import (
     OracleUserCreate,
@@ -29,6 +40,11 @@ from app.models.oracle_user import (
 )
 from app.orm.oracle_user import OracleUser
 from app.services.audit import AuditService, get_audit_service
+from app.services.oracle_reading import (
+    OracleReadingService,
+    get_oracle_reading_service,
+    oracle_progress,
+)
 from app.services.security import EncryptionService, get_encryption_service
 
 logger = logging.getLogger(__name__)
@@ -79,7 +95,7 @@ def _get_client_ip(request: Request) -> str | None:
     return request.client.host if request.client else None
 
 
-# ─── Oracle Reading Endpoints (gRPC proxies) ────────────────────────────────
+# ─── Oracle Reading Endpoints ─────────────────────────────────────────────────
 
 
 @router.post(
@@ -87,12 +103,31 @@ def _get_client_ip(request: Request) -> str | None:
     response_model=ReadingResponse,
     dependencies=[Depends(require_scope("oracle:write"))],
 )
-async def get_reading(request: ReadingRequest):
+def create_reading(
+    body: ReadingRequest,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+    svc: OracleReadingService = Depends(get_oracle_reading_service),
+    audit: AuditService = Depends(get_audit_service),
+):
     """Get a full oracle reading for a date/time."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Oracle service not connected",
+    result = svc.get_reading(body.datetime, body.extended)
+    reading = svc.store_reading(
+        user_id=None,
+        sign_type="reading",
+        sign_value=result.get("generated_at", ""),
+        question=body.datetime,
+        reading_result=result,
+        ai_interpretation=result.get("summary"),
     )
+    audit.log_reading_created(
+        reading.id,
+        "reading",
+        ip=_get_client_ip(request),
+        key_hash=_user.get("api_key_hash"),
+    )
+    svc.db.commit()
+    return ReadingResponse(**result)
 
 
 @router.post(
@@ -100,12 +135,31 @@ async def get_reading(request: ReadingRequest):
     response_model=QuestionResponse,
     dependencies=[Depends(require_scope("oracle:write"))],
 )
-async def get_question_sign(request: QuestionRequest):
+def create_question_sign(
+    body: QuestionRequest,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+    svc: OracleReadingService = Depends(get_oracle_reading_service),
+    audit: AuditService = Depends(get_audit_service),
+):
     """Ask a yes/no question with numerological context."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Oracle service not connected",
+    result = svc.get_question_sign(body.question)
+    reading = svc.store_reading(
+        user_id=None,
+        sign_type="question",
+        sign_value=result.get("answer", ""),
+        question=body.question,
+        reading_result=result,
+        ai_interpretation=result.get("interpretation"),
     )
+    audit.log_reading_created(
+        reading.id,
+        "question",
+        ip=_get_client_ip(request),
+        key_hash=_user.get("api_key_hash"),
+    )
+    svc.db.commit()
+    return QuestionResponse(**result)
 
 
 @router.post(
@@ -113,12 +167,31 @@ async def get_question_sign(request: QuestionRequest):
     response_model=NameReadingResponse,
     dependencies=[Depends(require_scope("oracle:write"))],
 )
-async def get_name_reading(request: NameReadingRequest):
+def create_name_reading(
+    body: NameReadingRequest,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+    svc: OracleReadingService = Depends(get_oracle_reading_service),
+    audit: AuditService = Depends(get_audit_service),
+):
     """Get a name cipher reading."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Oracle service not connected",
+    result = svc.get_name_reading(body.name)
+    reading = svc.store_reading(
+        user_id=None,
+        sign_type="name",
+        sign_value=body.name,
+        question=body.name,
+        reading_result=result,
+        ai_interpretation=result.get("interpretation"),
     )
+    audit.log_reading_created(
+        reading.id,
+        "name",
+        ip=_get_client_ip(request),
+        key_hash=_user.get("api_key_hash"),
+    )
+    svc.db.commit()
+    return NameReadingResponse(**result)
 
 
 @router.get(
@@ -126,12 +199,13 @@ async def get_name_reading(request: NameReadingRequest):
     response_model=DailyInsightResponse,
     dependencies=[Depends(require_scope("oracle:read"))],
 )
-async def get_daily_insight(date: str = None):
+def get_daily_insight(
+    date: str | None = None,
+    svc: OracleReadingService = Depends(get_oracle_reading_service),
+):
     """Get daily insight for today or a specific date."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Oracle service not connected",
-    )
+    result = svc.get_daily_insight(date)
+    return DailyInsightResponse(**result)
 
 
 @router.post(
@@ -139,12 +213,97 @@ async def get_daily_insight(date: str = None):
     response_model=RangeResponse,
     dependencies=[Depends(require_scope("oracle:write"))],
 )
-async def suggest_range(request: RangeRequest):
+def suggest_scan_range(
+    body: RangeRequest,
+    svc: OracleReadingService = Depends(get_oracle_reading_service),
+):
     """Get AI-suggested scan range based on timing + coverage."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Oracle service not connected",
+    result = svc.suggest_range(
+        scanned_ranges=body.scanned_ranges,
+        puzzle_number=body.puzzle_number,
+        ai_level=body.ai_level,
     )
+    return RangeResponse(**result)
+
+
+# ─── Reading History Endpoints ───────────────────────────────────────────────
+
+
+@router.get(
+    "/readings",
+    response_model=StoredReadingListResponse,
+    dependencies=[Depends(require_scope("oracle:read"))],
+)
+def list_readings(
+    request: Request,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    sign_type: str | None = Query(None),
+    _user: dict = Depends(get_current_user),
+    svc: OracleReadingService = Depends(get_oracle_reading_service),
+    audit: AuditService = Depends(get_audit_service),
+):
+    """List stored oracle readings with optional filters."""
+    is_admin = "oracle:admin" in _user.get("scopes", [])
+    readings, total = svc.list_readings(
+        user_id=None,
+        is_admin=is_admin,
+        limit=limit,
+        offset=offset,
+        sign_type=sign_type,
+    )
+    audit.log_reading_listed(
+        ip=_get_client_ip(request),
+        key_hash=_user.get("api_key_hash"),
+    )
+    svc.db.commit()
+    return StoredReadingListResponse(
+        readings=[StoredReadingResponse(**r) for r in readings],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/readings/{reading_id}",
+    response_model=StoredReadingResponse,
+    dependencies=[Depends(require_scope("oracle:read"))],
+)
+def get_stored_reading(
+    reading_id: int,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+    svc: OracleReadingService = Depends(get_oracle_reading_service),
+    audit: AuditService = Depends(get_audit_service),
+):
+    """Get a single stored oracle reading by ID."""
+    data = svc.get_reading_by_id(reading_id)
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found"
+        )
+    audit.log_reading_read(
+        reading_id,
+        ip=_get_client_ip(request),
+        key_hash=_user.get("api_key_hash"),
+    )
+    svc.db.commit()
+    return StoredReadingResponse(**data)
+
+
+# ─── Oracle WebSocket ────────────────────────────────────────────────────────
+
+
+@router.websocket("/ws")
+async def oracle_ws(websocket: WebSocket):
+    """WebSocket endpoint for oracle progress updates."""
+    await oracle_progress.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        oracle_progress.disconnect(websocket)
 
 
 # ─── Oracle User Management ─────────────────────────────────────────────────

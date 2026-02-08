@@ -104,6 +104,42 @@ class AuditService:
             api_key_hash=key_hash,
         )
 
+    def log_reading_created(
+        self,
+        reading_id: int,
+        sign_type: str,
+        *,
+        ip: str | None = None,
+        key_hash: str | None = None,
+    ):
+        return self.log(
+            "oracle_reading.create",
+            resource_type="oracle_reading",
+            resource_id=reading_id,
+            ip_address=ip,
+            api_key_hash=key_hash,
+            details={"sign_type": sign_type},
+        )
+
+    def log_reading_read(
+        self, reading_id: int, *, ip: str | None = None, key_hash: str | None = None
+    ):
+        return self.log(
+            "oracle_reading.read",
+            resource_type="oracle_reading",
+            resource_id=reading_id,
+            ip_address=ip,
+            api_key_hash=key_hash,
+        )
+
+    def log_reading_listed(self, *, ip: str | None = None, key_hash: str | None = None):
+        return self.log(
+            "oracle_reading.list",
+            resource_type="oracle_reading",
+            ip_address=ip,
+            api_key_hash=key_hash,
+        )
+
     def log_auth_failed(self, *, ip: str | None = None, details: dict | None = None):
         return self.log(
             "auth.failed",

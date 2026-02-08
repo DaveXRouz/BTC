@@ -1,6 +1,6 @@
 """Oracle request/response models."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ReadingRequest(BaseModel):
@@ -89,3 +89,22 @@ class RangeResponse(BaseModel):
     strategy: str
     confidence: float
     reasoning: str
+
+
+class StoredReadingResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    user_id: int | None = None
+    sign_type: str
+    sign_value: str
+    question: str | None = None
+    reading_result: dict | None = None
+    ai_interpretation: str | None = None
+    created_at: str
+
+
+class StoredReadingListResponse(BaseModel):
+    readings: list[StoredReadingResponse]
+    total: int
+    limit: int
+    offset: int
