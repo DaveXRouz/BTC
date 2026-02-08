@@ -88,6 +88,21 @@ export const oracle = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  history: (params?: {
+    limit?: number;
+    offset?: number;
+    sign_type?: string;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.offset) query.set("offset", String(params.offset));
+    if (params?.sign_type) query.set("sign_type", params.sign_type);
+    return request<import("@/types").StoredReadingListResponse>(
+      `/oracle/readings?${query}`,
+    );
+  },
+  getReading: (id: number) =>
+    request<import("@/types").StoredReading>(`/oracle/readings/${id}`),
 };
 
 // ─── Oracle Users ───

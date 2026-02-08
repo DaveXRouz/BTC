@@ -89,6 +89,36 @@ export interface NameReading {
   interpretation: string;
 }
 
+// ─── Oracle Results ───
+
+// Union of all reading results from API
+export type ConsultationResult =
+  | { type: "reading"; data: OracleReading }
+  | { type: "question"; data: QuestionResponse }
+  | { type: "name"; data: NameReading };
+
+// Stored reading from GET /oracle/readings — mirrors backend StoredReadingResponse
+export interface StoredReading {
+  id: number;
+  user_id: number | null;
+  sign_type: string;
+  sign_value: string;
+  question: string | null;
+  reading_result: Record<string, unknown> | null;
+  ai_interpretation: string | null;
+  created_at: string;
+}
+
+// Paginated response — mirrors backend StoredReadingListResponse
+export interface StoredReadingListResponse {
+  readings: StoredReading[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export type ResultsTab = "summary" | "details" | "history";
+
 // ─── Oracle Users ───
 
 export interface OracleUser {

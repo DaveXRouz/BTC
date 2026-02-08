@@ -7,14 +7,13 @@ import { Oracle } from "../Oracle";
 // Mock i18next
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string) => {
+    t: (key: string, params?: Record<string, unknown>) => {
       const map: Record<string, string> = {
         "oracle.title": "Oracle",
         "oracle.subtitle": "Cosmic Guidance & Numerology",
         "oracle.user_profile": "User Profile",
         "oracle.current_reading": "Current Reading",
         "oracle.reading_results": "Reading Results",
-        "oracle.reading_history": "Reading History",
         "oracle.select_profile": "Select profile",
         "oracle.no_profiles": "No profiles yet",
         "oracle.add_new_profile": "Add New Profile",
@@ -22,7 +21,8 @@ vi.mock("react-i18next", () => ({
         "oracle.select_to_begin": "Select a profile to begin readings.",
         "oracle.results_placeholder":
           "Results will appear here after a reading.",
-        "oracle.history_placeholder": "Past readings will appear here.",
+        "oracle.details_placeholder":
+          "Submit a reading to see detailed analysis.",
         "oracle.new_profile": "New Profile",
         "oracle.field_name": "Name",
         "oracle.field_name_persian": "Name (Persian)",
@@ -44,6 +44,16 @@ vi.mock("react-i18next", () => ({
         "oracle.max_users_error": "Maximum 5 users allowed",
         "oracle.duplicate_user_error": "This user has already been added",
         "oracle.translate": "Translate to Persian",
+        "oracle.tab_summary": "Summary",
+        "oracle.tab_details": "Details",
+        "oracle.tab_history": "History",
+        "oracle.filter_all": "All",
+        "oracle.filter_reading": "Readings",
+        "oracle.filter_question": "Questions",
+        "oracle.filter_name": "Names",
+        "oracle.history_empty": "No readings yet.",
+        "oracle.history_count": `${params?.count ?? 0} readings`,
+        "oracle.error_history": "Failed to load reading history.",
         "common.loading": "Loading...",
         "common.save": "Save",
         "common.cancel": "Cancel",
@@ -55,6 +65,13 @@ vi.mock("react-i18next", () => ({
       changeLanguage: vi.fn(),
     },
   }),
+}));
+
+vi.mock("@/services/api", () => ({
+  oracle: {
+    history: vi.fn().mockReturnValue(new Promise(() => {})),
+  },
+  translation: { translate: vi.fn() },
 }));
 
 beforeEach(() => {
@@ -70,7 +87,6 @@ describe("Oracle Page", () => {
     expect(screen.getByText("User Profile")).toBeInTheDocument();
     expect(screen.getByText("Current Reading")).toBeInTheDocument();
     expect(screen.getByText("Reading Results")).toBeInTheDocument();
-    expect(screen.getByText("Reading History")).toBeInTheDocument();
   });
 
   it("shows user selector with no profiles initially", async () => {
@@ -98,16 +114,22 @@ describe("Oracle Page", () => {
     expect(screen.getByText("New Profile")).toBeInTheDocument();
   });
 
-  it("shows placeholder sections for future features", async () => {
+  it("shows tabbed results with Summary, Details, History", async () => {
+    renderWithProviders(<Oracle />);
+    await waitFor(() => {
+      expect(screen.getByText("Summary")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Details")).toBeInTheDocument();
+    expect(screen.getByText("History")).toBeInTheDocument();
+  });
+
+  it("shows summary placeholder by default", async () => {
     renderWithProviders(<Oracle />);
     await waitFor(() => {
       expect(
         screen.getByText("Results will appear here after a reading."),
       ).toBeInTheDocument();
     });
-    expect(
-      screen.getByText("Past readings will appear here."),
-    ).toBeInTheDocument();
   });
 
   it("shows primary user label", async () => {

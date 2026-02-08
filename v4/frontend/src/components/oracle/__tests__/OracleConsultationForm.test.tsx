@@ -48,7 +48,9 @@ vi.mock("react-i18next", () => ({
 
 describe("OracleConsultationForm", () => {
   it("renders all form fields", () => {
-    render(<OracleConsultationForm userId={1} userName="Alice" />);
+    render(
+      <OracleConsultationForm userId={1} userName="Alice" onResult={vi.fn()} />,
+    );
     expect(screen.getByText("Consulting for Alice")).toBeInTheDocument();
     expect(screen.getByText("Question")).toBeInTheDocument();
     expect(screen.getByText("Sign")).toBeInTheDocument();
@@ -57,7 +59,9 @@ describe("OracleConsultationForm", () => {
   });
 
   it("toggles Persian keyboard on icon click", async () => {
-    render(<OracleConsultationForm userId={1} userName="Alice" />);
+    render(
+      <OracleConsultationForm userId={1} userName="Alice" onResult={vi.fn()} />,
+    );
     const toggleBtn = screen.getByLabelText("Toggle Persian keyboard");
     await userEvent.click(toggleBtn);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -67,7 +71,9 @@ describe("OracleConsultationForm", () => {
   });
 
   it("types via Persian keyboard into question field", async () => {
-    render(<OracleConsultationForm userId={1} userName="Alice" />);
+    render(
+      <OracleConsultationForm userId={1} userName="Alice" onResult={vi.fn()} />,
+    );
     // Open keyboard
     await userEvent.click(screen.getByLabelText("Toggle Persian keyboard"));
     // Click a character
@@ -77,12 +83,16 @@ describe("OracleConsultationForm", () => {
   });
 
   it("shows submit button", () => {
-    render(<OracleConsultationForm userId={1} userName="Alice" />);
+    render(
+      <OracleConsultationForm userId={1} userName="Alice" onResult={vi.fn()} />,
+    );
     expect(screen.getByText("Submit Reading")).toBeInTheDocument();
   });
 
   it("shows sign validation error on submit with empty sign", async () => {
-    render(<OracleConsultationForm userId={1} userName="Alice" />);
+    render(
+      <OracleConsultationForm userId={1} userName="Alice" onResult={vi.fn()} />,
+    );
     await userEvent.click(screen.getByText("Submit Reading"));
     expect(screen.getByText("Sign value is required")).toBeInTheDocument();
   });

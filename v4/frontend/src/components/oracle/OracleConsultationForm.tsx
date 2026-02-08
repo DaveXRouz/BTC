@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { SignData, LocationData } from "@/types";
+import type { SignData, LocationData, ConsultationResult } from "@/types";
 import { validateSign } from "@/utils/signValidators";
+import { oracle } from "@/services/api";
 import { PersianKeyboard } from "./PersianKeyboard";
 import { CalendarPicker } from "./CalendarPicker";
 import { SignTypeSelector } from "./SignTypeSelector";
@@ -10,11 +11,13 @@ import { LocationSelector } from "./LocationSelector";
 interface OracleConsultationFormProps {
   userId: number;
   userName: string;
+  onResult: (result: ConsultationResult) => void;
 }
 
 export function OracleConsultationForm({
-  userId,
+  userId: _userId,
   userName,
+  onResult,
 }: OracleConsultationFormProps) {
   const { t } = useTranslation();
 
@@ -25,6 +28,7 @@ export function OracleConsultationForm({
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [signError, setSignError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function handleKeyboardChar(char: string) {
     setQuestion((prev) => prev + char);
@@ -39,7 +43,7 @@ export function OracleConsultationForm({
     if (signError) setSignError(undefined);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     // Validate sign
@@ -50,18 +54,21 @@ export function OracleConsultationForm({
     }
 
     setIsSubmitting(true);
+    setError(null);
 
-    // Log consultation data — API integration in T1-S4
-    console.log("Oracle consultation:", {
-      userId,
-      question,
-      date,
-      sign,
-      location,
-    });
-
-    // Simulate async (will be replaced by real API call)
-    setTimeout(() => setIsSubmitting(false), 500);
+    try {
+      if (question.trim()) {
+        const data = await oracle.question(question);
+        onResult({ type: "question", data });
+      } else {
+        const data = await oracle.reading(date || undefined);
+        onResult({ type: "reading", data });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("oracle.error_submit"));
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -128,6 +135,8 @@ export function OracleConsultationForm({
       >
         {isSubmitting ? t("common.loading") : t("oracle.submit_reading")}
       </button>
+
+      {error && <p className="text-xs text-nps-bg-danger">{error}</p>}
     </form>
   );
 }

@@ -9,8 +9,12 @@ import {
   useDeleteOracleUser,
 } from "@/hooks/useOracleUsers";
 import { OracleConsultationForm } from "@/components/oracle/OracleConsultationForm";
-import { TranslatedReading } from "@/components/oracle/TranslatedReading";
-import type { OracleUserCreate, SelectedUsers } from "@/types";
+import { ReadingResults } from "@/components/oracle/ReadingResults";
+import type {
+  OracleUserCreate,
+  SelectedUsers,
+  ConsultationResult,
+} from "@/types";
 
 const SELECTED_USER_KEY = "nps_selected_oracle_user";
 
@@ -25,8 +29,8 @@ export function Oracle() {
     null,
   );
   const [formMode, setFormMode] = useState<"create" | "edit" | null>(null);
-  // Reading result state — setReadingResult wired in T1-S4 API integration
-  const [readingResult, _setReadingResult] = useState<string | null>(null);
+  const [consultationResult, setConsultationResult] =
+    useState<ConsultationResult | null>(null);
 
   // Restore persisted primary user on load
   useEffect(() => {
@@ -126,6 +130,7 @@ export function Oracle() {
           <OracleConsultationForm
             userId={primaryUser.id}
             userName={primaryUser.name}
+            onResult={setConsultationResult}
           />
         ) : (
           <p className="text-nps-text-dim text-sm">
@@ -134,28 +139,12 @@ export function Oracle() {
         )}
       </section>
 
-      {/* Reading Results */}
+      {/* Reading Results + History (tabbed) */}
       <section className="bg-nps-oracle-bg border border-nps-oracle-border rounded-lg p-4">
         <h3 className="text-sm font-semibold text-nps-oracle-accent mb-3">
           {t("oracle.reading_results")}
         </h3>
-        {readingResult ? (
-          <TranslatedReading reading={readingResult} />
-        ) : (
-          <p className="text-nps-text-dim text-sm">
-            {t("oracle.results_placeholder")}
-          </p>
-        )}
-      </section>
-
-      {/* Reading History Placeholder */}
-      <section className="bg-nps-oracle-bg border border-nps-oracle-border rounded-lg p-4">
-        <h3 className="text-sm font-semibold text-nps-oracle-accent mb-3">
-          {t("oracle.reading_history")}
-        </h3>
-        <p className="text-nps-text-dim text-sm">
-          {t("oracle.history_placeholder")}
-        </p>
+        <ReadingResults result={consultationResult} />
       </section>
 
       {/* User Form Modal */}
