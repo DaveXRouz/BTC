@@ -90,6 +90,26 @@ export const oracle = {
     }),
 };
 
+// ─── Oracle Users ───
+
+export const oracleUsers = {
+  list: () => request<import("@/types").OracleUser[]>("/oracle/users"),
+  get: (id: number) =>
+    request<import("@/types").OracleUser>(`/oracle/users/${id}`),
+  create: (data: import("@/types").OracleUserCreate) =>
+    request<import("@/types").OracleUser>("/oracle/users", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: number, data: import("@/types").OracleUserUpdate) =>
+    request<import("@/types").OracleUser>(`/oracle/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  delete: (id: number) =>
+    request<void>(`/oracle/users/${id}`, { method: "DELETE" }),
+};
+
 // ─── Vault ───
 
 export const vault = {

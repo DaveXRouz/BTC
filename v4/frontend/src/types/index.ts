@@ -89,6 +89,33 @@ export interface NameReading {
   interpretation: string;
 }
 
+// ─── Oracle Users ───
+
+export interface OracleUser {
+  id: number;
+  name: string;
+  name_persian?: string;
+  birthday: string; // "YYYY-MM-DD"
+  mother_name: string;
+  mother_name_persian?: string;
+  country?: string;
+  city?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface OracleUserCreate {
+  name: string;
+  name_persian?: string;
+  birthday: string;
+  mother_name: string;
+  mother_name_persian?: string;
+  country?: string;
+  city?: string;
+}
+
+export type OracleUserUpdate = Partial<OracleUserCreate>;
+
 // ─── Vault ───
 
 export interface Finding {

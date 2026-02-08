@@ -907,7 +907,7 @@ def ask_master_password(parent, first_time=False):
     def _on_skip():
         dialog.destroy()
 
-    ok_btn = tk.Button(
+    ok_btn = StyledButton(
         btn_frame,
         text="OK",
         command=_on_ok,
@@ -919,7 +919,7 @@ def ask_master_password(parent, first_time=False):
     )
     ok_btn.pack(side="left", padx=4)
 
-    skip_btn = tk.Button(
+    skip_btn = StyledButton(
         btn_frame,
         text="Skip (No Encryption)",
         command=_on_skip,
@@ -1004,7 +1004,7 @@ def ask_change_password(parent):
         result["value"] = (old_v, new_v)
         dialog.destroy()
 
-    tk.Button(
+    StyledButton(
         btn_f,
         text="Change",
         command=_ok,
@@ -1014,7 +1014,7 @@ def ask_change_password(parent):
         padx=16,
         pady=4,
     ).pack(side="left", padx=4)
-    tk.Button(
+    StyledButton(
         btn_f,
         text="Cancel",
         command=dialog.destroy,
