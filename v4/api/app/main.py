@@ -9,7 +9,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.middleware.rate_limit import RateLimitMiddleware
-from app.routers import auth, health, learning, oracle, scanner, vault
+from app.routers import (
+    auth,
+    health,
+    learning,
+    location,
+    oracle,
+    scanner,
+    translation,
+    vault,
+)
 from app.services.security import init_encryption
 from app.services.websocket_manager import websocket_endpoint
 
@@ -56,6 +65,8 @@ app.include_router(scanner.router, prefix="/api/scanner", tags=["scanner"])
 app.include_router(oracle.router, prefix="/api/oracle", tags=["oracle"])
 app.include_router(vault.router, prefix="/api/vault", tags=["vault"])
 app.include_router(learning.router, prefix="/api/learning", tags=["learning"])
+app.include_router(translation.router, prefix="/api/translation", tags=["translation"])
+app.include_router(location.router, prefix="/api/location", tags=["location"])
 
 # WebSocket
 app.add_api_websocket_route("/ws", websocket_endpoint)

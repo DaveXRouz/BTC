@@ -21,6 +21,8 @@ from app.middleware.auth import get_current_user, require_scope
 from app.models.audit import AuditLogEntry, AuditLogResponse
 from app.models.oracle import (
     DailyInsightResponse,
+    MultiUserReadingRequest,
+    MultiUserReadingResponse,
     NameReadingRequest,
     NameReadingResponse,
     QuestionRequest,
@@ -224,6 +226,62 @@ def suggest_scan_range(
         ai_level=body.ai_level,
     )
     return RangeResponse(**result)
+
+
+# ─── Multi-User Reading Endpoint ────────────────────────────────────────────
+
+
+@router.post(
+    "/reading/multi-user",
+    response_model=MultiUserReadingResponse,
+    dependencies=[Depends(require_scope("oracle:write"))],
+)
+def create_multi_user_reading(
+    body: MultiUserReadingRequest,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+    svc: OracleReadingService = Depends(get_oracle_reading_service),
+    audit: AuditService = Depends(get_audit_service),
+):
+    """Multi-user FC60 analysis with compatibility, energy, and dynamics."""
+    users = [
+        {
+            "name": u.name,
+            "birth_year": u.birth_year,
+            "birth_month": u.birth_month,
+            "birth_day": u.birth_day,
+        }
+        for u in body.users
+    ]
+
+    try:
+        result = svc.get_multi_user_reading(users, body.include_interpretation)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        )
+
+    # Collect user_ids for junction table (may be None)
+    user_ids = [u.user_id for u in body.users]
+    primary_uid = body.users[body.primary_user_index].user_id
+
+    reading = svc.store_multi_user_reading(
+        primary_user_id=primary_uid,
+        user_ids=user_ids,
+        result_dict=result,
+        ai_interpretation=result.get("ai_interpretation"),
+    )
+
+    audit.log_reading_created(
+        reading.id,
+        "multi_user",
+        ip=_get_client_ip(request),
+        key_hash=_user.get("api_key_hash"),
+    )
+    svc.db.commit()
+
+    result["reading_id"] = reading.id
+    return MultiUserReadingResponse(**result)
 
 
 # ─── Reading History Endpoints ───────────────────────────────────────────────

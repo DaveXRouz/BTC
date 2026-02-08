@@ -11,7 +11,13 @@ from starlette.responses import JSONResponse
 logger = logging.getLogger(__name__)
 
 # Paths with lower limits (AI-powered endpoints)
-_AI_PATHS = {"/api/oracle/reading", "/api/oracle/question", "/api/oracle/name"}
+_AI_PATHS = {
+    "/api/oracle/reading",
+    "/api/oracle/question",
+    "/api/oracle/name",
+    "/api/oracle/reading/multi-user",
+    "/api/translation/translate",
+}
 _AI_RATE_LIMIT = 100  # per hour
 _AI_WINDOW = 3600  # 1 hour in seconds
 

@@ -13,7 +13,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.orm.oracle_reading import OracleReading
+from app.orm.oracle_reading import OracleReading, OracleReadingUser
 from app.services.security import EncryptionService, get_encryption_service
 
 logger = logging.getLogger(__name__)
@@ -63,6 +63,8 @@ from logic.timing_advisor import (
     get_current_quality,
     get_optimal_hours_today,
 )  # noqa: E402
+from engines.multi_user_service import MultiUserFC60Service  # noqa: E402
+from engines.ai_interpreter import interpret_group  # noqa: E402
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -285,6 +287,79 @@ class OracleReadingService:
             "confidence": confidence,
             "reasoning": reasoning,
         }
+
+    # ── Multi-user analysis ──
+
+    def get_multi_user_reading(
+        self, users: list[dict], include_interpretation: bool = True
+    ) -> dict:
+        """Run multi-user FC60 analysis via T3-S2 engine.
+
+        Args:
+            users: List of {name, birth_year, birth_month, birth_day} dicts.
+            include_interpretation: Whether to generate AI narrative.
+
+        Returns:
+            Complete analysis dict with optional AI interpretation.
+        """
+        svc = MultiUserFC60Service()
+        result = svc.analyze(users)
+        result_dict = result.to_dict()
+
+        if include_interpretation:
+            try:
+                interp = interpret_group(result_dict)
+                result_dict["ai_interpretation"] = interp.to_dict()
+            except Exception:
+                logger.warning("AI interpretation unavailable, skipping", exc_info=True)
+                result_dict["ai_interpretation"] = None
+        else:
+            result_dict["ai_interpretation"] = None
+
+        return result_dict
+
+    def store_multi_user_reading(
+        self,
+        primary_user_id: int | None,
+        user_ids: list[int | None],
+        result_dict: dict,
+        ai_interpretation: dict | None,
+    ) -> OracleReading:
+        """Persist a multi-user reading + junction table entries."""
+        enc_ai = None
+        if ai_interpretation:
+            ai_str = json.dumps(ai_interpretation)
+            enc_ai = self.enc.encrypt_field(ai_str) if self.enc else ai_str
+
+        reading = OracleReading(
+            user_id=primary_user_id,
+            is_multi_user=True,
+            primary_user_id=primary_user_id,
+            question="",
+            sign_type="multi_user",
+            sign_value=f"{result_dict.get('user_count', 0)}-user analysis",
+            reading_result=json.dumps(result_dict),
+            individual_results=json.dumps(result_dict.get("profiles", [])),
+            compatibility_matrix=json.dumps(
+                result_dict.get("pairwise_compatibility", [])
+            ),
+            combined_energy=json.dumps(result_dict.get("group_energy", {})),
+            ai_interpretation=enc_ai,
+        )
+        self.db.add(reading)
+        self.db.flush()
+
+        for i, uid in enumerate(user_ids):
+            if uid is not None:
+                entry = OracleReadingUser(
+                    reading_id=reading.id,
+                    user_id=uid,
+                    is_primary=(uid == primary_user_id),
+                )
+                self.db.add(entry)
+
+        self.db.flush()
+        return reading
 
     # ── DB storage methods ──
 
