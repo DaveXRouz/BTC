@@ -29,7 +29,9 @@ _SCOPE_HIERARCHY = {
     "vault:admin": {"vault:admin", "vault:write", "vault:read"},
     "vault:write": {"vault:write", "vault:read"},
     "vault:read": {"vault:read"},
-    "admin": set(),  # expanded in _expand_scopes
+    # "admin" is a role-level marker, not a domain scope. It grants nothing
+    # by itself — the admin role gets all domain-specific scopes via _ROLE_SCOPES.
+    "admin": set(),
 }
 
 # Role to default scopes mapping
@@ -85,21 +87,16 @@ def create_access_token(user_id: str, username: str, role: str) -> str:
         "username": username,
         "role": role,
         "scopes": scopes,
-        "exp": datetime.now(timezone.utc)
-        + timedelta(minutes=settings.jwt_expire_minutes),
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes),
         "iat": datetime.now(timezone.utc),
     }
-    return jwt.encode(
-        payload, settings.api_secret_key, algorithm=settings.jwt_algorithm
-    )
+    return jwt.encode(payload, settings.api_secret_key, algorithm=settings.jwt_algorithm)
 
 
 def _try_jwt_auth(token: str) -> dict | None:
     """Try to decode as JWT. Returns user context dict or None."""
     try:
-        payload = jwt.decode(
-            token, settings.api_secret_key, algorithms=[settings.jwt_algorithm]
-        )
+        payload = jwt.decode(token, settings.api_secret_key, algorithms=[settings.jwt_algorithm])
         return {
             "user_id": payload.get("sub"),
             "username": payload.get("username"),

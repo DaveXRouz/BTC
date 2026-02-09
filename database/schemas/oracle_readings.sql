@@ -33,9 +33,9 @@ CREATE TABLE IF NOT EXISTS oracle_readings (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     -- Constraints
-    CONSTRAINT oracle_readings_sign_type_check CHECK (sign_type IN ('time', 'name', 'question')),
+    CONSTRAINT oracle_readings_sign_type_check CHECK (sign_type IN ('time', 'name', 'question', 'reading', 'multi_user', 'daily')),
     CONSTRAINT oracle_readings_user_check CHECK (
-        (is_multi_user = FALSE AND user_id IS NOT NULL) OR
+        (is_multi_user = FALSE) OR
         (is_multi_user = TRUE AND primary_user_id IS NOT NULL)
     )
 );
@@ -44,4 +44,4 @@ COMMENT ON TABLE oracle_readings IS 'Oracle readings with FC60, numerology, and 
 COMMENT ON COLUMN oracle_readings.reading_result IS 'Full FC60 calculation results as JSONB';
 COMMENT ON COLUMN oracle_readings.individual_results IS 'Per-user results for multi-user readings (JSONB array)';
 COMMENT ON COLUMN oracle_readings.compatibility_matrix IS 'User compatibility scores (JSONB)';
-COMMENT ON COLUMN oracle_readings.sign_type IS 'Type of sign: time, name, or question';
+COMMENT ON COLUMN oracle_readings.sign_type IS 'Type of sign: time, name, question, reading, multi_user, or daily';

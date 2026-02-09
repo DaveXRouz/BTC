@@ -9,8 +9,8 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 1 of 45
-**Last session:** Session 1 — Foundation Verification & Baseline (2026-02-09)
+**Sessions completed:** 2 of 45
+**Last session:** Session 2 — Fix Gaps & Validate Reading Flow (2026-02-09)
 **Current block:** Foundation (Sessions 1-5)
 
 ---
@@ -148,6 +148,59 @@ TEMPLATE — copy this for each new session:
 **Decisions:** Verified using SQLite fallback for unit tests. Integration tests deferred to when Docker is available.
 
 **Next:** Session 2 — Fix schema discrepancy between init.sql and standalone SQL files. Begin validating Oracle reading flow (create reading, store results, retrieve history). Address Pydantic deprecation warning. Verify admin scope design.
+
+## Session 2 — 2026-02-09
+
+**Terminal:** SINGLE
+**Block:** Foundation
+**Task:** Fix 5 gaps from Session 1, validate Oracle reading flow
+**Spec:** `.session-specs/SESSION_2_SPEC.md`
+
+**Fixes Applied:**
+
+| #   | Gap                                    | Fix                                                                            | File                                   |
+| --- | -------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------- |
+| 1   | Schema discrepancy (3 vs 6 sign_types) | Synced standalone SQL to match init.sql: 6 sign_types + relaxed user_check     | `database/schemas/oracle_readings.sql` |
+| 2   | Pydantic deprecation warning           | Migrated `class Config` → `model_config = SettingsConfigDict(...)`             | `api/app/config.py`                    |
+| 3   | Admin scope empty/confusing            | Added clarifying comment — `admin` is a role marker, domain scopes do the work | `api/app/middleware/auth.py`           |
+| 4   | No Docker/PostgreSQL                   | Not fixable locally — documented as environment requirement                    | N/A                                    |
+| 5   | No virtual environment                 | Noted — not blocking, recommend for CI                                         | N/A                                    |
+
+**Reading Flow Validated:**
+
+| Endpoint                            | Tests                                                           | Status |
+| ----------------------------------- | --------------------------------------------------------------- | ------ |
+| POST /api/oracle/reading            | 4 tests (datetime, default, 403, 401)                           | PASS   |
+| POST /api/oracle/question           | 3 tests (sign, 403, empty)                                      | PASS   |
+| POST /api/oracle/name               | 3 tests (reading, 403, empty)                                   | PASS   |
+| GET /api/oracle/daily               | 3 tests (default, date, readonly)                               | PASS   |
+| POST /api/oracle/suggest-range      | 2 tests (range, 403)                                            | PASS   |
+| POST /api/oracle/reading/multi-user | 17 tests (2-10 users, fields, validation, history)              | PASS   |
+| GET /api/oracle/readings            | 4 tests (empty, populated, pagination, filter)                  | PASS   |
+| GET /api/oracle/readings/{id}       | 2 tests (found, 404)                                            | PASS   |
+| Encryption roundtrip                | 2 tests (encrypted question decrypted in response, no-enc mode) | PASS   |
+| DB storage                          | 2 tests (reading stored, name stored)                           | PASS   |
+
+**Test Results:**
+
+| Suite                | Pass    | Fail  | Warnings                        |
+| -------------------- | ------- | ----- | ------------------------------- |
+| API Unit Tests       | 166     | 0     | 0 (Pydantic warning eliminated) |
+| Oracle Service Tests | 156     | 0     | 0                               |
+| **Total**            | **322** | **0** | **0**                           |
+
+**Files changed:**
+
+- `database/schemas/oracle_readings.sql` — synced sign_type CHECK and user_check constraints to match init.sql
+- `api/app/config.py` — migrated to SettingsConfigDict (Pydantic V2 pattern)
+- `api/app/middleware/auth.py` — clarified admin scope comment
+
+**Tests:** 322 pass / 0 fail / 0 warnings (improved from Session 1: eliminated 1 deprecation warning)
+**Commit:** pending
+**Issues:** None
+**Decisions:** Confirmed admin scope design is correct — domain-specific scopes (oracle:admin etc.) are the enforcement mechanism, bare `admin` is just a role marker.
+
+**Next:** Session 3 — Validate Oracle user profile management (birthday validation, coordinates/location, Persian UTF-8 field handling) and remaining Foundation auth endpoints (login, API key creation/listing/revocation).
 
 ---
 
