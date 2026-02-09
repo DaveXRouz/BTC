@@ -155,7 +155,6 @@ BTC/
 ├── .archive/              ← V1/V3 code (READ-ONLY)
 ├── .specs/                ← 16-session specs (reference only)
 ├── .session-specs/        ← 45-session specs (active)
-├── .project/              ← Project management playbooks
 └── docker-compose.yml
 ```
 
@@ -478,4 +477,5 @@ All config in `.env` (copy from `.env.example`):
 | Session specs (active)             | `.session-specs/` folder          |
 | All workflow paths                 | `.claude/master-workflow.md`      |
 | V3 source (reference)              | `.archive/v3/`                    |
-| Project playbooks                  | `.project/` folder                |
+| Error recovery recipes             | `docs/ERROR_RECOVERY.md`          |
+| Layer verification checklists      | `docs/VERIFICATION_CHECKLISTS.md` |
