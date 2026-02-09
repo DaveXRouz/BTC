@@ -28,6 +28,7 @@ If SESSION_LOG.md has zero session entries, start Session 1 of the current block
 
 For detailed startup protocol → `.claude/startup.md`
 For workflow modes → `.claude/workflows.md`
+For all workflow paths → `.claude/master-workflow.md`
 
 ---
 
@@ -132,6 +133,7 @@ BTC/
 ├── .claude/               ← Detailed Claude Code configs
 │   ├── startup.md             Boot protocol + silent checks
 │   ├── workflows.md           Single-terminal + multi-terminal modes
+│   ├── master-workflow.md     All paths through the 45-session build
 │   └── templates.md           File templates (Python, TS, Rust)
 ├── logic/                 ← Algorithm docs + recipes
 │   ├── FC60_ALGORITHM.md      FC60 math + formulas + test vectors
@@ -474,5 +476,6 @@ All config in `.env` (copy from `.env.example`):
 | Session history                    | `SESSION_LOG.md`                  |
 | Spec files (reference)             | `.specs/` folder                  |
 | Session specs (active)             | `.session-specs/` folder          |
+| All workflow paths                 | `.claude/master-workflow.md`      |
 | V3 source (reference)              | `.archive/v3/`                    |
 | Project playbooks                  | `.project/` folder                |
