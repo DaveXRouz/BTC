@@ -1,4 +1,4 @@
-"""Dashboard tab — V3 War Room overview."""
+"""Dashboard tab — War Room overview."""
 
 import threading
 import tkinter as tk
@@ -60,7 +60,7 @@ class DashboardTab:
         ).pack(anchor="w", pady=(4, 2))
         self.activity_log = LogPanel(main, height=8)
         self.activity_log.pack(fill="both", expand=True)
-        self.activity_log.log("NPS V3 started. Awaiting missions.", "info")
+        self.activity_log.log("NPS started. Awaiting missions.", "info")
 
     # ─── Current Moment ───
     def _build_moment_panel(self, parent):

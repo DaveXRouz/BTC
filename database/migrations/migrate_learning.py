@@ -1,10 +1,10 @@
 """
-Migrate V3 learning state to V4 PostgreSQL.
+Migrate legacy learning state to current PostgreSQL.
 
-V3 format: nps/data/learning/learning_state.json
+Legacy format: nps/data/learning/learning_state.json
   Single JSON: {"xp": N, "level": N, "insights": [...], ...}
 
-V4 target: learning_data + insights tables
+Current target: learning_data + insights tables
 """
 
 import json
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def migrate_learning(v3_path: Path, dry_run: bool = True, **kwargs):
-    """Migrate V3 learning state to V4 PostgreSQL."""
+    """Migrate legacy learning state to current PostgreSQL."""
     state_file = v3_path / "data" / "learning" / "learning_state.json"
 
     if not state_file.exists():

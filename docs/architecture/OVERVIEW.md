@@ -1,8 +1,8 @@
-# V4 Architecture Overview
+# NPS Architecture Overview
 
 ## 7-Layer Distributed Architecture
 
-NPS V4 transforms the V3 Python/Tkinter monolith into a distributed microservices architecture targeting web deployment.
+NPS transforms the legacy Python/Tkinter monolith into a distributed microservices architecture targeting web deployment.
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -85,9 +85,9 @@ The WebSocket connection (`/ws`) provides:
 - Health status changes
 - AI learning events (level up, insights)
 
-## V3 to V4 Migration Path
+## Legacy to Current Migration Path
 
-| V3 Component                    | V4 Home                                                      | Status           |
+| Legacy Component                | Current Home                                                 | Status           |
 | ------------------------------- | ------------------------------------------------------------ | ---------------- |
 | `nps/engines/fc60.py`           | Oracle service engines                                       | Copied as-is     |
 | `nps/engines/numerology.py`     | Oracle service engines                                       | Copied as-is     |
@@ -107,7 +107,7 @@ The WebSocket connection (`/ws`) provides:
 - **Transport:** TLS via nginx (external), plain gRPC (internal Docker network)
 - **Authentication:** JWT tokens (web) + API keys (programmatic/Telegram)
 - **Encryption at rest:** AES-256-GCM (`ENC4:` prefix) for sensitive fields
-- **Legacy support:** V3 `ENC:` (PBKDF2 + HMAC-SHA256) decrypt for migration
+- **Legacy support:** Legacy `ENC:` (PBKDF2 + HMAC-SHA256) decrypt for migration
 - **Key material:** Never leaves server; frontend displays only masked values
 
 ## Phase Roadmap

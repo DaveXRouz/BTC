@@ -1,4 +1,4 @@
-# NPS V4 Integration Issues Log
+# NPS Integration Issues Log
 
 **Session:** INTEGRATION-S2 (Deep Testing & Final Polish)
 **Date:** 2026-02-08

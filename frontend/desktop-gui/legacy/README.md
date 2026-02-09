@@ -1,6 +1,6 @@
-# Legacy Tkinter GUI (V3)
+# Legacy Tkinter GUI
 
-This directory contains the V3 Tkinter desktop GUI, preserved as reference for the V4 React frontend migration.
+This directory contains the legacy Tkinter desktop GUI, preserved as reference for the current React frontend migration.
 
 ## Files
 
@@ -16,9 +16,9 @@ This directory contains the V3 Tkinter desktop GUI, preserved as reference for t
 
 ## Dual-GUI Strategy
 
-V4 supports two frontends:
+NPS supports two frontends:
 
-1. **React Web UI** (`frontend/src/`) — Primary target for V4. Modern web-based interface with real-time WebSocket updates.
+1. **React Web UI** (`frontend/src/`) — Primary target. Modern web-based interface with real-time WebSocket updates.
 2. **Tkinter Desktop GUI** (this directory) — Legacy reference. May be adapted for local-only mode in later phases.
 
 The React frontend replaces all 5 Tkinter tabs with equivalent web pages:
@@ -32,5 +32,5 @@ The React frontend replaces all 5 Tkinter tabs with equivalent web pages:
 ## Notes
 
 - These files are **read-only reference copies** from `nps/gui/`.
-- Do not modify these files — edit the V3 originals in `nps/gui/` if needed.
+- Do not modify these files — edit the legacy originals in `nps/gui/` if needed.
 - The React migration should preserve all user-facing features from these tabs.

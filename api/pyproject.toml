@@ -1,7 +1,7 @@
 [project]
 name = "nps-api"
 version = "4.0.0"
-description = "NPS V4 API Service — FastAPI REST + WebSocket"
+description = "NPS API Service — FastAPI REST + WebSocket"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.109.0",

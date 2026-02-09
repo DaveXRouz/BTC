@@ -1,7 +1,7 @@
 """
-NPS V4 Oracle Service — gRPC server.
+NPS Oracle Service — gRPC server.
 
-Wraps V3 engines (fc60, numerology, oracle, timing_advisor) with gRPC interface.
+Wraps legacy engines (fc60, numerology, oracle, timing_advisor) with gRPC interface.
 These engines are near-zero rewrite — they are pure computation with no I/O.
 
 To run:
@@ -22,7 +22,7 @@ from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 import oracle_service  # triggers sys.path shim
 from oracle_service.grpc_gen import oracle_pb2, oracle_pb2_grpc
 
-# V3 engines (resolved via sys.path shim in oracle_service/__init__.py)
+# Legacy engines (resolved via sys.path shim in oracle_service/__init__.py)
 from engines.fc60 import (
     encode_fc60,
     ganzhi_year,
@@ -112,7 +112,7 @@ def _parse_datetime(dt_str):
 
 
 class OracleServiceImpl(oracle_pb2_grpc.OracleServiceServicer):
-    """Implements oracle.proto OracleService — 8 RPCs wrapping V3 engines."""
+    """Implements oracle.proto OracleService — 8 RPCs wrapping legacy engines."""
 
     def HealthCheck(self, request, context):
         with _track_rpc("HealthCheck"):

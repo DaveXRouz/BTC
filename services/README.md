@@ -1,8 +1,8 @@
-# V4 Backend Services
+# NPS Backend Services
 
 ## Overview
 
-V4 splits the V3 monolith into two specialized backend services, each with a gRPC interface defined in `proto/`.
+NPS splits the legacy monolith into two specialized backend services, each with a gRPC interface defined in `proto/`.
 
 ## Services
 
@@ -14,7 +14,7 @@ High-performance key scanner rewritten in Rust for maximum throughput.
 - **Language:** Rust (Cargo project)
 - **Interface:** gRPC (scanner.proto)
 - **Responsibilities:** Key generation, address derivation, balance checking, checkpoint management
-- **V3 reference:** Python crypto files preserved in `scanner/docs/v3_*_reference.py`
+- **Legacy reference:** Python crypto files preserved in `scanner/docs/v3_*_reference.py`
 
 See `scanner/README.md` for details.
 
@@ -26,7 +26,7 @@ FC60 numerology engine, oracle readings, AI learning, and strategy intelligence.
 - **Language:** Python 3.8+
 - **Interface:** gRPC (oracle.proto)
 - **Responsibilities:** Oracle readings, numerology analysis, timing advice, scoring, AI learning
-- **V3 reuse:** All V3 engines, solvers, and logic modules copied as-is
+- **Legacy reuse:** All legacy engines, solvers, and logic modules copied as-is
 
 See `oracle/README.md` for details.
 

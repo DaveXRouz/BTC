@@ -22,7 +22,7 @@ The 16-session scaffolding process produced 45,903 lines of code:
 - Working database schema (PostgreSQL init.sql + migrations)
 - API skeleton with 13 Oracle endpoints (FastAPI)
 - Frontend with 20+ React components (Oracle UI, Persian keyboard, calendar)
-- Oracle service structure with V3 engines copied in
+- Oracle service structure with legacy engines copied in
 - Integration tests (56+), Playwright E2E (8 scenarios)
 - Docker Compose (7 containers), Dockerfiles, nginx config
 - Auth middleware (JWT + API key), encryption (AES-256-GCM)

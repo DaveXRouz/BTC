@@ -1,4 +1,4 @@
-"""Shared fixtures for NPS V4 integration tests."""
+"""Shared fixtures for NPS integration tests."""
 
 import os
 import sys

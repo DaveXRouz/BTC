@@ -1,4 +1,4 @@
-// NPS V4 TypeScript types — mirrors API Pydantic models
+// NPS TypeScript types — mirrors API Pydantic models
 
 // ─── Scanner ───
 
@@ -393,7 +393,7 @@ export interface User {
   role: string;
 }
 
-// ─── Currency (from V3 theme.py) ───
+// ─── Currency (from legacy theme.py) ───
 
 export const CURRENCY_SYMBOLS: Record<
   string,

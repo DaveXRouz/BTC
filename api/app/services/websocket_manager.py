@@ -1,7 +1,7 @@
 """WebSocket manager — broadcasts events to connected frontend clients.
 
-Replaces V3's tkinter.after() polling with real-time push.
-Maps V3 event types to typed WebSocket messages.
+Replaces legacy tkinter.after() polling with real-time push.
+Maps legacy event types to typed WebSocket messages.
 """
 
 import json

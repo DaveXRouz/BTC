@@ -1,6 +1,6 @@
 /**
  * WebSocket client — real-time event stream from API.
- * Replaces V3's tkinter.after() polling.
+ * Replaces legacy tkinter.after() polling.
  */
 
 import type { WSEvent, EventType } from "@/types";

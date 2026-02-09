@@ -77,7 +77,7 @@ LIFE_PATH_MEANINGS = {
 
 
 # ════════════════════════════════════════════════════════════
-# V1 Numerology Functions (from v1 fc60_engine.py)
+# Legacy Numerology Functions (from original fc60_engine.py)
 # ════════════════════════════════════════════════════════════
 
 

@@ -2,7 +2,7 @@
 name = "nps-scanner"
 version = "4.0.0"
 edition = "2021"
-description = "NPS V4 Scanner Service — High-performance key scanner in Rust"
+description = "NPS Scanner Service — High-performance key scanner in Rust"
 
 [dependencies]
 # Crypto

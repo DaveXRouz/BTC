@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NPS V4 Health Check — reports status for all docker-compose services
+# NPS Health Check — reports status for all docker-compose services
 set -euo pipefail
 
 GREEN='\033[0;32m'
@@ -18,7 +18,7 @@ HEALTHY=0
 UNHEALTHY=0
 NOT_RUNNING=0
 
-echo "NPS V4 Health Check"
+echo "NPS Health Check"
 echo "==================="
 echo ""
 

@@ -1,4 +1,4 @@
-"""Shared test fixtures for V4 API tests."""
+"""Shared test fixtures for API tests."""
 
 import pytest
 from httpx import ASGITransport, AsyncClient

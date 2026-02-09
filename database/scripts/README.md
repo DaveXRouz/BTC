@@ -1,6 +1,6 @@
 # Oracle Database Scripts
 
-Scripts for backing up and restoring Oracle domain tables independently from the main NPS V4 database.
+Scripts for backing up and restoring Oracle domain tables independently from the main NPS database.
 
 ## Tables Covered
 

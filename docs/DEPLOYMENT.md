@@ -1,4 +1,4 @@
-# NPS V4 Deployment Guide
+# NPS Deployment Guide
 
 ## Prerequisites
 

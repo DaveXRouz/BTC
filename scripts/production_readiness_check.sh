@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NPS V4 Production Readiness Check
+# NPS Production Readiness Check
 # Automated verification of 10 key requirements
 # Usage: ./scripts/production_readiness_check.sh
 
@@ -12,7 +12,7 @@ fail() { echo "  [FAIL] $1"; FAIL=$((FAIL + 1)); }
 warn() { echo "  [WARN] $1"; WARN=$((WARN + 1)); }
 
 echo "=============================================="
-echo "NPS V4 Production Readiness Check"
+echo "NPS Production Readiness Check"
 echo "=============================================="
 echo ""
 

@@ -1,17 +1,17 @@
 # Numerology Systems — Calculation Reference
 
 > Reference: `.archive/v3/engines/numerology.py` (294 lines)
-> V4 location: `services/oracle/oracle_service/engines/numerology.py`
+> Current location: `services/oracle/oracle_service/engines/numerology.py`
 
 ---
 
 ## Three Systems
 
-| System | Language | Used In |
-|--------|----------|---------|
-| **Pythagorean** | English | V3 + V4 |
-| **Chaldean** | English (alternative) | V4 only (new) |
-| **Abjad** | Persian/Arabic | V4 only (new) |
+| System          | Language              | Used In          |
+| --------------- | --------------------- | ---------------- |
+| **Pythagorean** | English               | Legacy + Current |
+| **Chaldean**    | English (alternative) | New              |
+| **Abjad**       | Persian/Arabic        | New              |
 
 All reduce to single digit (1-9) preserving **master numbers** (11, 22, 33).
 
@@ -22,6 +22,7 @@ All reduce to single digit (1-9) preserving **master numbers** (11, 22, 33).
 **Letter table:** A=1 B=2 C=3 D=4 E=5 F=6 G=7 H=8 I=9, J=1 K=2 ... Z=8
 
 **Reduction:** Sum digits repeatedly. Stop at 1-9 or master number.
+
 ```python
 def numerology_reduce(n):
     if n in (11, 22, 33): return n
@@ -32,6 +33,7 @@ def numerology_reduce(n):
 ```
 
 **Core calculations:**
+
 - `name_to_number(name)` — sum all letters → reduce
 - `name_soul_urge(name)` — vowels (A,E,I,O,U) only → reduce
 - `name_personality(name)` — consonants only → reduce
@@ -40,13 +42,13 @@ def numerology_reduce(n):
 
 ---
 
-## Chaldean (Alternative English — V4 New)
+## Chaldean (Alternative English — New)
 
 Different assignments: A=1 B=2 C=3 D=4 E=5 **F=8** **G=3** H=5 I=1, no letter = 9 (sacred). Same reduction rules.
 
 ---
 
-## Abjad (Persian — V4 New)
+## Abjad (Persian — New)
 
 Arabic/Persian letters with traditional values: ا=1 ب=2 ج=3 ... غ=1000. Persian extras: پ=2 چ=3 ژ=7 گ=20. Same reduction principle.
 
@@ -55,6 +57,7 @@ Arabic/Persian letters with traditional values: ا=1 ب=2 ج=3 ... غ=1000. Pers
 ## FC60 Integration
 
 `number_vibration(n)` bridges both systems:
+
 - `digit_sum` + `reduced` (numerology)
 - `fc60_token` + `animal` + `element` (FC60 via n % 60)
 
@@ -73,9 +76,9 @@ Base → 0.3
 
 ## Test Vectors
 
-| Input | Function | Expected |
-|-------|----------|----------|
-| "DAVE" | name_to_number | 5 |
-| 1990,6,15 | life_path | 4 |
-| 29 | numerology_reduce | 11 (master) |
-| 347 | digit_sum_reduced | 5 |
+| Input     | Function          | Expected    |
+| --------- | ----------------- | ----------- |
+| "DAVE"    | name_to_number    | 5           |
+| 1990,6,15 | life_path         | 4           |
+| 29        | numerology_reduce | 11 (master) |
+| 347       | digit_sum_reduced | 5           |

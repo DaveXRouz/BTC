@@ -1,11 +1,11 @@
 """
-Migrate V3 vault findings (JSONL) to V4 PostgreSQL.
+Migrate legacy vault findings (JSONL) to current PostgreSQL.
 
-V3 format: nps/data/findings/vault_live.jsonl
+Legacy format: nps/data/findings/vault_live.jsonl
   Each line: {"address": "...", "chain": "btc", "balance": 0, "private_key": "ENC:...", ...}
 
-V4 target: findings table
-  - Decrypt ENC: values with V3 security module
+Current target: findings table
+  - Decrypt ENC: values with legacy security module
   - Re-encrypt with AES-256-GCM
   - Generate UUIDs
   - Convert epoch timestamps to TIMESTAMPTZ
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def migrate_vault(v3_path: Path, dry_run: bool = True, v3_password: str = None):
-    """Migrate V3 vault JSONL to V4 PostgreSQL findings table."""
+    """Migrate legacy vault JSONL to current PostgreSQL findings table."""
     vault_file = v3_path / "data" / "findings" / "vault_live.jsonl"
 
     if not vault_file.exists():
@@ -62,10 +62,10 @@ def migrate_vault(v3_path: Path, dry_run: bool = True, v3_password: str = None):
         return
 
     # TODO: Implement actual migration
-    # 1. Initialize V3 security module with v3_password
+    # 1. Initialize legacy security module with v3_password
     # 2. For each finding:
-    #    a. Decrypt ENC: fields with V3 decrypt()
-    #    b. Re-encrypt with V4 AES-256-GCM
+    #    a. Decrypt ENC: fields with legacy decrypt()
+    #    b. Re-encrypt with current AES-256-GCM
     #    c. Convert timestamp (epoch float) to datetime
     #    d. Generate UUID
     #    e. INSERT into findings table

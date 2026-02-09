@@ -9,7 +9,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-_USER_AGENT = "NPS-V4-Oracle/4.0"
+_USER_AGENT = "NPS-Oracle/4.0"
 _NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 _IPAPI_URL = "https://ipapi.co/{ip}/json/"
 

@@ -1,8 +1,8 @@
-# V4 Scripts
+# NPS Scripts
 
 ## Overview
 
-Deployment, backup, and operational scripts for V4 infrastructure management.
+Deployment, backup, and operational scripts for NPS infrastructure management.
 
 ## Scripts
 

@@ -2,7 +2,7 @@
 
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Frameworks/Python.framework/Versions/3.12/bin:$PATH"
 
-REPO=/Users/hamzeh/Desktop/GitHub/BTC
+REPO=/Users/hamzeh/Desktop/GitHub/NPS
 PYTHON=/Library/Frameworks/Python.framework/Versions/3.12/bin/python3
 
 # Auto-update in background (non-blocking)
@@ -12,7 +12,7 @@ PYTHON=/Library/Frameworks/Python.framework/Versions/3.12/bin/python3
 lsof -ti:8000 | xargs kill 2>/dev/null
 sleep 0.5
 
-# Start V4 API + frontend (single server, survives script exit)
+# Start API + frontend (single server, survives script exit)
 cd "$REPO/api"
 nohup arch -arm64 "$PYTHON" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --loop asyncio > /tmp/nps-server.log 2>&1 &
 disown

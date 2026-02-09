@@ -1,4 +1,4 @@
-//! NPS V4 Scanner Service — High-performance key scanner.
+//! NPS Scanner Service — High-performance key scanner.
 //!
 //! Targets 5000+ keys/sec using secp256k1, bip39, and multi-threaded scanning.
 //! Exposes a gRPC API for control by the FastAPI gateway.

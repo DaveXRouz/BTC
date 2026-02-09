@@ -1,5 +1,5 @@
 #!/bin/bash
-# NPS V4 — PostgreSQL restore script
+# NPS — PostgreSQL restore script
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,7 +28,7 @@ if [ ! -f "$BACKUP_FILE" ]; then
     exit 1
 fi
 
-echo "=== NPS V4 Database Restore ==="
+echo "=== NPS Database Restore ==="
 echo "Database: $POSTGRES_DB"
 echo "Backup: $BACKUP_FILE"
 echo ""

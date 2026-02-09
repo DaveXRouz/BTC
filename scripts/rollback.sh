@@ -1,11 +1,11 @@
 #!/bin/bash
-# NPS V4 — Rollback to previous version
+# NPS — Rollback to previous version
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 V4_DIR="$(dirname "$SCRIPT_DIR")"
 
-echo "=== NPS V4 Rollback ==="
+echo "=== NPS Rollback ==="
 
 # Stop current services
 echo "Stopping current services..."

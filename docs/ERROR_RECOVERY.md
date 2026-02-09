@@ -1,8 +1,8 @@
-# ERROR RECOVERY PLAYBOOK - NPS V4
+# ERROR RECOVERY PLAYBOOK - NPS
 
 ## 🎯 PURPOSE
 
-This playbook provides systematic approaches to debugging and recovering from errors across all NPS V4 layers. When something breaks, follow these patterns.
+This playbook provides systematic approaches to debugging and recovering from errors across all NPS layers. When something breaks, follow these patterns.
 
 **Rule:** Don't guess. Follow the systematic debugging process.
 
@@ -116,10 +116,12 @@ This playbook provides systematic approaches to debugging and recovering from er
 #### Error: Component won't render
 
 **Symptoms:**
+
 - Blank page
 - Console error: "Cannot read property 'X' of undefined"
 
 **Diagnosis:**
+
 ```bash
 # Check browser console
 F12 → Console tab
@@ -131,35 +133,40 @@ F12 → Console tab
 ```
 
 **Common Causes:**
+
 1. **Props not passed from parent**
+
    ```typescript
    // BAD: Parent doesn't pass required prop
    <Dashboard />  // Missing 'data' prop
-   
+
    // GOOD:
    <Dashboard data={data} />
    ```
 
 2. **State not initialized**
+
    ```typescript
    // BAD: undefined initial state
    const [data, setData] = useState();
-   
+
    // GOOD:
    const [data, setData] = useState<DataType | null>(null);
    ```
 
 3. **Async data not handled**
+
    ```typescript
    // BAD: Renders before data loads
    return <div>{data.name}</div>
-   
+
    // GOOD:
    if (!data) return <Loading />;
    return <div>{data.name}</div>;
    ```
 
 **Fix:**
+
 ```bash
 1. Add null checks
 2. Initialize state properly
@@ -172,11 +179,13 @@ F12 → Console tab
 #### Error: API calls failing
 
 **Symptoms:**
+
 - Network errors in console
 - CORS errors
 - 401/403 responses
 
 **Diagnosis:**
+
 ```bash
 # Check Network tab
 F12 → Network tab → Filter: XHR
@@ -188,31 +197,35 @@ F12 → Network tab → Filter: XHR
 ```
 
 **Common Causes:**
+
 1. **Missing API key**
+
    ```typescript
    // BAD: No Authorization header
-   fetch('/api/scanner/start')
-   
+   fetch("/api/scanner/start");
+
    // GOOD:
-   fetch('/api/scanner/start', {
-     headers: { 'Authorization': `Bearer ${apiKey}` }
-   })
+   fetch("/api/scanner/start", {
+     headers: { Authorization: `Bearer ${apiKey}` },
+   });
    ```
 
 2. **Wrong base URL**
+
    ```typescript
    // BAD: Hardcoded localhost
-   const API_URL = 'http://localhost:8000';
-   
+   const API_URL = "http://localhost:8000";
+
    // GOOD: Environment variable
    const API_URL = import.meta.env.VITE_API_URL;
    ```
 
 3. **CORS not configured**
+
    ```python
    # In FastAPI (Layer 2)
    from fastapi.middleware.cors import CORSMiddleware
-   
+
    app.add_middleware(
        CORSMiddleware,
        allow_origins=["http://localhost:5173"],
@@ -223,6 +236,7 @@ F12 → Network tab → Filter: XHR
    ```
 
 **Fix:**
+
 ```bash
 1. Verify API is running (curl http://localhost:8000/api/health)
 2. Check API key in request headers
@@ -237,10 +251,12 @@ F12 → Network tab → Filter: XHR
 #### Error: 500 Internal Server Error
 
 **Symptoms:**
+
 - API returns 500
 - No specific error message
 
 **Diagnosis:**
+
 ```bash
 # Check API logs
 tail -f volumes/logs/api.log | jq .
@@ -252,14 +268,16 @@ tail -f volumes/logs/api.log | jq .
 ```
 
 **Common Causes:**
+
 1. **Unhandled exception**
+
    ```python
    # BAD: No error handling
    @app.get("/api/scanner/stats")
    async def get_stats():
        stats = db.query(...)  # Could fail
        return stats
-   
+
    # GOOD:
    @app.get("/api/scanner/stats")
    async def get_stats():
@@ -272,10 +290,11 @@ tail -f volumes/logs/api.log | jq .
    ```
 
 2. **Database connection failed**
+
    ```python
    # Check database connection
    from sqlalchemy import text
-   
+
    try:
        db.execute(text("SELECT 1"))
    except Exception as e:
@@ -283,10 +302,11 @@ tail -f volumes/logs/api.log | jq .
    ```
 
 3. **Missing environment variable**
+
    ```python
    # BAD: No default, crashes if not set
    DATABASE_URL = os.environ["DATABASE_URL"]
-   
+
    # GOOD: Explicit error
    DATABASE_URL = os.environ.get("DATABASE_URL")
    if not DATABASE_URL:
@@ -294,6 +314,7 @@ tail -f volumes/logs/api.log | jq .
    ```
 
 **Fix:**
+
 ```bash
 1. Add try/except around risky operations
 2. Check database connection (psql -h localhost -U nps_user)
@@ -306,10 +327,12 @@ tail -f volumes/logs/api.log | jq .
 #### Error: 401 Unauthorized
 
 **Symptoms:**
+
 - All API calls return 401
 - Even with valid API key
 
 **Diagnosis:**
+
 ```bash
 # Test API key manually
 curl -H "Authorization: Bearer YOUR_KEY" http://localhost:8000/api/health
@@ -319,13 +342,16 @@ psql -c "SELECT * FROM api_keys;"
 ```
 
 **Common Causes:**
+
 1. **API key not in database**
+
    ```bash
    # Generate new key
    python security/scripts/generate_api_key.py --name "Test" --scopes admin
    ```
 
 2. **Wrong key hash algorithm**
+
    ```python
    # Ensure both generation and validation use same algorithm
    import hashlib
@@ -333,14 +359,16 @@ psql -c "SELECT * FROM api_keys;"
    ```
 
 3. **Middleware not applied**
+
    ```python
    # Ensure auth middleware is in endpoint
    from app.security.auth import validate_api_key
-   
+
    @app.get("/api/scanner/start", dependencies=[Depends(validate_api_key)])
    ```
 
 **Fix:**
+
 ```bash
 1. Verify key exists in database
 2. Check key_hash generation matches validation
@@ -355,10 +383,12 @@ psql -c "SELECT * FROM api_keys;"
 #### Error: Scanner service crash
 
 **Symptoms:**
+
 - Scanner service exits unexpectedly
 - No keys generated
 
 **Diagnosis:**
+
 ```bash
 # Check scanner logs
 docker logs nps-scanner
@@ -370,7 +400,9 @@ docker logs nps-scanner
 ```
 
 **Common Causes:**
+
 1. **Database connection pool exhausted**
+
    ```rust
    // Increase pool size
    let pool = PgPoolOptions::new()
@@ -380,10 +412,11 @@ docker logs nps-scanner
    ```
 
 2. **Unwrap on None/Err**
+
    ```rust
    // BAD: Panics if Oracle not available
    let guidance = oracle_client.get_suggestion().unwrap();
-   
+
    // GOOD: Handle gracefully
    let guidance = match oracle_client.get_suggestion().await {
        Ok(g) => Some(g),
@@ -395,10 +428,11 @@ docker logs nps-scanner
    ```
 
 3. **Memory leak**
+
    ```bash
    # Monitor memory usage
    docker stats nps-scanner
-   
+
    # If memory grows unbounded:
    # Check for:
    # - Unclosed database connections
@@ -407,6 +441,7 @@ docker logs nps-scanner
    ```
 
 **Fix:**
+
 ```bash
 1. Add Result<T,E> error handling (no unwrap)
 2. Increase connection pool size
@@ -419,10 +454,12 @@ docker logs nps-scanner
 #### Error: Oracle service timeout
 
 **Symptoms:**
+
 - Oracle service doesn't respond
 - API calls to Oracle hang
 
 **Diagnosis:**
+
 ```bash
 # Check Oracle logs
 docker logs nps-oracle
@@ -434,14 +471,16 @@ docker logs nps-oracle
 ```
 
 **Common Causes:**
+
 1. **AI API call hanging**
+
    ```python
    # BAD: No timeout
    response = await anthropic_client.messages.create(...)
-   
+
    # GOOD: Add timeout
    import asyncio
-   
+
    try:
        response = await asyncio.wait_for(
            anthropic_client.messages.create(...),
@@ -453,25 +492,28 @@ docker logs nps-oracle
    ```
 
 2. **Database query too slow**
+
    ```bash
    # Check slow queries
    psql -c "SELECT query, mean_exec_time FROM pg_stat_statements WHERE mean_exec_time > 1000 ORDER BY mean_exec_time DESC LIMIT 10;"
-   
+
    # Add indexes if needed
    ```
 
 3. **Deadlock**
+
    ```python
    # Check for deadlocks
    # In PostgreSQL logs, look for:
    # "deadlock detected"
-   
+
    # Fix by:
    # - Consistent lock ordering
    # - Shorter transactions
    ```
 
 **Fix:**
+
 ```bash
 1. Add timeouts to all external calls
 2. Optimize slow database queries
@@ -486,10 +528,12 @@ docker logs nps-oracle
 #### Error: Connection refused
 
 **Symptoms:**
+
 - Can't connect to PostgreSQL
 - "Connection refused" error
 
 **Diagnosis:**
+
 ```bash
 # Is PostgreSQL running?
 docker-compose ps postgres
@@ -503,16 +547,19 @@ docker network inspect nps-network
 ```
 
 **Common Causes:**
+
 1. **PostgreSQL not started**
+
    ```bash
    docker-compose up -d postgres
    ```
 
 2. **Wrong connection string**
+
    ```python
    # BAD: Wrong host
    DATABASE_URL = "postgresql://nps_user:password@localhost:5432/nps_db"
-   
+
    # GOOD: Docker service name
    DATABASE_URL = "postgresql://nps_user:password@postgres:5432/nps_db"
    ```
@@ -522,10 +569,11 @@ docker network inspect nps-network
    # In docker-compose.yml
    postgres:
      ports:
-       - "5432:5432"  # Make sure this is present
+       - "5432:5432" # Make sure this is present
    ```
 
 **Fix:**
+
 ```bash
 1. Start PostgreSQL (docker-compose up -d postgres)
 2. Fix connection string (use service name, not localhost)
@@ -538,10 +586,12 @@ docker network inspect nps-network
 #### Error: Query timeout
 
 **Symptoms:**
+
 - Queries take >10 seconds
 - Application hangs
 
 **Diagnosis:**
+
 ```bash
 # Check active queries
 psql -c "SELECT pid, now() - pg_stat_activity.query_start AS duration, query FROM pg_stat_activity WHERE state = 'active' ORDER BY duration DESC;"
@@ -554,34 +604,39 @@ psql -c "EXPLAIN ANALYZE YOUR_QUERY;"
 ```
 
 **Common Causes:**
+
 1. **Missing index**
+
    ```sql
    -- Check if query uses indexes
    EXPLAIN ANALYZE SELECT * FROM findings WHERE chain = 'btc';
-   
+
    -- If sequential scan, add index
    CREATE INDEX idx_findings_chain ON findings(chain);
    ```
 
 2. **Table bloat (needs vacuum)**
+
    ```bash
    # Run vacuum
    psql -c "VACUUM ANALYZE findings;"
-   
+
    # Set up automatic vacuum
    ALTER TABLE findings SET (autovacuum_enabled = true);
    ```
 
 3. **Too many rows returned**
+
    ```python
    # BAD: No limit
    findings = db.query(Finding).all()
-   
+
    # GOOD: Paginate
    findings = db.query(Finding).limit(100).offset(page * 100).all()
    ```
 
 **Fix:**
+
 ```bash
 1. Add indexes for common query patterns
 2. Run VACUUM ANALYZE regularly
@@ -596,10 +651,12 @@ psql -c "EXPLAIN ANALYZE YOUR_QUERY;"
 #### Error: Container won't start
 
 **Symptoms:**
+
 - `docker-compose up` fails
 - Container exits immediately
 
 **Diagnosis:**
+
 ```bash
 # Check container logs
 docker-compose logs [service-name]
@@ -612,13 +669,15 @@ docker inspect nps-api
 ```
 
 **Common Causes:**
+
 1. **Dependency not ready**
+
    ```yaml
    # BAD: No health check
    api:
      depends_on:
        - postgres
-   
+
    # GOOD: Wait for healthy
    api:
      depends_on:
@@ -627,23 +686,26 @@ docker inspect nps-api
    ```
 
 2. **Environment variable missing**
+
    ```bash
    # Check .env file exists
    ls -la .env
-   
+
    # Check variables loaded
    docker-compose config | grep DATABASE_URL
    ```
 
 3. **Port already in use**
+
    ```bash
    # Find process using port
    lsof -i :8000
-   
+
    # Kill process or change port
    ```
 
 **Fix:**
+
 ```bash
 1. Add health checks to dependencies
 2. Verify .env file present and correct
@@ -656,10 +718,12 @@ docker inspect nps-api
 #### Error: Services can't communicate
 
 **Symptoms:**
+
 - API can't reach Scanner/Oracle
 - "Connection refused" between services
 
 **Diagnosis:**
+
 ```bash
 # Check network
 docker network ls
@@ -671,7 +735,9 @@ docker exec nps-api curl http://scanner:50051/health
 ```
 
 **Common Causes:**
+
 1. **Not on same network**
+
    ```yaml
    # All services must be on same network
    services:
@@ -681,17 +747,18 @@ docker exec nps-api curl http://scanner:50051/health
      scanner:
        networks:
          - nps-network
-   
+
    networks:
      nps-network:
        driver: bridge
    ```
 
 2. **Wrong service name**
+
    ```python
    # BAD: Using localhost
    SCANNER_URL = "http://localhost:50051"
-   
+
    # GOOD: Using service name
    SCANNER_URL = "http://scanner:50051"
    ```
@@ -705,6 +772,7 @@ docker exec nps-api curl http://scanner:50051/health
    ```
 
 **Fix:**
+
 ```bash
 1. Ensure all services on same Docker network
 2. Use service names (not localhost) in inter-service calls
@@ -718,10 +786,12 @@ docker exec nps-api curl http://scanner:50051/health
 #### Error: Encryption/decryption fails
 
 **Symptoms:**
+
 - Can't decrypt private keys
 - "Invalid padding" error
 
 **Diagnosis:**
+
 ```bash
 # Check encryption key
 printenv NPS_MASTER_PASSWORD
@@ -731,7 +801,9 @@ python -c "from security.encryption import encrypt_dict, decrypt_dict; data = {'
 ```
 
 **Common Causes:**
+
 1. **Wrong password used**
+
    ```python
    # Encryption and decryption must use same password
    encrypted = encrypt_dict(data, password1)
@@ -739,6 +811,7 @@ python -c "from security.encryption import encrypt_dict, decrypt_dict; data = {'
    ```
 
 2. **Password changed**
+
    ```bash
    # If master password changed, re-encrypt all data
    python security/scripts/rotate_master_key.py \
@@ -747,14 +820,16 @@ python -c "from security.encryption import encrypt_dict, decrypt_dict; data = {'
    ```
 
 3. **Encryption library version mismatch**
+
    ```bash
    # Check cryptography version
    pip list | grep cryptography
-   
+
    # Ensure same version on all instances
    ```
 
 **Fix:**
+
 ```bash
 1. Verify master password consistent across all services
 2. If password changed, run key rotation script
@@ -769,10 +844,12 @@ python -c "from security.encryption import encrypt_dict, decrypt_dict; data = {'
 #### Error: Health checks failing
 
 **Symptoms:**
+
 - Dashboard shows services "down"
 - But services appear to work
 
 **Diagnosis:**
+
 ```bash
 # Test health endpoints manually
 curl http://localhost:8000/api/health
@@ -784,23 +861,26 @@ python -c "import time; import requests; start = time.time(); requests.get('http
 ```
 
 **Common Causes:**
+
 1. **Timeout too short**
+
    ```python
    # BAD: 1s timeout
    response = requests.get(url, timeout=1)
-   
+
    # GOOD: 5s timeout
    response = requests.get(url, timeout=5)
    ```
 
 2. **Health check calls external service**
+
    ```python
    # BAD: Health check depends on external API
    @app.get("/health")
    async def health():
        claude_api_status = await check_claude_api()  # Could fail
        return {"status": "healthy" if claude_api_status else "down"}
-   
+
    # GOOD: Health check only checks internal state
    @app.get("/health")
    async def health():
@@ -817,10 +897,11 @@ python -c "import time; import requests; start = time.time(); requests.get('http
      interval: 10s
      timeout: 5s
      retries: 5
-     start_period: 30s  # Wait 30s before first check
+     start_period: 30s # Wait 30s before first check
    ```
 
 **Fix:**
+
 ```bash
 1. Increase health check timeout
 2. Health checks should only check critical internal state
@@ -841,11 +922,13 @@ python -c "import time; import requests; start = time.time(); requests.get('http
 **Error:** [error message]
 
 **Diagnosis:**
+
 1. Check logs: `docker-compose logs [service-name]`
 2. Check dependencies: Are required services healthy?
 3. Check environment: Are env vars loaded?
 
 **Common Fixes:**
+
 - [ ] Dependency not healthy → Add health check + wait
 - [ ] Env var missing → Check .env file
 - [ ] Port conflict → Change port or kill process
@@ -866,11 +949,13 @@ python -c "import time; import requests; start = time.time(); requests.get('http
 **Metric:** [metric-name] (current: X, target: Y)
 
 **Diagnosis:**
+
 1. Profile: [tool used, results]
 2. Bottleneck: [identified bottleneck]
 3. Resource usage: CPU/Memory/Disk
 
 **Common Fixes:**
+
 - [ ] Database query slow → Add index, optimize query
 - [ ] Memory leak → Fix leaked resources
 - [ ] CPU-bound → Parallelize or optimize algorithm
@@ -891,11 +976,13 @@ python -c "import time; import requests; start = time.time(); requests.get('http
 **Tables affected:** [table names]
 
 **Diagnosis:**
+
 1. Check constraints: `psql -c "\d+ table_name"`
 2. Find orphaned records: [query used]
 3. Transaction isolation: [check current level]
 
 **Common Fixes:**
+
 - [ ] Missing foreign key → Add constraint + clean data
 - [ ] Race condition → Use transaction isolation
 - [ ] Concurrent updates → Add optimistic locking
@@ -909,12 +996,12 @@ python -c "import time; import requests; start = time.time(); requests.get('http
 
 ## 📊 ERROR PRIORITY MATRIX
 
-| Severity | Impact | Response Time | Escalation |
-|----------|--------|---------------|------------|
-| **CRITICAL** | System down, data loss risk | Immediate | Wake up team |
-| **HIGH** | Feature broken, affects users | <1 hour | Notify lead |
-| **MEDIUM** | Degraded performance | <4 hours | Fix in sprint |
-| **LOW** | Non-critical issue | <1 day | Backlog |
+| Severity     | Impact                        | Response Time | Escalation    |
+| ------------ | ----------------------------- | ------------- | ------------- |
+| **CRITICAL** | System down, data loss risk   | Immediate     | Wake up team  |
+| **HIGH**     | Feature broken, affects users | <1 hour       | Notify lead   |
+| **MEDIUM**   | Degraded performance          | <4 hours      | Fix in sprint |
+| **LOW**      | Non-critical issue            | <1 day        | Backlog       |
 
 ---
 
@@ -934,5 +1021,5 @@ After fixing any error:
 
 **Remember:** Every error is a learning opportunity. Document it well. 🚀
 
-*Version: 1.0*  
-*Last Updated: 2026-02-08*
+_Version: 1.0_  
+_Last Updated: 2026-02-08_

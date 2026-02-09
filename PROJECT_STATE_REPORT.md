@@ -1,4 +1,4 @@
-# PROJECT STATE REPORT — NPS V4 Deep Scan
+# PROJECT STATE REPORT — NPS Deep Scan
 
 > **Generated:** 2026-02-09
 > **Purpose:** Comprehensive pre-build assessment before the 45-session Oracle rebuild
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The NPS V4 project has a **solid foundation** from 16 sessions of scaffolding. The Oracle service engines (FC60, numerology, oracle reader) are production-ready with ~12,670 lines of real computation logic. The database schema is comprehensive (15 tables, 36 indexes). Auth (JWT + API key + 3-tier scopes) and encryption (AES-256-GCM) are fully implemented. The frontend Oracle page works end-to-end but 5 other pages are empty stubs. The Scanner service is 100% stub code (311 lines of Rust structure with no real implementations). The biggest architectural issue is a dual AI integration — one uses the Anthropic SDK (correct), the other shells out to the Claude CLI (violates architecture rule #1).
+The NPS project has a **solid foundation** from 16 sessions of scaffolding. The Oracle service engines (FC60, numerology, oracle reader) are production-ready with ~12,670 lines of real computation logic. The database schema is comprehensive (15 tables, 36 indexes). Auth (JWT + API key + 3-tier scopes) and encryption (AES-256-GCM) are fully implemented. The frontend Oracle page works end-to-end but 5 other pages are empty stubs. The Scanner service is 100% stub code (311 lines of Rust structure with no real implementations). The biggest architectural issue is a dual AI integration — one uses the Anthropic SDK (correct), the other shells out to the Claude CLI (violates architecture rule #1).
 
 **Bottom line:** Sessions 1-12 of the 45-session plan can build on real, working code. Sessions 13+ require significant new work.
 
@@ -190,15 +190,15 @@ LAYER 7: JSON logging + Prometheus + Telegram alerts
 
 ### Services Layer
 
-| Service                 | File                                     | Purpose                                   |
-| ----------------------- | ---------------------------------------- | ----------------------------------------- |
-| `security.py`           | `api/app/services/security.py`           | AES-256-GCM encrypt/decrypt + V3 fallback |
-| `audit.py`              | `api/app/services/audit.py`              | Audit log writes                          |
-| `oracle_reading.py`     | `api/app/services/oracle_reading.py`     | Oracle engine orchestration               |
-| `oracle_permissions.py` | `api/app/services/oracle_permissions.py` | Scope checking                            |
-| `location_service.py`   | `api/app/services/location_service.py`   | Geocoding/timezone                        |
-| `translation.py`        | `api/app/services/translation.py`        | EN↔FA translation                         |
-| `websocket_manager.py`  | `api/app/services/websocket_manager.py`  | Real-time events                          |
+| Service                 | File                                     | Purpose                                       |
+| ----------------------- | ---------------------------------------- | --------------------------------------------- |
+| `security.py`           | `api/app/services/security.py`           | AES-256-GCM encrypt/decrypt + legacy fallback |
+| `audit.py`              | `api/app/services/audit.py`              | Audit log writes                              |
+| `oracle_reading.py`     | `api/app/services/oracle_reading.py`     | Oracle engine orchestration                   |
+| `oracle_permissions.py` | `api/app/services/oracle_permissions.py` | Scope checking                                |
+| `location_service.py`   | `api/app/services/location_service.py`   | Geocoding/timezone                            |
+| `translation.py`        | `api/app/services/translation.py`        | EN↔FA translation                             |
+| `websocket_manager.py`  | `api/app/services/websocket_manager.py`  | Real-time events                              |
 
 ### API Tests
 
@@ -246,21 +246,21 @@ LAYER 7: JSON logging + Prometheus + Telegram alerts
 
 #### Operational Modules
 
-| Module                   | File                             | Lines     | Status                             |
-| ------------------------ | -------------------------------- | --------- | ---------------------------------- |
-| Scanner Brain            | `engines/scanner_brain.py`       | 572       | Implemented — oracle suggestions   |
-| Learning                 | `engines/learning.py`            | 439       | Implemented — XP/level system      |
-| Learner                  | `engines/learner.py`             | 307       | Implemented — pattern learning     |
-| Session Manager          | `engines/session_manager.py`     | 147       | Implemented                        |
-| Terminal Manager         | `engines/terminal_manager.py`    | 254       | Implemented                        |
-| Multi-user FC60          | `engines/multi_user_fc60.py`     | 167       | Implemented                        |
-| Multi-user Service       | `engines/multi_user_service.py`  | 114       | Implemented                        |
-| Translation              | `engines/translation_service.py` | 410       | Implemented — EN↔FA                |
-| Vault                    | `engines/vault.py`               | 305       | V3 carry-over — needs DB migration |
-| Notifier                 | `engines/notifier.py`            | 1,577     | V3 carry-over — should move to API |
-| Memory                   | `engines/memory.py`              | 423       | Utility                            |
-| Perf                     | `engines/perf.py`                | 174       | Performance tracking               |
-| **Operational subtotal** |                                  | **4,889** |                                    |
+| Module                   | File                             | Lines     | Status                                 |
+| ------------------------ | -------------------------------- | --------- | -------------------------------------- |
+| Scanner Brain            | `engines/scanner_brain.py`       | 572       | Implemented — oracle suggestions       |
+| Learning                 | `engines/learning.py`            | 439       | Implemented — XP/level system          |
+| Learner                  | `engines/learner.py`             | 307       | Implemented — pattern learning         |
+| Session Manager          | `engines/session_manager.py`     | 147       | Implemented                            |
+| Terminal Manager         | `engines/terminal_manager.py`    | 254       | Implemented                            |
+| Multi-user FC60          | `engines/multi_user_fc60.py`     | 167       | Implemented                            |
+| Multi-user Service       | `engines/multi_user_service.py`  | 114       | Implemented                            |
+| Translation              | `engines/translation_service.py` | 410       | Implemented — EN↔FA                    |
+| Vault                    | `engines/vault.py`               | 305       | Legacy carry-over — needs DB migration |
+| Notifier                 | `engines/notifier.py`            | 1,577     | Legacy carry-over — should move to API |
+| Memory                   | `engines/memory.py`              | 423       | Utility                                |
+| Perf                     | `engines/perf.py`                | 174       | Performance tracking                   |
+| **Operational subtotal** |                                  | **4,889** |                                        |
 
 #### Solver Classes (7)
 
@@ -430,7 +430,7 @@ LAYER 7: JSON logging + Prometheus + Telegram alerts
 | Key derivation   | PBKDF2-HMAC-SHA256, 600,000 iterations                                                                      |
 | Nonce            | 96-bit random per encryption                                                                                |
 | Salt             | 32 bytes                                                                                                    |
-| Prefix           | `ENC4:` (V4), `ENC:` (V3 fallback for migration)                                                            |
+| Prefix           | `ENC4:` (current), `ENC:` (legacy fallback for migration)                                                   |
 | Sensitive fields | `private_key`, `seed_phrase`, `wif`, `extended_private_key`, `mother_name`, `question`, `ai_interpretation` |
 
 ### Auth
@@ -554,47 +554,47 @@ LAYER 7: JSON logging + Prometheus + Telegram alerts
 
 ### .archive/ (Read-only reference)
 
-| Directory                     | Content                                       |
-| ----------------------------- | --------------------------------------------- |
-| `.archive/v1/`                | V1 original code                              |
-| `.archive/v2/`                | V2 iteration                                  |
-| `.archive/v3/`                | V3 engines — **math baseline** for validation |
-| `.archive/v3-scripts/`        | V3 utility scripts                            |
-| `.archive/development-notes/` | Historical notes                              |
-| `.archive/old-docs/`          | Previous documentation                        |
-| `.archive/session-memory/`    | Session context from scaffolding              |
+| Directory                     | Content                                           |
+| ----------------------------- | ------------------------------------------------- |
+| `.archive/v1/`                | Original code                                     |
+| `.archive/v2/`                | Earlier version iteration                         |
+| `.archive/v3/`                | Legacy engines — **math baseline** for validation |
+| `.archive/v3-scripts/`        | Legacy utility scripts                            |
+| `.archive/development-notes/` | Historical notes                                  |
+| `.archive/old-docs/`          | Previous documentation                            |
+| `.archive/session-memory/`    | Session context from scaffolding                  |
 
 ### .project/ (Project management)
 
-| File                             | Purpose                         |
-| -------------------------------- | ------------------------------- |
-| `NPS_V4_PROJECT_INSTRUCTIONS.md` | Master project instructions     |
-| `SKILLS_PLAYBOOK.md`             | Team skills reference           |
-| `SUBAGENT_PATTERNS.md`           | Subagent orchestration patterns |
-| `TOOL_ORCHESTRATION_MATRIX.md`   | Tool selection matrix           |
-| `VERIFICATION_CHECKLISTS.md`     | QA checklists                   |
-| `ERROR_RECOVERY.md`              | Error handling playbook         |
-| `SESSION_HANDOFF_TEMPLATE.md`    | Session handoff template        |
+| File                           | Purpose                         |
+| ------------------------------ | ------------------------------- |
+| `NPS_PROJECT_INSTRUCTIONS.md`  | Master project instructions     |
+| `SKILLS_PLAYBOOK.md`           | Team skills reference           |
+| `SUBAGENT_PATTERNS.md`         | Subagent orchestration patterns |
+| `TOOL_ORCHESTRATION_MATRIX.md` | Tool selection matrix           |
+| `VERIFICATION_CHECKLISTS.md`   | QA checklists                   |
+| `ERROR_RECOVERY.md`            | Error handling playbook         |
+| `SESSION_HANDOFF_TEMPLATE.md`  | Session handoff template        |
 
 ---
 
 ## What Works (Production-Ready)
 
-| #   | Component                 | Evidence                                                     |
-| --- | ------------------------- | ------------------------------------------------------------ |
-| 1   | **Database schema**       | 15 tables, 36 indexes, migrations, seed data, extensions     |
-| 2   | **Auth system**           | JWT + API key + legacy, 3-tier scopes, audit logging         |
-| 3   | **Encryption**            | AES-256-GCM, PBKDF2 600K iterations, V3 migration fallback   |
-| 4   | **FC60 engine**           | 966 lines, pure Python, JDN/base-60/ganzhi/moon computations |
-| 5   | **Numerology engine**     | 294 lines, Pythagorean system with master numbers            |
-| 6   | **Oracle reader**         | 1,493 lines, sign/name/question/daily readings               |
-| 7   | **Oracle API**            | 15 endpoints working, full CRUD + WebSocket                  |
-| 8   | **AI client (SDK)**       | Anthropic SDK with caching, rate limiting, graceful fallback |
-| 9   | **Frontend Oracle page**  | 15 components, form → results → history flow                 |
-| 10  | **i18n**                  | 171/171 keys EN↔FA, full RTL support                         |
-| 11  | **Docker infrastructure** | 8 services with health checks, multi-stage builds            |
-| 12  | **Monitoring stack**      | Metrics, JSON logging, Telegram alerts                       |
-| 13  | **Integration tests**     | 7 cross-layer test files + 3 audit scripts                   |
+| #   | Component                 | Evidence                                                       |
+| --- | ------------------------- | -------------------------------------------------------------- |
+| 1   | **Database schema**       | 15 tables, 36 indexes, migrations, seed data, extensions       |
+| 2   | **Auth system**           | JWT + API key + legacy, 3-tier scopes, audit logging           |
+| 3   | **Encryption**            | AES-256-GCM, PBKDF2 600K iterations, legacy migration fallback |
+| 4   | **FC60 engine**           | 966 lines, pure Python, JDN/base-60/ganzhi/moon computations   |
+| 5   | **Numerology engine**     | 294 lines, Pythagorean system with master numbers              |
+| 6   | **Oracle reader**         | 1,493 lines, sign/name/question/daily readings                 |
+| 7   | **Oracle API**            | 15 endpoints working, full CRUD + WebSocket                    |
+| 8   | **AI client (SDK)**       | Anthropic SDK with caching, rate limiting, graceful fallback   |
+| 9   | **Frontend Oracle page**  | 15 components, form → results → history flow                   |
+| 10  | **i18n**                  | 171/171 keys EN↔FA, full RTL support                           |
+| 11  | **Docker infrastructure** | 8 services with health checks, multi-stage builds              |
+| 12  | **Monitoring stack**      | Metrics, JSON logging, Telegram alerts                         |
+| 13  | **Integration tests**     | 7 cross-layer test files + 3 audit scripts                     |
 
 ---
 
@@ -610,8 +610,8 @@ LAYER 7: JSON logging + Prometheus + Telegram alerts
 | 6   | **Prometheus not integrated**      | Low      | Config exists at `infrastructure/monitoring/prometheus.yml` but not in docker-compose      |
 | 7   | **Vault API empty**                | Medium   | 4 endpoints return empty responses                                                         |
 | 8   | **Learning API empty**             | Medium   | 5 endpoints return empty responses                                                         |
-| 9   | **Oracle vault (V3)**              | Low      | `engines/vault.py` needs PostgreSQL migration from file-based storage                      |
-| 10  | **Oracle notifier (V3)**           | Low      | `engines/notifier.py` (1,577 lines) should move to API layer per architecture              |
+| 9   | **Oracle vault (legacy)**          | Low      | `engines/vault.py` needs PostgreSQL migration from file-based storage                      |
+| 10  | **Oracle notifier (legacy)**       | Low      | `engines/notifier.py` (1,577 lines) should move to API layer per architecture              |
 
 ---
 
@@ -631,13 +631,13 @@ LAYER 7: JSON logging + Prometheus + Telegram alerts
 
 ### Block 2: Calculation Engines (Sessions 6-12) — FC60, Numerology, Zodiac
 
-| What Exists                          | What Needs Work                                      |
-| ------------------------------------ | ---------------------------------------------------- |
-| FC60 engine (966 lines)              | Validate against V3 baseline, add zodiac integration |
-| Numerology — Pythagorean (294 lines) | Add Chaldean system, add Abjad system                |
-| Oracle reader (1,493 lines)          | May need reading type extensions                     |
-| Scoring engine (290 lines)           | Validate scoring consistency (Rust↔Python)           |
-| 7 solver classes (2,497 lines)       | Review and potentially extend                        |
+| What Exists                          | What Needs Work                                          |
+| ------------------------------------ | -------------------------------------------------------- |
+| FC60 engine (966 lines)              | Validate against legacy baseline, add zodiac integration |
+| Numerology — Pythagorean (294 lines) | Add Chaldean system, add Abjad system                    |
+| Oracle reader (1,493 lines)          | May need reading type extensions                         |
+| Scoring engine (290 lines)           | Validate scoring consistency (Rust↔Python)               |
+| 7 solver classes (2,497 lines)       | Review and potentially extend                            |
 
 **Leverage factor: HIGH** — Core engines exist. Sessions focus on adding missing systems and validating accuracy.
 
@@ -675,11 +675,11 @@ LAYER 7: JSON logging + Prometheus + Telegram alerts
 
 ### Block 6: Features & Integration (Sessions 32-37) — Export, Share, Telegram
 
-| What Exists                       | What Needs Work                               |
-| --------------------------------- | --------------------------------------------- |
-| ExportButton component            | Expand export formats                         |
-| Telegram alerter in devops        | Telegram bot for users (separate from alerts) |
-| Oracle notifier (V3, 1,577 lines) | Refactor into API layer                       |
+| What Exists                           | What Needs Work                               |
+| ------------------------------------- | --------------------------------------------- |
+| ExportButton component                | Expand export formats                         |
+| Telegram alerter in devops            | Telegram bot for users (separate from alerts) |
+| Oracle notifier (legacy, 1,577 lines) | Refactor into API layer                       |
 
 **Leverage factor: LOW** — Mostly new feature development.
 
@@ -709,15 +709,15 @@ LAYER 7: JSON logging + Prometheus + Telegram alerts
 
 ## Potential Issues
 
-| #   | Issue                           | Risk                       | Mitigation                                                  |
-| --- | ------------------------------- | -------------------------- | ----------------------------------------------------------- |
-| 1   | AI engine conflict (SDK vs CLI) | Architecture violation     | Remove `ai_engine.py` CLI path in Block 3                   |
-| 2   | gRPC bypass in API              | Technical debt             | Wire API→gRPC in Block 1 or 2                               |
-| 3   | Scanner 100% stub               | Blocks integration testing | Scanner is out of scope for 45-session plan                 |
-| 4   | V3 modules in Oracle service    | Migration debt             | Migrate vault.py, notifier.py, config.py in relevant blocks |
-| 5   | No HTTPS                        | Security gap               | Add in Block 8 (deployment)                                 |
-| 6   | Hardcoded CLI path              | `/opt/homebrew/bin/claude` | Remove with AI engine cleanup                               |
-| 7   | Admin seed has placeholder hash | Dev-only risk              | Replace with proper bcrypt hash                             |
+| #   | Issue                            | Risk                       | Mitigation                                                  |
+| --- | -------------------------------- | -------------------------- | ----------------------------------------------------------- |
+| 1   | AI engine conflict (SDK vs CLI)  | Architecture violation     | Remove `ai_engine.py` CLI path in Block 3                   |
+| 2   | gRPC bypass in API               | Technical debt             | Wire API→gRPC in Block 1 or 2                               |
+| 3   | Scanner 100% stub                | Blocks integration testing | Scanner is out of scope for 45-session plan                 |
+| 4   | Legacy modules in Oracle service | Migration debt             | Migrate vault.py, notifier.py, config.py in relevant blocks |
+| 5   | No HTTPS                         | Security gap               | Add in Block 8 (deployment)                                 |
+| 6   | Hardcoded CLI path               | `/opt/homebrew/bin/claude` | Remove with AI engine cleanup                               |
+| 7   | Admin seed has placeholder hash  | Dev-only risk              | Replace with proper bcrypt hash                             |
 
 ---
 
@@ -728,7 +728,7 @@ LAYER 7: JSON logging + Prometheus + Telegram alerts
 3. **Defer Scanner** — It's 100% stub and explicitly marked "DO NOT TOUCH" in CLAUDE.md. Don't let it block Oracle work.
 4. **Wire gRPC properly** — Currently API imports engines directly. Either commit to this pattern or wire gRPC. Decide in Session 1.
 5. **Add HTTPS in Block 7-8** — Not urgent for development but required for production.
-6. **Leverage V3 archive** — `.archive/v3/engines/` is the math validation baseline. Use it for every engine test.
+6. **Leverage legacy archive** — `.archive/v3/engines/` is the math validation baseline. Use it for every engine test.
 
 ---
 

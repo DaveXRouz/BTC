@@ -1,5 +1,5 @@
 """
-Tests for NPS V4 Oracle DevOps monitoring components.
+Tests for NPS Oracle DevOps monitoring components.
 
 Covers:
 - OracleJSONFormatter (structured logging)

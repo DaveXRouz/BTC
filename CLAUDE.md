@@ -1,4 +1,4 @@
-# CLAUDE.md — NPS V4 Project Brain
+# CLAUDE.md — NPS Project Brain
 
 > **Read this file FIRST. Every session. No exceptions.**
 > **Last updated:** 2026-02-09
@@ -34,9 +34,9 @@ For all workflow paths → `.claude/master-workflow.md`
 
 ## PROJECT IDENTITY
 
-**Name:** NPS (Numerology Puzzle Solver) V4
+**Name:** NPS (Numerology Puzzle Solver)
 **Purpose:** Bitcoin wallet hunting via Scanner ↔ Oracle collaboration with AI learning
-**Repo:** https://github.com/DaveXRouz/BTC.git
+**Repo:** https://github.com/DaveXRouz/NPS.git
 **Owner:** Dave (DaveXRouz)
 
 **Simple version:** Scanner generates Bitcoin keys fast. Oracle analyzes patterns using numerology + AI. They share a PostgreSQL database and make each other smarter over time.
@@ -126,7 +126,7 @@ For loop details → `logic/SCANNER_ORACLE_LOOP.md`
 ## REPOSITORY LAYOUT
 
 ```
-BTC/
+NPS/
 ├── CLAUDE.md              ← YOU ARE HERE
 ├── README.md              ← Human overview
 ├── SESSION_LOG.md         ← Session tracker (read at step 2)
@@ -152,7 +152,7 @@ BTC/
 ├── proto/                 ← gRPC definitions
 ├── scripts/               ← Deploy, backup, restore
 ├── docs/                  ← API reference, deployment guide
-├── .archive/              ← V1/V3 code (READ-ONLY)
+├── .archive/              ← Legacy code (READ-ONLY)
 ├── .specs/                ← 16-session specs (reference only)
 ├── .session-specs/        ← 45-session specs (active)
 └── docker-compose.yml
@@ -256,9 +256,9 @@ Write code
 2. **AI uses API only** — Anthropic Python SDK, HTTP calls. Never CLI.
 3. **Proto contracts are source of truth** — `scanner.proto` and `oracle.proto` define interfaces.
 4. **Scoring consistency** — Rust and Python must produce identical outputs for same input.
-5. **V3 engines are reference** — `.archive/v3/engines/` is the math baseline. New code must match outputs.
+5. **Legacy engines are reference** — `.archive/v3/engines/` is the math baseline. New code must match outputs.
 6. **Environment over config files** — `.env` only. Not `config.json`.
-7. **AES-256-GCM encryption** — `ENC4:` prefix (V4). `ENC:` fallback for V3 migration only.
+7. **AES-256-GCM encryption** — `ENC4:` prefix (current). `ENC:` fallback for legacy migration only.
 8. **Layer separation** — No shortcuts. Frontend→API→Service→Database.
 9. **Persian UTF-8** — All text supports Persian. RTL when locale is FA.
 10. **Graceful degradation** — Missing API key = fallback text, not crash. Missing Redis = in-memory.
@@ -476,6 +476,6 @@ All config in `.env` (copy from `.env.example`):
 | Spec files (reference)             | `.specs/` folder                  |
 | Session specs (active)             | `.session-specs/` folder          |
 | All workflow paths                 | `.claude/master-workflow.md`      |
-| V3 source (reference)              | `.archive/v3/`                    |
+| Legacy source (reference)          | `.archive/v3/`                    |
 | Error recovery recipes             | `docs/ERROR_RECOVERY.md`          |
 | Layer verification checklists      | `docs/VERIFICATION_CHECKLISTS.md` |

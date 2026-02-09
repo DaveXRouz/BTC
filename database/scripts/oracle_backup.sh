@@ -1,5 +1,5 @@
 #!/bin/bash
-# NPS V4 — Oracle Tables Backup Script
+# NPS — Oracle Tables Backup Script
 # Backs up only Oracle domain tables (not the full database).
 #
 # Usage:
@@ -53,7 +53,7 @@ else
     BACKUP_TYPE="full"
 fi
 
-echo "=== NPS V4 Oracle Backup ==="
+echo "=== NPS Oracle Backup ==="
 echo "Type: $BACKUP_TYPE"
 echo "Database: $POSTGRES_DB"
 echo "Tables: ${ORACLE_TABLES[*]}"

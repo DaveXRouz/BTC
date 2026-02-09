@@ -1,4 +1,4 @@
-"""WebSocket event models — maps V3 event types to typed messages."""
+"""WebSocket event models — maps legacy event types to typed messages."""
 
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ class WSEvent(BaseModel):
     timestamp: float = 0
 
 
-# V3 event types -> V4 WebSocket message types
+# Legacy event types -> current WebSocket message types
 EVENT_TYPES = {
     "FINDING_FOUND": "finding",
     "HEALTH_CHANGED": "health",
@@ -24,7 +24,7 @@ EVENT_TYPES = {
     "HIGH_SCORE": "high_score",
     "CONFIG_CHANGED": "config_changed",
     "SHUTDOWN": "shutdown",
-    # V4-only events
+    # Current-only events
     "STATS_UPDATE": "stats_update",
     "ERROR": "error",
 }

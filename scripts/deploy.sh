@@ -1,11 +1,11 @@
 #!/bin/bash
-# NPS V4 — Deploy script
+# NPS — Deploy script
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 V4_DIR="$(dirname "$SCRIPT_DIR")"
 
-echo "=== NPS V4 Deployment ==="
+echo "=== NPS Deployment ==="
 echo "Directory: $V4_DIR"
 
 # Check prerequisites

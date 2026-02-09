@@ -1,4 +1,4 @@
-"""NPS V4 API — FastAPI application entry point."""
+"""NPS API — FastAPI application entry point."""
 
 import logging
 import os
@@ -79,7 +79,7 @@ async def lifespan(app: FastAPI):
         app.state.oracle_channel = channel
         logger.info("Oracle gRPC channel established")
     except Exception as exc:
-        logger.info("Oracle gRPC unavailable, using direct V3 imports: %s", exc)
+        logger.info("Oracle gRPC unavailable, using direct legacy imports: %s", exc)
         app.state.oracle_channel = None
 
     yield
@@ -94,7 +94,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="NPS V4 API",
+    title="NPS API",
     description="Numerology Puzzle Solver — REST API + WebSocket",
     version="4.0.0",
     lifespan=lifespan,
@@ -125,7 +125,7 @@ app.include_router(location.router, prefix="/api/location", tags=["location"])
 # WebSocket
 app.add_api_websocket_route("/ws", websocket_endpoint)
 
-# Serve V4 frontend build (must be LAST — catches all unmatched routes)
+# Serve frontend build (must be LAST — catches all unmatched routes)
 frontend_dist = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
 if frontend_dist.is_dir():
     app.mount(

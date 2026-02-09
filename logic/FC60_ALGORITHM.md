@@ -1,7 +1,7 @@
 # FC60 Algorithm — FrankenChron-60 Calculation Machine
 
 > Reference: `.archive/v3/engines/fc60.py` (966 lines, zero external dependencies)
-> V4 location: `services/oracle/oracle_service/engines/fc60.py`
+> Current location: `services/oracle/oracle_service/engines/fc60.py`
 
 ---
 
@@ -29,6 +29,7 @@ Example: `token60(23)` → 23//5=4(Dragon "DR") + 23%5=3(Metal "MT") → **"DRMT
 ## Key Formulas
 
 ### Julian Day Number (Fliegel–Van Flandern)
+
 ```
 a = (14 - month) // 12
 y2 = year + 4800 - a
@@ -39,19 +40,23 @@ JDN = day + (153*m2 + 2)//5 + 365*y2 + y2//4 - y2//100 + y2//400 - 32045
 ### Weekday: `(JDN + 1) % 7` → 0=Sunday ... 6=Saturday
 
 ### Moon Phase
+
 ```
 age = (JDN - 2451550.1) % 29.530588853
 illumination = 50.0 * (1.0 - cos(2π * age / 29.530588853))
 ```
+
 8 phases: 🌑🌒🌓🌔🌕🌖🌗🌘
 
 ### Gānzhī (干支) Sexagenary Cycle
+
 ```
 stem_index = (year - 4) % 10    # 10 Heavenly Stems
 branch_index = (year - 4) % 12  # 12 Earthly Branches
 ```
 
 ### Weighted Checksum (Luhn-inspired)
+
 ```
 chk = (1*(year%60) + 2*month + 3*day + 4*hour + 5*minute + 6*second + 7*(JDN%60)) % 60
 ```
@@ -64,12 +69,12 @@ chk = (1*(year%60) + 2*month + 3*day + 4*hour + 5*minute + 6*second + 7*(JDN%60)
 
 ---
 
-## Test Vectors (V4 MUST Match V3)
+## Test Vectors (Current MUST Match Legacy)
 
-| Input | Expected JDN | token60(JDN % 60) |
-|-------|-------------|-------------------|
-| 2024-01-01 | 2460310 | token60(10) = "OXWU" |
-| 2000-01-01 | 2451545 | token60(45) = "ROWU" |
-| 1990-06-15 | 2448058 | token60(58) = "PIMT" |
+| Input      | Expected JDN | token60(JDN % 60)    |
+| ---------- | ------------ | -------------------- |
+| 2024-01-01 | 2460310      | token60(10) = "OXWU" |
+| 2000-01-01 | 2451545      | token60(45) = "ROWU" |
+| 1990-06-15 | 2448058      | token60(58) = "PIMT" |
 
 Use `.archive/v3/engines/fc60.py:self_test()` as verification baseline.

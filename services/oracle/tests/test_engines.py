@@ -1,4 +1,4 @@
-"""Engine parity tests — verify V3 engines work correctly under V4 import paths."""
+"""Engine parity tests — verify legacy engines work correctly under current import paths."""
 
 import unittest
 
@@ -29,7 +29,7 @@ from engines.oracle import read_sign, read_name, question_sign, daily_insight
 
 
 class TestFC60Engine(unittest.TestCase):
-    """FC60 engine parity with V3 test vectors."""
+    """FC60 engine parity with legacy test vectors."""
 
     def test_token60_roundtrip(self):
         """All 60 tokens encode/decode correctly."""
@@ -96,7 +96,7 @@ class TestFC60Engine(unittest.TestCase):
 
 
 class TestNumerologyEngine(unittest.TestCase):
-    """Numerology engine parity with V3."""
+    """Numerology engine parity with legacy."""
 
     def test_reduce_basic(self):
         self.assertEqual(numerology_reduce(29), 11)  # master number preserved
@@ -145,7 +145,7 @@ class TestNumerologyEngine(unittest.TestCase):
 
 
 class TestOracleEngine(unittest.TestCase):
-    """Oracle engine parity with V3."""
+    """Oracle engine parity with legacy."""
 
     def test_read_sign_structure(self):
         result = read_sign("11:11")

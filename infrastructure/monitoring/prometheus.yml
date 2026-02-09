@@ -1,4 +1,4 @@
-# NPS V4 — Prometheus scrape configuration (stub)
+# NPS — Prometheus scrape configuration (stub)
 # TODO: Add to docker-compose.yml when monitoring is implemented
 
 global:

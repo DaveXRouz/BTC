@@ -1,7 +1,7 @@
 [project]
 name = "nps-oracle"
 version = "4.0.0"
-description = "NPS V4 Oracle Service — FC60 numerology, readings, timing, AI analysis"
+description = "NPS Oracle Service — FC60 numerology, readings, timing, AI analysis"
 requires-python = ">=3.11"
 dependencies = [
     "grpcio>=1.60.0",

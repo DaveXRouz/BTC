@@ -1,8 +1,8 @@
-"""V4 Security module — AES-256-GCM encryption + V3 legacy decrypt.
+"""Security module — AES-256-GCM encryption + legacy decrypt.
 
-Replaces V3's HMAC-SHA256 stream cipher with AES-256-GCM.
-Keeps PBKDF2-HMAC-SHA256 for key derivation (same as V3).
-Provides V3 decrypt() fallback for data migration.
+Replaces legacy HMAC-SHA256 stream cipher with AES-256-GCM.
+Keeps PBKDF2-HMAC-SHA256 for key derivation (same as legacy).
+Provides legacy decrypt() fallback for data migration.
 """
 
 import base64
@@ -13,7 +13,7 @@ from typing import Any
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-# Shared with V3
+# Shared with legacy
 SENSITIVE_KEYS = ["private_key", "seed_phrase", "wif", "extended_private_key"]
 
 # Oracle fields that contain personal data
@@ -35,7 +35,7 @@ _NONCE_LENGTH = 12  # 96-bit nonce for AES-GCM
 def derive_key(password: str, salt: bytes) -> bytes:
     """Derive a 256-bit key from password + salt using PBKDF2-HMAC-SHA256.
 
-    Compatible with V3's _derive_key().
+    Compatible with legacy _derive_key().
     """
     return hashlib.pbkdf2_hmac(
         "sha256",
@@ -70,9 +70,9 @@ def decrypt_aes256gcm(encoded: str, key: bytes) -> str:
 
 
 def decrypt_v3_legacy(encoded: str, master_key: bytes) -> str:
-    """Decrypt V3 'ENC:' prefixed data using HMAC-SHA256 stream cipher.
+    """Decrypt legacy 'ENC:' prefixed data using HMAC-SHA256 stream cipher.
 
-    Exact copy of V3's decrypt() for migration compatibility.
+    Exact copy of legacy decrypt() for migration compatibility.
     """
     if encoded.startswith("PLAIN:"):
         return encoded[6:]
@@ -124,7 +124,7 @@ def encrypt_dict(data: dict, key: bytes, sensitive_keys: list = None) -> dict:
 
 
 def decrypt_dict(data: dict, key: bytes, sensitive_keys: list = None) -> dict:
-    """Decrypt sensitive fields. Handles both V3 (ENC:) and V4 (ENC4:) prefixes."""
+    """Decrypt sensitive fields. Handles both legacy (ENC:) and current (ENC4:) prefixes."""
     if sensitive_keys is None:
         sensitive_keys = SENSITIVE_KEYS
 

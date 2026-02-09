@@ -47,7 +47,7 @@ async def readiness_check(request: Request):
     # Scanner service is not deployed (Rust stub)
     checks["scanner_service"] = "not_deployed"
 
-    # Oracle uses direct V3 engine imports (no gRPC needed)
+    # Oracle uses direct legacy engine imports (no gRPC needed)
     checks["oracle_service"] = "direct_mode"
 
     # Overall status: healthy if DB is up (core services only)
@@ -60,7 +60,7 @@ async def readiness_check(request: Request):
 
 @router.get("/performance")
 async def performance_stats():
-    """Performance metrics (wraps V3 PerfMonitor pattern)."""
+    """Performance metrics (wraps legacy PerfMonitor pattern)."""
     # TODO: Implement performance tracking
     return {
         "uptime_seconds": 0,

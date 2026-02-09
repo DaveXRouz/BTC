@@ -1,6 +1,6 @@
-# NPS V4 — Numerology Puzzle Solver (Web Edition)
+# NPS — Numerology Puzzle Solver (Web Edition)
 
-A distributed microservices system for Bitcoin wallet discovery through numerological pattern analysis. V4 transforms the V3 desktop app into a web-accessible platform with AI-powered Oracle guidance.
+A distributed microservices system for Bitcoin wallet discovery through numerological pattern analysis. NPS transforms the legacy desktop app into a web-accessible platform with AI-powered Oracle guidance.
 
 ---
 
@@ -33,16 +33,16 @@ Checks balances             Suggests lucky ranges
 
 ## Current Status
 
-| Component | Status |
-|-----------|--------|
-| Oracle API (13 endpoints) | Scaffolded — rewriting logic |
-| Oracle Frontend (React) | Scaffolded — rewriting components |
-| PostgreSQL + Schema | Production-ready |
-| Auth (JWT + API key) | Production-ready |
-| Encryption (AES-256-GCM) | Production-ready |
-| Scanner (Rust) | Stub — future project |
-| Bilingual (EN + Persian RTL) | In progress |
-| AI Interpretation | In progress |
+| Component                    | Status                            |
+| ---------------------------- | --------------------------------- |
+| Oracle API (13 endpoints)    | Scaffolded — rewriting logic      |
+| Oracle Frontend (React)      | Scaffolded — rewriting components |
+| PostgreSQL + Schema          | Production-ready                  |
+| Auth (JWT + API key)         | Production-ready                  |
+| Encryption (AES-256-GCM)     | Production-ready                  |
+| Scanner (Rust)               | Stub — future project             |
+| Bilingual (EN + Persian RTL) | In progress                       |
+| AI Interpretation            | In progress                       |
 
 **Active work:** 45-session Oracle rebuild.
 
@@ -51,14 +51,16 @@ Checks balances             Suggests lucky ranges
 ## Quick Start
 
 ### Prerequisites
+
 - Docker + Docker Compose
 - Python 3.11+
 - Node.js 18+
 
 ### Setup
+
 ```bash
-git clone https://github.com/DaveXRouz/BTC.git
-cd BTC
+git clone https://github.com/DaveXRouz/NPS.git
+cd NPS
 cp .env.example .env        # Edit with your settings
 docker compose up -d postgres redis
 docker compose exec postgres psql -U nps -d nps -f /docker-entrypoint-initdb.d/init.sql
@@ -86,14 +88,14 @@ make backup          # Backup database
 
 ## Documentation
 
-| Doc | Location |
-|-----|----------|
-| API Swagger | http://localhost:8000/docs |
-| API Reference | `docs/api/API_REFERENCE.md` |
-| Architecture | `logic/ARCHITECTURE_DECISIONS.md` |
-| FC60 Algorithm | `logic/FC60_ALGORITHM.md` |
-| Deployment | `docs/DEPLOYMENT.md` |
-| Troubleshooting | `docs/TROUBLESHOOTING.md` |
+| Doc             | Location                          |
+| --------------- | --------------------------------- |
+| API Swagger     | http://localhost:8000/docs        |
+| API Reference   | `docs/api/API_REFERENCE.md`       |
+| Architecture    | `logic/ARCHITECTURE_DECISIONS.md` |
+| FC60 Algorithm  | `logic/FC60_ALGORITHM.md`         |
+| Deployment      | `docs/DEPLOYMENT.md`              |
+| Troubleshooting | `docs/TROUBLESHOOTING.md`         |
 
 ---
 
@@ -101,12 +103,12 @@ make backup          # Backup database
 
 All via environment variables. See `.env.example` for full list.
 
-| Variable | Purpose | Required |
-|----------|---------|----------|
-| `POSTGRES_PASSWORD` | Database password | Yes |
-| `API_SECRET_KEY` | JWT signing key | Yes |
+| Variable             | Purpose               | Required       |
+| -------------------- | --------------------- | -------------- |
+| `POSTGRES_PASSWORD`  | Database password     | Yes            |
+| `API_SECRET_KEY`     | JWT signing key       | Yes            |
 | `NPS_ENCRYPTION_KEY` | AES-256-GCM key (hex) | For encryption |
-| `ANTHROPIC_API_KEY` | AI interpretations | Optional |
+| `ANTHROPIC_API_KEY`  | AI interpretations    | Optional       |
 
 ---
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# NPS V4 — Oracle Tables Restore Script
+# NPS — Oracle Tables Restore Script
 # Restores only Oracle domain tables from a backup file.
 # Does NOT drop the entire database — only truncates Oracle tables.
 #
@@ -43,7 +43,7 @@ if [ ! -f "$BACKUP_FILE" ]; then
     exit 1
 fi
 
-echo "=== NPS V4 Oracle Restore ==="
+echo "=== NPS Oracle Restore ==="
 echo "Database: $POSTGRES_DB"
 echo "Backup: $BACKUP_FILE"
 echo "Tables: ${ORACLE_TABLES[*]}"

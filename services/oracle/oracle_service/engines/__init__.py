@@ -1,13 +1,13 @@
-"""V4 Oracle Service — Engine Layer.
+"""Oracle Service — Engine Layer.
 
-All V3 engines copied as-is for Phase 2 Oracle service.
+All legacy engines copied as-is for Phase 2 Oracle service.
 Pure computation modules (fc60, numerology, math_analysis, scoring) are
 used directly. Operational modules (logger, health, config, etc.) will
-be adapted to V4 patterns (environment variables, gRPC, PostgreSQL)
+be adapted to current patterns (environment variables, gRPC, PostgreSQL)
 during later phases.
 """
 
-# Core computation engines (V3 portable, no adaptation needed)
+# Core computation engines (legacy portable, no adaptation needed)
 from engines.fc60 import (
     token60,
     encode_fc60,

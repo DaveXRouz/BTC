@@ -1,4 +1,4 @@
-"""Oracle reading service — computation via V3 engines + DB persistence."""
+"""Oracle reading service — computation via legacy engines + DB persistence."""
 
 import json
 import logging
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 #
 # Two paths needed:
 # 1. Parent of oracle_service/ so `import oracle_service` works (for logic/__init__.py)
-# 2. Inside oracle_service/ so `from engines.xxx` works (V3-style imports)
+# 2. Inside oracle_service/ so `from engines.xxx` works (legacy-style imports)
 
 _ORACLE_PARENT_DIR = str(Path(__file__).resolve().parents[3] / "services" / "oracle")
 _ORACLE_SERVICE_DIR = str(

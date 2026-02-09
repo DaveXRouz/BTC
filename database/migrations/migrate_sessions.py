@@ -1,10 +1,10 @@
 """
-Migrate V3 session files to V4 PostgreSQL.
+Migrate legacy session files to current PostgreSQL.
 
-V3 format: nps/data/sessions/{session_id}.json
+Legacy format: nps/data/sessions/{session_id}.json
   Each file: {"session_id": "...", "terminal_id": "...", "started": epoch, ...}
 
-V4 target: sessions table
+Current target: sessions table
 """
 
 import json
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def migrate_sessions(v3_path: Path, dry_run: bool = True, **kwargs):
-    """Migrate V3 session JSON files to V4 PostgreSQL sessions table."""
+    """Migrate legacy session JSON files to current PostgreSQL sessions table."""
     sessions_dir = v3_path / "data" / "sessions"
 
     if not sessions_dir.exists():
@@ -51,6 +51,6 @@ def migrate_sessions(v3_path: Path, dry_run: bool = True, **kwargs):
     #    a. Parse JSON
     #    b. Convert epoch timestamps to datetime
     #    c. Generate UUID
-    #    d. Map V3 fields to V4 schema
+    #    d. Map legacy fields to current schema
     #    e. INSERT into sessions table
     logger.info("  [STUB] Live migration not yet implemented")

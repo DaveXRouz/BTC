@@ -1,8 +1,8 @@
-# V4 Scanner Service (Rust)
+# NPS Scanner Service (Rust)
 
 ## Overview
 
-High-performance key scanner rewritten in Rust for maximum throughput. Replaces the V3 Python scanner (`unified_solver.py`, `btc_solver.py`, `scanner_solver.py`) with native performance.
+High-performance key scanner rewritten in Rust for maximum throughput. Replaces the legacy Python scanner (`unified_solver.py`, `btc_solver.py`, `scanner_solver.py`) with native performance.
 
 ## Architecture
 
@@ -16,11 +16,11 @@ src/
   grpc/             — gRPC server implementing scanner.proto
 ```
 
-## V3 Reference Files
+## Legacy Reference Files
 
-The `docs/` directory contains V3 Python implementations as reference for the Rust rewrite:
+The `docs/` directory contains legacy Python implementations as reference for the Rust rewrite:
 
-| Reference File            | V3 Source                | Purpose                                               |
+| Reference File            | Legacy Source            | Purpose                                               |
 | ------------------------- | ------------------------ | ----------------------------------------------------- |
 | `v3_crypto_reference.py`  | `nps/engines/crypto.py`  | secp256k1, address generation, key derivation         |
 | `v3_keccak_reference.py`  | `nps/engines/keccak.py`  | Keccak-256 for Ethereum addresses                     |

@@ -1,4 +1,4 @@
--- NPS V4 — Seed admin user (development only)
+-- NPS — Seed admin user (development only)
 -- Password: admin (bcrypt hash, DO NOT use in production)
 INSERT INTO users (username, password_hash, role)
 VALUES ('admin', '$2b$12$placeholder_hash_replace_me', 'admin')

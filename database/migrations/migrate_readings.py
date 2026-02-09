@@ -1,10 +1,10 @@
 """
-Migrate V3 oracle readings to V4 PostgreSQL.
+Migrate legacy oracle readings to current PostgreSQL.
 
-V3 format: nps/data/oracle_readings.json (if exists)
+Legacy format: nps/data/oracle_readings.json (if exists)
   JSON array of reading objects
 
-V4 target: readings table
+Current target: readings table
 """
 
 import json
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def migrate_readings(v3_path: Path, dry_run: bool = True, **kwargs):
-    """Migrate V3 oracle readings to V4 PostgreSQL."""
+    """Migrate legacy oracle readings to current PostgreSQL."""
     readings_file = v3_path / "data" / "oracle_readings.json"
 
     if not readings_file.exists():

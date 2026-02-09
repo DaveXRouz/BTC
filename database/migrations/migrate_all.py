@@ -1,8 +1,8 @@
 """
-NPS V3 -> V4 Data Migration Orchestrator
+NPS Legacy -> Current Data Migration Orchestrator
 
-Migrates all V3 file-based data to V4 PostgreSQL.
-Requires V3 master password for encrypted vault records.
+Migrates all legacy file-based data to current PostgreSQL.
+Requires legacy master password for encrypted vault records.
 
 Usage:
     python migrate_all.py --v3-path /path/to/nps --dry-run
@@ -23,12 +23,14 @@ logger = logging.getLogger(__name__)
 
 def run_migration(v3_path: Path, dry_run: bool = True, v3_password: str = None):
     """Run all migration steps in order."""
-    logger.info(f"NPS V3 -> V4 Migration {'(DRY RUN)' if dry_run else '(LIVE)'}")
-    logger.info(f"V3 path: {v3_path}")
+    logger.info(
+        f"NPS legacy -> current Migration {'(DRY RUN)' if dry_run else '(LIVE)'}"
+    )
+    logger.info(f"Legacy path: {v3_path}")
 
-    # Validate V3 path
+    # Validate legacy path
     if not (v3_path / "data").exists():
-        logger.error(f"V3 data directory not found at {v3_path / 'data'}")
+        logger.error(f"Legacy data directory not found at {v3_path / 'data'}")
         sys.exit(1)
 
     steps = [
@@ -52,12 +54,12 @@ def run_migration(v3_path: Path, dry_run: bool = True, v3_password: str = None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="NPS V3 -> V4 Data Migration")
+    parser = argparse.ArgumentParser(description="NPS Legacy -> Current Data Migration")
     parser.add_argument(
         "--v3-path",
         type=Path,
         required=True,
-        help="Path to V3 nps/ directory",
+        help="Path to legacy nps/ directory",
     )
     parser.add_argument(
         "--dry-run",
@@ -72,7 +74,7 @@ def main():
     )
     parser.add_argument(
         "--v3-password",
-        help="V3 master password for decrypting ENC: vault records",
+        help="Legacy master password for decrypting ENC: vault records",
     )
 
     args = parser.parse_args()
@@ -80,7 +82,7 @@ def main():
 
     if not dry_run and not args.v3_password:
         logger.warning(
-            "No V3 password provided. Encrypted vault records will be skipped."
+            "No legacy password provided. Encrypted vault records will be skipped."
         )
 
     run_migration(args.v3_path, dry_run=dry_run, v3_password=args.v3_password)

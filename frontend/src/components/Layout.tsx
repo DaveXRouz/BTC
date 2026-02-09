@@ -20,7 +20,7 @@ export function Layout() {
       <nav className="w-64 border-r rtl:border-r-0 rtl:border-l border-nps-border bg-nps-bg-card flex flex-col">
         <div className="p-4 border-b border-nps-border flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-nps-gold">NPS V4</h1>
+            <h1 className="text-xl font-bold text-nps-gold">NPS</h1>
             <p className="text-xs text-nps-text-dim">
               Numerology Puzzle Solver
             </p>

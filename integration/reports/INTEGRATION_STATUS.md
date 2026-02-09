@@ -1,4 +1,4 @@
-# NPS V4 Integration Status Report
+# NPS Integration Status Report
 
 **Session:** INTEGRATION-S2 (Deep Testing & Final Polish)
 **Date:** 2026-02-08
@@ -64,7 +64,7 @@
 | Connection                            | Status  | Notes                                     |
 | ------------------------------------- | ------- | ----------------------------------------- |
 | PostgreSQL <-> API (SQLAlchemy)       | Working | pool_pre_ping=True, verified via SELECT 1 |
-| API <-> V3 Oracle engines             | Working | Direct import via sys.path shim           |
+| API <-> Legacy Oracle engines         | Working | Direct import via sys.path shim           |
 | API auth (JWT + API key + legacy)     | Working | Legacy Bearer grants admin                |
 | Encryption at rest (AES-256-GCM)      | Working | Transparent encrypt/decrypt               |
 | Redis connection                      | Working | Graceful fallback if unavailable          |
@@ -88,7 +88,7 @@
 | API <-> Oracle via gRPC      | Skipped (direct imports)   | P3           |
 | WebSocket events             | Not tested                 | P2           |
 | Redis caching                | Connected but unused       | P3           |
-| V3 data migration            | Script exists but untested | P3           |
+| Legacy data migration        | Script exists but untested | P3           |
 
 ## Performance Baseline
 
@@ -114,7 +114,7 @@ FastAPI API (:8000)
   |
   |-- SQLAlchemy --> PostgreSQL (:5432)
   |-- redis.asyncio --> Redis (:6379) [optional]
-  |-- sys.path shim --> V3 Oracle engines (direct import)
+  |-- sys.path shim --> Legacy Oracle engines (direct import)
   |     |-- engines/fc60.py
   |     |-- engines/numerology.py
   |     |-- engines/oracle.py

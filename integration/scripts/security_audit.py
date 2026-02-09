@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Security audit script for NPS V4 Oracle API.
+"""Security audit script for NPS Oracle API.
 
 Validates auth enforcement, input handling, credential hygiene, and CORS.
 
@@ -218,7 +218,7 @@ def check_no_subprocess():
 
 def main():
     print("=" * 60)
-    print("NPS V4 Security Audit")
+    print("NPS Security Audit")
     print("=" * 60)
     if not check_api():
         print("ERROR: API not reachable")

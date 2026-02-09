@@ -1,5 +1,5 @@
 /**
- * NPS V4 API client — typed fetch wrappers for all endpoints.
+ * NPS API client — typed fetch wrappers for all endpoints.
  */
 
 const API_BASE = "/api";

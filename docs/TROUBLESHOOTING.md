@@ -1,4 +1,4 @@
-# NPS V4 Troubleshooting Guide
+# NPS Troubleshooting Guide
 
 ## Database Issues
 
@@ -51,7 +51,7 @@ python3 -c "import secrets; print(secrets.token_hex(32))"
 
 ### "Failed to decrypt field"
 
-The encryption key has changed since the data was written. You need the original key to decrypt existing data. V3 data uses `ENC:` prefix (PBKDF2), V4 uses `ENC4:` prefix (AES-256-GCM).
+The encryption key has changed since the data was written. You need the original key to decrypt existing data. Legacy data uses `ENC:` prefix (PBKDF2), current uses `ENC4:` prefix (AES-256-GCM).
 
 ## CORS Issues
 
@@ -71,7 +71,7 @@ Ensure the API server is handling CORS middleware correctly. Check FastAPI CORS 
 
 ### "ModuleNotFoundError: No module named 'engines'"
 
-The V3 engine import path isn't configured. The API uses a sys.path shim. Ensure:
+The legacy engine import path isn't configured. The API uses a sys.path shim. Ensure:
 
 1. `services/oracle/oracle_service/engines/` directory exists
 2. `__init__.py` files exist in all intermediate directories
@@ -143,7 +143,7 @@ Redis caching is connected but currently unused (reserved for future phases).
 
 ### Slow readings (> 5 seconds)
 
-V3 engines are pure Python computation. For the Oracle reading endpoint:
+Legacy engines are pure Python computation. For the Oracle reading endpoint:
 
 - FC60 encoding: ~10ms
 - Numerology: ~5ms

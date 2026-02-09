@@ -1,4 +1,4 @@
--- NPS V4 — PostgreSQL Schema
+-- NPS — PostgreSQL Schema
 -- Run: psql -U nps -d nps -f init.sql
 
 -- Extensions
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS findings (
     -- Timestamps
     found_at        TIMESTAMPTZ NOT NULL,
     created_at      TIMESTAMPTZ DEFAULT NOW(),
-    -- V3 migration tracking
+    -- legacy migration tracking
     v3_session      VARCHAR(200),
     migrated_from   VARCHAR(20) DEFAULT 'v4'
 );
@@ -108,7 +108,7 @@ CREATE INDEX idx_findings_session ON findings(session_id);
 CREATE INDEX idx_findings_found_at ON findings(found_at);
 CREATE INDEX idx_findings_score ON findings(score);
 
--- ─── Oracle Readings (main V4 schema) ───
+-- ─── Oracle Readings (main schema) ───
 
 CREATE TABLE IF NOT EXISTS readings (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

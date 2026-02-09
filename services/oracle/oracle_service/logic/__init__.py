@@ -1,7 +1,7 @@
-"""V4 Oracle Service — Logic Layer.
+"""Oracle Service — Logic Layer.
 
 Intelligence modules for smart scanning decisions.
-All V3 logic files copied as-is. These provide strategy, timing,
+All legacy logic files copied as-is. These provide strategy, timing,
 pattern analysis, scoring, and range optimization.
 """
 

@@ -12,43 +12,52 @@
 ### Steps:
 
 1. **Define the Pydantic models** (request + response):
+
    ```
    api/app/models/[feature].py
    ```
+
    - Request model with validation
    - Response model with example values
    - Add to `api/app/models/__init__.py` exports
 
 2. **Create the router**:
+
    ```
    api/app/routers/[feature].py
    ```
+
    - Import models
    - Add auth dependency: `Depends(get_current_user)`
    - Add proper HTTP status codes
    - Add OpenAPI tags and descriptions
 
 3. **Register the router** in `api/app/main.py`:
+
    ```python
    from app.routers import feature
    app.include_router(feature.router, prefix="/api", tags=["feature"])
    ```
 
 4. **Add service logic** (if complex):
+
    ```
    api/app/services/[feature]_service.py
    ```
 
 5. **Write tests**:
+
    ```
    api/tests/test_[feature].py
    ```
+
    - Test success case (200)
    - Test validation failure (422)
    - Test auth failure (401)
    - Test not found (404)
 
 6. **Run verification**:
+
    ```bash
    cd api && python3 -m pytest tests/test_[feature].py -v
    curl http://localhost:8000/docs  # Check Swagger
@@ -68,29 +77,35 @@
 ### Steps:
 
 1. **Create the component**:
+
    ```
    frontend/src/components/[folder]/[ComponentName].tsx
    ```
+
    - Follow template from `.claude/templates.md`
    - Include `useTranslation()` for any text
    - Support RTL with `dir` attribute
    - Use Tailwind classes
 
 2. **Add translations**:
+
    ```
    frontend/src/locales/en.json  → add English strings
    frontend/src/locales/fa.json  → add Persian strings
    ```
 
 3. **Add TypeScript types** (if new data shapes):
+
    ```
    frontend/src/types/index.ts
    ```
 
 4. **Write tests**:
+
    ```
    frontend/src/components/[folder]/__tests__/[ComponentName].test.tsx
    ```
+
    - Render test
    - Interaction test
    - RTL test (if applicable)
@@ -109,37 +124,45 @@
 
 ### Steps:
 
-1. **Check V3 reference** (if engine existed in V3):
+1. **Check legacy reference** (if engine existed in legacy version):
+
    ```
    .archive/v3/engines/[engine_name].py
    ```
+
    - Note all functions and their outputs
-   - Create test vectors from V3 output
+   - Create test vectors from legacy output
 
 2. **Create the engine**:
+
    ```
    services/oracle/oracle_service/engines/[engine_name].py
    ```
+
    - Follow Python template from `.claude/templates.md`
    - Zero external dependencies (pure Python preferred)
    - Type hints on everything
    - Docstrings with math formulas
 
 3. **Write comprehensive tests**:
+
    ```
    services/oracle/tests/test_[engine_name].py
    ```
+
    - Test all public functions
-   - Test with V3 test vectors (output must match exactly)
+   - Test with legacy test vectors (output must match exactly)
    - Test edge cases (zero, negative, very large numbers)
    - Test Persian input (if applicable)
 
 4. **Add to engine registry** (if the oracle service has one):
+
    ```
    services/oracle/oracle_service/engines/__init__.py
    ```
 
 5. **Run verification**:
+
    ```bash
    cd services/oracle && python3 -m pytest tests/test_[engine_name].py -v
    ```
@@ -166,47 +189,58 @@
    - Soft delete (deleted_at TIMESTAMPTZ?)
 
 2. **Create migration file**:
+
    ```
    database/migrations/[NNN]_[description].sql
    ```
+
    - Wrap in BEGIN/COMMIT
    - Add indexes
    - Add verification query comment
 
 3. **Create rollback file**:
+
    ```
    database/migrations/[NNN]_[description]_rollback.sql
    ```
 
 4. **Add schema file** (for reference):
+
    ```
    database/schemas/[table_name].sql
    ```
 
 5. **Create ORM model**:
+
    ```
    api/app/orm/[table_name].py
    ```
+
    - SQLAlchemy model matching the schema exactly
    - Add to `api/app/orm/__init__.py`
 
 6. **Create Pydantic model** (for API):
+
    ```
    api/app/models/[feature].py
    ```
+
    - Request model (what API accepts)
    - Response model (what API returns)
    - Don't expose internal fields (encrypted data, hashes)
 
 7. **Run migration**:
+
    ```bash
    docker-compose exec postgres psql -U nps -d nps -f /path/to/migration.sql
    ```
 
 8. **Write tests**:
+
    ```
    integration/tests/test_database.py  # Add tests for new table
    ```
+
    - Test INSERT
    - Test SELECT with index
    - Test constraints (violate them, expect errors)
@@ -221,9 +255,11 @@
 ### Steps:
 
 1. **Add English strings**:
+
    ```
    frontend/src/locales/en.json
    ```
+
    ```json
    {
      "feature": {
@@ -236,9 +272,11 @@
    ```
 
 2. **Add Persian strings**:
+
    ```
    frontend/src/locales/fa.json
    ```
+
    ```json
    {
      "feature": {
@@ -251,28 +289,30 @@
    ```
 
 3. **Use in component**:
+
    ```tsx
    const { t, i18n } = useTranslation();
-   const isRTL = i18n.language === 'fa';
+   const isRTL = i18n.language === "fa";
 
    return (
-     <div dir={isRTL ? 'rtl' : 'ltr'}>
-       <h1>{t('feature.title')}</h1>
-       <p>{t('feature.description')}</p>
+     <div dir={isRTL ? "rtl" : "ltr"}>
+       <h1>{t("feature.title")}</h1>
+       <p>{t("feature.description")}</p>
      </div>
    );
    ```
 
 4. **Handle Persian numbers** (if displaying numbers):
+
    ```tsx
-   import { toPersianDigits } from '../utils/persianFormatter';
+   import { toPersianDigits } from "../utils/persianFormatter";
 
    const displayNum = isRTL ? toPersianDigits(count) : count;
    ```
 
 5. **Test both languages**:
    ```tsx
-   it('displays Persian text in FA mode', () => {
+   it("displays Persian text in FA mode", () => {
      // Mock i18n to return 'fa'
      // Verify RTL dir attribute
      // Verify Persian strings render
@@ -288,11 +328,13 @@
 ### Steps:
 
 1. **Reproduce** — confirm the bug exists:
+
    ```bash
    # Run the failing test or replicate the issue
    ```
 
 2. **Write a failing test** that captures the bug:
+
    ```python
    def test_bug_description():
        """Regression test for [bug description]."""
@@ -305,11 +347,13 @@
 4. **Fix the code** — minimal change that fixes the issue
 
 5. **Verify the test passes**:
+
    ```bash
    pytest test_file.py::test_bug_description -v
    ```
 
 6. **Run ALL tests** — make sure fix didn't break anything:
+
    ```bash
    make test
    ```
@@ -331,11 +375,13 @@
    - What does the AI interpretation prompt look like?
 
 2. **Create/update Oracle engine code**:
+
    ```
    services/oracle/oracle_service/engines/[reading_type].py
    ```
 
 3. **Create/update solver**:
+
    ```
    services/oracle/oracle_service/solvers/[reading_type]_solver.py
    ```
@@ -356,7 +402,7 @@
    - Frontend tests (form + display)
    - Integration test (end-to-end flow)
 
-7. **Verify against V3** (if reading type existed):
+7. **Verify against legacy** (if reading type existed):
    - Same inputs → same calculation outputs
    - AI interpretation can differ (improved), but math must match
 
@@ -369,11 +415,13 @@
 ### Steps:
 
 1. **Run production readiness check**:
+
    ```bash
    ./scripts/production_readiness_check.sh
    ```
 
 2. **Run full test suite**:
+
    ```bash
    make test
    python3 -m pytest integration/tests/ -v -s
@@ -381,6 +429,7 @@
    ```
 
 3. **Run security audit**:
+
    ```bash
    python3 integration/scripts/security_audit.py
    pip-audit
@@ -388,11 +437,13 @@
    ```
 
 4. **Run performance audit**:
+
    ```bash
    python3 integration/scripts/perf_audit.py
    ```
 
 5. **Build production images**:
+
    ```bash
    docker-compose build
    docker-compose up -d
@@ -400,12 +451,14 @@
    ```
 
 6. **Verify live**:
+
    ```bash
    curl http://localhost:8000/api/health
    curl http://localhost:5173  # Frontend loads
    ```
 
 7. **Backup current database** (before deploying schema changes):
+
    ```bash
    make backup
    ```

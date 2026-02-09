@@ -1,4 +1,4 @@
-# NPS V4 API Reference
+# NPS API Reference
 
 Base URL: `http://localhost:8000/api`
 

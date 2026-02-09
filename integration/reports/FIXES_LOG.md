@@ -59,7 +59,7 @@ CONSTRAINT oracle_readings_sign_type_check CHECK (sign_type IN ('time', 'name', 
 CONSTRAINT oracle_readings_sign_type_check CHECK (sign_type IN ('time', 'name', 'question', 'reading', 'multi_user', 'daily'))
 ```
 
-**Rationale:** The API stores `sign_type="reading"` for general readings (`oracle.py:119`), `sign_type="multi_user"` for multi-user readings (`oracle_reading.py:339`), and `sign_type="daily"` would be needed for daily insight persistence. The original CHECK only allowed the three V3-era types.
+**Rationale:** The API stores `sign_type="reading"` for general readings (`oracle.py:119`), `sign_type="multi_user"` for multi-user readings (`oracle_reading.py:339`), and `sign_type="daily"` would be needed for daily insight persistence. The original CHECK only allowed the three legacy-era types.
 
 ---
 

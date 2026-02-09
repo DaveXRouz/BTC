@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to NPS V4 will be documented in this file.
+All notable changes to NPS will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
@@ -8,12 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- V3 file migration: all engines, solvers, logic modules copied to Oracle service
-- V3 reference files for Rust scanner (crypto, keccak, bip39, balance)
+- Legacy file migration: all engines, solvers, logic modules copied to Oracle service
+- Legacy reference files for Rust scanner (crypto, keccak, bip39, balance)
 - Legacy Tkinter GUI preserved in `frontend/desktop-gui/legacy/`
 - Per-layer README documentation for all 8 service directories
 - Architecture overview (`docs/architecture/OVERVIEW.md`)
-- Migration guide (`docs/migration/V3_TO_V4_GUIDE.md`)
+- Migration guide (`docs/migration/MIGRATION_GUIDE.md`)
 - REST API reference (`docs/api/ENDPOINTS.md`)
 - MIT License
 
@@ -33,4 +33,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Prometheus monitoring setup
 - Deployment scripts (deploy, backup, restore, rollback)
 - JWT + API key authentication middleware
-- AES-256-GCM encryption with V3 legacy decrypt support
+- AES-256-GCM encryption with legacy decrypt support

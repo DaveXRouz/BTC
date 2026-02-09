@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* NPS V4 global styles */
+/* NPS global styles */
 body {
   font-family: "Inter", "Segoe UI", "Helvetica", sans-serif;
   -webkit-font-smoothing: antialiased;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Performance audit script for NPS V4 Oracle endpoints.
+"""Performance audit script for NPS Oracle endpoints.
 
 Benchmarks all Oracle endpoints, computes statistics (p50, p95, mean, min, max),
 compares against performance targets, and outputs results.
@@ -153,7 +153,7 @@ def run_audit():
         sys.exit(1)
 
     print("=" * 70)
-    print("NPS V4 Performance Audit")
+    print("NPS Performance Audit")
     print(f"API: {API_BASE_URL}")
     print(f"Iterations per endpoint: {ITERATIONS}")
     print("=" * 70)

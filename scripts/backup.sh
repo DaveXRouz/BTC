@@ -1,5 +1,5 @@
 #!/bin/bash
-# NPS V4 — PostgreSQL backup script
+# NPS — PostgreSQL backup script
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,7 +16,7 @@ fi
 POSTGRES_DB="${POSTGRES_DB:-nps}"
 POSTGRES_USER="${POSTGRES_USER:-nps}"
 
-echo "=== NPS V4 Database Backup ==="
+echo "=== NPS Database Backup ==="
 echo "Database: $POSTGRES_DB"
 echo "Output: $BACKUP_FILE"
 

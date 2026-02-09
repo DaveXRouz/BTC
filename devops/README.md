@@ -1,4 +1,4 @@
-# NPS V4 — DevOps & Monitoring
+# NPS — DevOps & Monitoring
 
 Production-grade monitoring for the Oracle gRPC service.
 

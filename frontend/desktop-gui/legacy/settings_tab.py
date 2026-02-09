@@ -1,5 +1,5 @@
 """
-Settings & Connections Tab for NPS V3.
+Settings & Connections Tab for NPS.
 
 Covers: Telegram config, security management, deployment,
 scanner defaults, notification toggles, and about info.
@@ -362,7 +362,7 @@ class SettingsTab:
 
         tk.Label(
             about_frame,
-            text="NPS — Numerology Puzzle Solver V3",
+            text="NPS — Numerology Puzzle Solver",
             font=F["small"],
             fg=C["text"],
             bg=C["bg_card"],

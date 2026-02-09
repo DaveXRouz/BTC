@@ -1234,7 +1234,7 @@ def read_name(name, birthday=None, mother_name=None):
 
 
 # ════════════════════════════════════════════════════════════
-# V3: FC60 Human Meanings & New Public API
+# Legacy: FC60 Human Meanings & New Public API
 # ════════════════════════════════════════════════════════════
 
 FC60_MEANINGS = {

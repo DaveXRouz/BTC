@@ -489,7 +489,7 @@ class BTCSolver(BaseSolver):
             self._inner_solver.stop()
 
     def get_name(self):
-        return "BTC Puzzle Hunter"
+        return "NPS Puzzle Hunter"
 
     def get_description(self):
         return f"Puzzle #{self.puzzle_id} — {self.strategy} strategy"

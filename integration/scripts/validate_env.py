@@ -101,7 +101,7 @@ def check_redis(env: dict[str, str]) -> str:
 
 def main():
     print("=" * 60)
-    print("NPS V4 Environment Validation")
+    print("NPS Environment Validation")
     print("=" * 60)
 
     # Load env

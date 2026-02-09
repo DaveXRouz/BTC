@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// Colors extracted from V3 gui/theme.py
+// Colors extracted from legacy gui/theme.py
 const npsColors = {
   bg: {
     DEFAULT: "#0d1117",

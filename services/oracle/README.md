@@ -1,23 +1,23 @@
-# V4 Oracle Service (Python)
+# NPS Oracle Service (Python)
 
 ## Overview
 
-Python-based Oracle service providing FC60 numerology, oracle readings, AI learning, and strategic intelligence. This service reuses V3 engines, solvers, and logic modules with minimal modification.
+Python-based Oracle service providing FC60 numerology, oracle readings, AI learning, and strategic intelligence. This service reuses legacy engines, solvers, and logic modules with minimal modification.
 
 ## Architecture
 
 ```
 oracle_service/
   server.py         — gRPC server entry point
-  engines/          — V3 engines (21 files, copied as-is)
-  solvers/          — V3 solvers (7 files, copied as-is)
-  logic/            — V3 logic modules (6 files, copied as-is)
+  engines/          — Legacy engines (21 files, copied as-is)
+  solvers/          — Legacy solvers (7 files, copied as-is)
+  logic/            — Legacy logic modules (6 files, copied as-is)
   grpc_gen/         — Generated protobuf stubs
 ```
 
-## V3 Engine Reuse
+## Legacy Engine Reuse
 
-All V3 engine files are copied directly into this service. They are categorized by adaptation needs:
+All legacy engine files are copied directly into this service. They are categorized by adaptation needs:
 
 ### Pure Computation (no changes needed)
 
@@ -27,20 +27,20 @@ All V3 engine files are copied directly into this service. They are categorized 
 - `scoring.py` — Key scoring weights (290 LOC)
 - `oracle.py` — Oracle readings (1,493 LOC)
 
-### AI/ML (minor adaptation for V4 persistence)
+### AI/ML (minor adaptation for current persistence)
 
 - `ai_engine.py` — Claude CLI integration (569 LOC)
 - `scanner_brain.py` — AI learning/suggestions (572 LOC)
 - `learning.py` — XP/level learning (439 LOC)
 - `learner.py` — Pattern learning (307 LOC)
 
-### Operational (needs V4 adaptation)
+### Operational (needs adaptation)
 
 - `config.py` — Will switch from config.json to environment variables
 - `logger.py` — Will integrate with centralized logging
 - `health.py` — Will expose gRPC health checks
 - `vault.py` — Will use PostgreSQL instead of JSONL
-- `security.py` — Will add AES-256-GCM (ENC4:) alongside V3 legacy decrypt
+- `security.py` — Will add AES-256-GCM (ENC4:) alongside legacy decrypt
 - `events.py` — Will adapt for gRPC streaming instead of GUI callbacks
 - `session_manager.py`, `terminal_manager.py` — Will use PostgreSQL
 - `notifier.py` — Telegram bot (moves to API layer in later phase)

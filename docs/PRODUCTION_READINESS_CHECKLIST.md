@@ -1,4 +1,4 @@
-# NPS V4 Production Readiness Checklist
+# NPS Production Readiness Checklist
 
 ## Critical (Must Pass)
 

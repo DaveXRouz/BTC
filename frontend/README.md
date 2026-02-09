@@ -1,11 +1,11 @@
-# V4 Frontend
+# NPS Frontend
 
 ## Overview
 
-The V4 frontend layer provides two interfaces:
+The NPS frontend layer provides two interfaces:
 
-1. **React Web UI** (`src/`) — Primary V4 interface built with React, TypeScript, and Tailwind CSS (Vite build).
-2. **Legacy Tkinter GUI** (`desktop-gui/legacy/`) — V3 desktop GUI preserved as migration reference.
+1. **React Web UI** (`src/`) — Primary interface built with React, TypeScript, and Tailwind CSS (Vite build).
+2. **Legacy Tkinter GUI** (`desktop-gui/legacy/`) — Legacy desktop GUI preserved as migration reference.
 
 ## React Web UI
 
@@ -60,4 +60,4 @@ npx tsc --noEmit
 
 ## Legacy Desktop GUI
 
-See `desktop-gui/legacy/README.md` for the V3 Tkinter GUI reference files and the dual-GUI migration strategy.
+See `desktop-gui/legacy/README.md` for the legacy Tkinter GUI reference files and the dual-GUI migration strategy.

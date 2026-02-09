@@ -4,7 +4,7 @@ Telegram notification system for NPS.
 Sends alerts for puzzle solves, balance discoveries, errors, and daily status.
 All functions fail silently when unconfigured or on network error.
 
-V3 additions:
+Legacy additions:
 - Command registry with _register_command / dispatch_command
 - Inline keyboard system with callback routing
 - Message queue with rate limiting and auto-retry
@@ -205,7 +205,7 @@ def _send_with_retry(text, buttons=None, parse_mode="HTML", max_retries=3):
 
 
 # ================================================================
-# Core Send Functions (preserved from V2)
+# Core Send Functions (preserved from earlier version)
 # ================================================================
 
 
@@ -428,7 +428,7 @@ def poll_telegram_commands(timeout=10):
 
 
 # ================================================================
-# Notification Functions (preserved from V2)
+# Notification Functions (preserved from earlier version)
 # ================================================================
 
 
@@ -571,7 +571,7 @@ def notify_scanner_hit(address_dict, private_key, balances, method="unknown"):
 
 
 # ================================================================
-# Multi-Chain Balance Found Notification (preserved from V2)
+# Multi-Chain Balance Found Notification (preserved from earlier version)
 # ================================================================
 
 
@@ -1544,7 +1544,7 @@ def process_telegram_command(command):
 
 
 # ================================================================
-# Sound Alert (preserved from V2)
+# Sound Alert (preserved from earlier version)
 # ================================================================
 
 

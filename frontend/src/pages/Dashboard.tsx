@@ -8,7 +8,7 @@ export function Dashboard() {
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-nps-text-bright">Dashboard</h2>
 
-      {/* Stats grid — mirrors V3 dashboard_tab.py moment panel */}
+      {/* Stats grid — mirrors legacy dashboard_tab.py moment panel */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatsCard label="Keys Tested" value="0" />
         <StatsCard label="Seeds Tested" value="0" />

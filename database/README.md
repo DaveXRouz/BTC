@@ -1,14 +1,14 @@
-# V4 Database Layer
+# NPS Database Layer
 
 ## Overview
 
-PostgreSQL database replacing V3's JSON/JSONL file-based storage. Provides ACID transactions, proper indexing, and concurrent access for all V4 services.
+PostgreSQL database replacing legacy JSON/JSONL file-based storage. Provides ACID transactions, proper indexing, and concurrent access for all NPS services.
 
 ## Schema
 
 Defined in `init.sql` with 10 tables:
 
-| Table              | V3 Source                | Description              |
+| Table              | Legacy Source            | Description              |
 | ------------------ | ------------------------ | ------------------------ |
 | `users`            | New                      | User accounts with auth  |
 | `api_keys`         | New                      | API key management       |
@@ -21,9 +21,9 @@ Defined in `init.sql` with 10 tables:
 | `patterns`         | `data/learning/` JSON    | Pattern analysis data    |
 | `config`           | `config.json`            | Runtime configuration    |
 
-## Migration from V3
+## Migration from Legacy
 
-V3 stores data in flat files under `nps/data/`:
+The legacy version stores data in flat files under `nps/data/`:
 
 - `findings/` — JSONL with encrypted fields
 - `sessions/` — JSON session files
@@ -32,9 +32,9 @@ V3 stores data in flat files under `nps/data/`:
 
 Migration scripts in `migrations/` handle:
 
-1. Reading V3 JSON/JSONL files
-2. Decrypting V3 `ENC:` encrypted fields
-3. Re-encrypting with V4 `ENC4:` (AES-256-GCM)
+1. Reading legacy JSON/JSONL files
+2. Decrypting legacy `ENC:` encrypted fields
+3. Re-encrypting with current `ENC4:` (AES-256-GCM)
 4. Inserting into PostgreSQL tables
 
 Seed data in `seeds/` provides development defaults.
