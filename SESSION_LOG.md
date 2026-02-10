@@ -297,7 +297,7 @@ TEMPLATE — copy this for each new session:
 - `tests/test_multi_user_fc60.py` — tested deleted modules
 
 **Tests:** 75 pass / 0 fail / 53 new (test_framework_bridge: 53, test_engines: 22 updated)
-**Commit:** pending
+**Commit:** 10ae762 — [oracle] integrate numerology_ai_framework via bridge module (#session-6)
 **Issues:** None
 **Decisions:**
 
