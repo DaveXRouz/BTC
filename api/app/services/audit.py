@@ -5,7 +5,6 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -45,6 +44,8 @@ class AuditService:
         )
         self.db.add(entry)
         return entry
+
+    # ─── Oracle User audit methods ────────────────────────────────────────────
 
     def log_user_created(
         self, oracle_user_id: int, *, ip: str | None = None, key_hash: str | None = None
@@ -104,6 +105,8 @@ class AuditService:
             api_key_hash=key_hash,
         )
 
+    # ─── Oracle Reading audit methods ─────────────────────────────────────────
+
     def log_reading_created(
         self,
         reading_id: int,
@@ -140,17 +143,126 @@ class AuditService:
             api_key_hash=key_hash,
         )
 
+    # ─── Auth audit methods ───────────────────────────────────────────────────
+
     def log_auth_failed(self, *, ip: str | None = None, details: dict | None = None):
         return self.log(
             "auth.failed",
             success=False,
+            resource_type="auth",
             ip_address=ip,
             details=details,
         )
 
-    def get_user_activity(
-        self, oracle_user_id: int, limit: int = 50
-    ) -> list[OracleAuditLog]:
+    def log_auth_login(
+        self,
+        user_id: str,
+        *,
+        ip: str | None = None,
+        username: str | None = None,
+    ) -> OracleAuditLog:
+        """Log a successful login."""
+        return self.log(
+            "auth.login",
+            resource_type="auth",
+            ip_address=ip,
+            details={"username": username},
+        )
+
+    def log_auth_logout(
+        self,
+        user_id: str,
+        *,
+        ip: str | None = None,
+    ) -> OracleAuditLog:
+        """Log a logout."""
+        return self.log(
+            "auth.logout",
+            resource_type="auth",
+            ip_address=ip,
+        )
+
+    def log_auth_register(
+        self,
+        new_user_id: str,
+        registered_by: str,
+        *,
+        ip: str | None = None,
+        role: str | None = None,
+    ) -> OracleAuditLog:
+        """Log a new user registration."""
+        return self.log(
+            "auth.register",
+            resource_type="auth",
+            ip_address=ip,
+            details={
+                "new_user_id": new_user_id,
+                "registered_by": registered_by,
+                "role": role,
+            },
+        )
+
+    def log_auth_token_refresh(
+        self,
+        user_id: str,
+        *,
+        ip: str | None = None,
+    ) -> OracleAuditLog:
+        """Log a token refresh."""
+        return self.log(
+            "auth.token_refresh",
+            resource_type="auth",
+            ip_address=ip,
+        )
+
+    def log_auth_lockout(
+        self,
+        *,
+        ip: str | None = None,
+        username: str | None = None,
+    ) -> OracleAuditLog:
+        """Log an account lockout due to brute-force."""
+        return self.log(
+            "auth.lockout",
+            success=False,
+            resource_type="auth",
+            ip_address=ip,
+            details={"username": username},
+        )
+
+    def log_api_key_created(
+        self,
+        user_id: str,
+        key_name: str,
+        *,
+        ip: str | None = None,
+    ) -> OracleAuditLog:
+        """Log an API key creation."""
+        return self.log(
+            "auth.api_key_created",
+            resource_type="api_key",
+            ip_address=ip,
+            details={"key_name": key_name},
+        )
+
+    def log_api_key_revoked(
+        self,
+        user_id: str,
+        key_id: str,
+        *,
+        ip: str | None = None,
+    ) -> OracleAuditLog:
+        """Log an API key revocation."""
+        return self.log(
+            "auth.api_key_revoked",
+            resource_type="api_key",
+            ip_address=ip,
+            details={"key_id": key_id},
+        )
+
+    # ─── Query methods ────────────────────────────────────────────────────────
+
+    def get_user_activity(self, oracle_user_id: int, limit: int = 50) -> list[OracleAuditLog]:
         return (
             self.db.query(OracleAuditLog)
             .filter(
@@ -167,7 +279,7 @@ class AuditService:
         return (
             self.db.query(OracleAuditLog)
             .filter(
-                OracleAuditLog.success == False,
+                OracleAuditLog.success == False,  # noqa: E712
                 OracleAuditLog.timestamp >= since,
             )
             .order_by(OracleAuditLog.timestamp.desc())
@@ -192,12 +304,7 @@ class AuditService:
             query = query.filter(OracleAuditLog.resource_id == resource_id)
 
         total = query.count()
-        entries = (
-            query.order_by(OracleAuditLog.timestamp.desc())
-            .offset(offset)
-            .limit(limit)
-            .all()
-        )
+        entries = query.order_by(OracleAuditLog.timestamp.desc()).offset(offset).limit(limit).all()
         return entries, total
 
 

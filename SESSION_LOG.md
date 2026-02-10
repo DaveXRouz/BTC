@@ -9,8 +9,8 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 1 of 45
-**Last session:** Session 1 — Database Schema Audit & Alignment
+**Sessions completed:** 2 of 45
+**Last session:** Session 2 — Authentication System Hardening
 **Current block:** Foundation (Sessions 1-5)
 
 ---
@@ -108,6 +108,39 @@ TEMPLATE — copy this for each new session:
 - Test vector user id=100 to avoid collision with seed user sequence (1-3)
 
 **Next:** Session 2 — Authentication System Hardening (JWT refresh tokens, API key management, password policies, migration 013)
+
+---
+
+## Session 2 — 2026-02-11
+
+**Terminal:** SINGLE
+**Block:** Foundation
+**Task:** Authentication System Hardening — moderator role, refresh tokens, logout, brute-force protection, admin registration, audit wiring
+**Spec:** .session-specs/SESSION_2_SPEC.md
+
+**Files changed:**
+
+- `database/migrations/013_auth_hardening.sql` — NEW: adds failed_attempts, locked_until, refresh_token_hash columns to users; adds users_role_check constraint (admin/moderator/user/readonly); adds partial indexes for refresh token and lockout lookup
+- `database/migrations/013_auth_hardening_rollback.sql` — NEW: clean rollback for migration 013 (drops columns, indexes, constraint)
+- `api/app/orm/user.py` — Added 3 columns: failed_attempts (int, default 0), locked_until (DateTime TZ), refresh_token_hash (Text)
+- `api/app/models/auth.py` — Added RegisterRequest (min_length validation), RegisterResponse, RefreshRequest, RefreshResponse; updated TokenResponse with optional refresh_token
+- `api/app/middleware/auth.py` — Added moderator role to \_ROLE_SCOPES; added \_TokenBlacklist class (thread-safe, TTL cleanup); added create_refresh_token() and hash_refresh_token() helpers; \_try_jwt_auth now checks blacklist
+- `api/app/routers/auth.py` — Added POST /login with brute-force protection (5 failures → 15min lockout) + refresh token generation + audit logging; added POST /refresh (token rotation); added POST /logout (JWT blacklist + clear refresh); added POST /register (admin-only, role validation, password min 8); wired audit logging to all endpoints including API key create/revoke
+- `api/app/services/audit.py` — Added 7 auth-specific methods: log_auth_login, log_auth_logout, log_auth_register, log_auth_token_refresh, log_auth_lockout, log_api_key_created, log_api_key_revoked; added resource_type="auth" to log_auth_failed
+- `api/tests/test_auth.py` — Extended from 15 to 56 tests: moderator scopes (3), refresh tokens (4), blacklist (5), brute-force (5), registration validation (4), token models (3), audit service (8), ORM columns (4), existing tests (15 preserved + 5 HTTP scope tests)
+
+**Tests:** 202 pass / 0 fail / 41 new (56 total in test_auth.py)
+**Commit:** pending
+**Issues:** None
+**Decisions:**
+
+- Kept bcrypt for password hashing (industry standard, already implemented). PBKDF2 600k serves encryption key derivation in security.py.
+- In-memory token blacklist (same pattern as rate_limit.py). Migrateable to Redis in Session 38.
+- One refresh token per user (column on users table, not separate table). Simpler, sufficient.
+- Moderator scopes: oracle:admin + scanner:read + vault:read. No system admin, no scanner/vault write.
+- Lockout: 5 failures → 15min auto-lock. Lock resets on expiry or successful login.
+
+**Next:** Session 3 — User Profile Management (CRUD for user profiles with auth-protected endpoints, profile settings, Session 1 oracle_settings table integration)
 
 ---
 

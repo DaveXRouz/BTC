@@ -1,7 +1,10 @@
-"""Authentication middleware — JWT verification and API key validation."""
+"""Authentication middleware — JWT verification, API key validation, token blacklist."""
 
 import hashlib
 import logging
+import secrets
+import threading
+import time
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, HTTPException, Security, status
@@ -18,7 +21,8 @@ logger = logging.getLogger(__name__)
 
 security_scheme = HTTPBearer(auto_error=False)
 
-# Scope hierarchy: higher scopes imply lower ones
+# ─── Scope hierarchy: higher scopes imply lower ones ─────────────────────────
+
 _SCOPE_HIERARCHY = {
     "oracle:admin": {"oracle:admin", "oracle:write", "oracle:read"},
     "oracle:write": {"oracle:write", "oracle:read"},
@@ -32,7 +36,8 @@ _SCOPE_HIERARCHY = {
     "admin": set(),  # expanded in _expand_scopes
 }
 
-# Role to default scopes mapping
+# ─── Role to default scopes mapping ──────────────────────────────────────────
+
 _ROLE_SCOPES = {
     "admin": [
         "oracle:admin",
@@ -45,6 +50,13 @@ _ROLE_SCOPES = {
         "vault:write",
         "vault:read",
         "admin",
+    ],
+    "moderator": [
+        "oracle:admin",
+        "oracle:write",
+        "oracle:read",
+        "scanner:read",
+        "vault:read",
     ],
     "user": [
         "oracle:write",
@@ -77,6 +89,67 @@ def _role_to_scopes(role: str) -> list[str]:
     return _ROLE_SCOPES.get(role, _ROLE_SCOPES["readonly"])
 
 
+# ─── Token Blacklist ─────────────────────────────────────────────────────────
+
+
+class _TokenBlacklist:
+    """In-memory JWT blacklist with TTL cleanup.
+
+    Mirrors the in-memory pattern used by rate_limit.py.
+    Tokens auto-expire from the blacklist when their JWT expiry passes.
+    """
+
+    def __init__(self) -> None:
+        self._tokens: dict[str, float] = {}  # token_hash -> expiry_timestamp
+        self._lock = threading.Lock()
+
+    def add(self, token: str, expires_at: float) -> None:
+        """Blacklist a token until its expiry time."""
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        with self._lock:
+            self._tokens[token_hash] = expires_at
+            self._cleanup()
+
+    def is_blacklisted(self, token: str) -> bool:
+        """Check if a token is blacklisted."""
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        with self._lock:
+            expiry = self._tokens.get(token_hash)
+            if expiry is None:
+                return False
+            if time.time() > expiry:
+                del self._tokens[token_hash]
+                return False
+            return True
+
+    def _cleanup(self) -> None:
+        """Remove expired entries. Called internally under lock."""
+        now = time.time()
+        expired = [k for k, v in self._tokens.items() if now > v]
+        for k in expired:
+            del self._tokens[k]
+
+
+_blacklist = _TokenBlacklist()
+
+# ─── Refresh Token Helpers ───────────────────────────────────────────────────
+
+_REFRESH_TOKEN_BYTES = 32  # 256-bit refresh token
+
+
+def create_refresh_token() -> str:
+    """Generate a cryptographically secure refresh token."""
+    return secrets.token_urlsafe(_REFRESH_TOKEN_BYTES)
+
+
+def hash_refresh_token(token: str) -> str:
+    """SHA-256 hash a refresh token for storage."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+# ─── JWT Creation ────────────────────────────────────────────────────────────
+
+
 def create_access_token(user_id: str, username: str, role: str) -> str:
     """Create a JWT access token."""
     scopes = _role_to_scopes(role)
@@ -91,8 +164,13 @@ def create_access_token(user_id: str, username: str, role: str) -> str:
     return jwt.encode(payload, settings.api_secret_key, algorithm=settings.jwt_algorithm)
 
 
+# ─── Auth Strategies ─────────────────────────────────────────────────────────
+
+
 def _try_jwt_auth(token: str) -> dict | None:
     """Try to decode as JWT. Returns user context dict or None."""
+    if _blacklist.is_blacklisted(token):
+        return None
     try:
         payload = jwt.decode(token, settings.api_secret_key, algorithms=[settings.jwt_algorithm])
         return {
@@ -143,6 +221,9 @@ def _try_api_key_auth(token: str, db: Session) -> dict | None:
         "api_key_hash": key_hash,
         "rate_limit": api_key.rate_limit,
     }
+
+
+# ─── FastAPI Dependencies ────────────────────────────────────────────────────
 
 
 async def get_current_user(
