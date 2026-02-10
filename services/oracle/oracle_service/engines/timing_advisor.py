@@ -6,7 +6,6 @@ to advise on optimal scanning times. Pure computation, no I/O.
 """
 
 import logging
-import time
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
@@ -19,7 +18,7 @@ def get_current_quality():
         dict with keys: quality, score (0-1), moon_phase, reasoning.
         quality is one of 'excellent', 'good', 'fair', 'poor'.
     """
-    from engines.fc60 import (
+    from oracle_service.framework_bridge import (
         compute_jdn,
         moon_phase,
         moon_illumination,
@@ -27,7 +26,7 @@ def get_current_quality():
         weekday_from_jdn,
         WEEKDAY_PLANETS,
     )
-    from engines.numerology import numerology_reduce, is_master_number
+    from oracle_service.framework_bridge import numerology_reduce, is_master_number
 
     now = datetime.now(timezone.utc)
     year, month, day = now.year, now.month, now.day
@@ -117,8 +116,12 @@ def get_optimal_hours_today():
     Returns:
         list of (hour, score) tuples sorted by score descending.
     """
-    from engines.fc60 import compute_jdn, moon_phase, weekday_from_jdn
-    from engines.numerology import numerology_reduce, is_master_number
+    from oracle_service.framework_bridge import (
+        compute_jdn,
+        moon_phase,
+        weekday_from_jdn,
+    )
+    from oracle_service.framework_bridge import numerology_reduce, is_master_number
 
     now = datetime.now(timezone.utc)
     year, month, day = now.year, now.month, now.day
@@ -172,8 +175,8 @@ def get_cosmic_alignment(key_int):
     Returns:
         float score 0.0 to 1.0.
     """
-    from engines.fc60 import compute_jdn, moon_phase, ganzhi_year
-    from engines.numerology import numerology_reduce, is_master_number
+    from oracle_service.framework_bridge import compute_jdn, moon_phase, ganzhi_year
+    from oracle_service.framework_bridge import numerology_reduce, is_master_number
 
     now = datetime.now(timezone.utc)
     year, month, day = now.year, now.month, now.day

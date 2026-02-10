@@ -1,35 +1,29 @@
 """Oracle Service — Engine Layer.
 
-All legacy engines copied as-is for Phase 2 Oracle service.
-Pure computation modules (fc60, numerology, math_analysis, scoring) are
-used directly. Operational modules (logger, health, config, etc.) will
-be adapted to current patterns (environment variables, gRPC, PostgreSQL)
-during later phases.
+Computation engines are now provided by numerology_ai_framework via
+framework_bridge. This __init__ re-exports the public API for backward
+compatibility.  Oracle-specific engines (oracle.py, ai_interpreter.py,
+translation_service.py, timing_advisor.py) remain in this package.
 """
 
-# Core computation engines (legacy portable, no adaptation needed)
-from engines.fc60 import (
-    token60,
-    encode_fc60,
-    format_full_output,
-    parse_input,
-)
-from engines.numerology import (
-    life_path,
-    name_to_number,
-    numerology_reduce,
-    personal_year,
-)
-from engines.math_analysis import math_profile, entropy
-from engines.scoring import hybrid_score, score_batch
+# Core computation (via framework bridge) — explicit re-exports
+from oracle_service.framework_bridge import token60 as token60
+from oracle_service.framework_bridge import encode_fc60 as encode_fc60
+from oracle_service.framework_bridge import numerology_reduce as numerology_reduce
+from oracle_service.framework_bridge import life_path as life_path
+from oracle_service.framework_bridge import name_to_number as name_to_number
+from oracle_service.framework_bridge import personal_year as personal_year
 
 # Oracle readings (function-based, not class-based)
-from engines.oracle import read_sign, read_name, question_sign, daily_insight
+from engines.oracle import read_sign as read_sign
+from engines.oracle import read_name as read_name
+from engines.oracle import question_sign as question_sign
+from engines.oracle import daily_insight as daily_insight
 
 # AI interpretation (T3-S3)
-from engines.ai_interpreter import (
-    interpret_reading,
-    interpret_all_formats,
-    interpret_group,
-)
-from engines.translation_service import translate, batch_translate, detect_language
+from engines.ai_interpreter import interpret_reading as interpret_reading
+from engines.ai_interpreter import interpret_all_formats as interpret_all_formats
+from engines.ai_interpreter import interpret_group as interpret_group
+from engines.translation_service import translate as translate
+from engines.translation_service import batch_translate as batch_translate
+from engines.translation_service import detect_language as detect_language

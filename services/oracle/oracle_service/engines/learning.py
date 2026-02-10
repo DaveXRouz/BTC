@@ -9,7 +9,6 @@ No external dependencies.
 """
 
 import json
-import os
 import math
 import logging
 from pathlib import Path
@@ -111,19 +110,19 @@ def get_learned_score(n: int, context: dict = None) -> float:
     if len(winners) < MIN_SOLVES_FOR_LEARNING:
         return 0.5
 
-    # LAZY IMPORT — avoids circular dependency
-    from engines.math_analysis import entropy, digit_balance
-    from engines.numerology import is_master_number
+    # LAZY IMPORT — math_analysis removed in Session 6; numerology via bridge
+    try:
+        from engines.math_analysis import entropy, digit_balance
+    except ImportError:
+        # math_analysis deleted — return neutral score until Session 7 rebuild
+        return 0.5
+    from oracle_service.framework_bridge import is_master_number
 
     candidate_entropy = entropy(n)
     candidate_balance = digit_balance(n)
 
-    winner_entropies = [
-        r.get("math_breakdown", {}).get("entropy_low", 0.5) for r in winners
-    ]
-    winner_balances = [
-        r.get("math_breakdown", {}).get("digit_balance", 0.5) for r in winners
-    ]
+    winner_entropies = [r.get("math_breakdown", {}).get("entropy_low", 0.5) for r in winners]
+    winner_balances = [r.get("math_breakdown", {}).get("digit_balance", 0.5) for r in winners]
 
     avg_winner_entropy = sum(winner_entropies) / len(winner_entropies)
     avg_winner_balance = sum(winner_balances) / len(winner_balances)
@@ -137,9 +136,7 @@ def get_learned_score(n: int, context: dict = None) -> float:
     balance_sim = 1.0 - abs(candidate_balance - avg_winner_balance)
 
     # Check numerology factors from history
-    winner_master_rate = sum(1 for r in winners if r.get("is_master", False)) / len(
-        winners
-    )
+    winner_master_rate = sum(1 for r in winners if r.get("is_master", False)) / len(winners)
     candidate_is_master = is_master_number(n)
     master_boost = 0.2 if candidate_is_master and winner_master_rate > 0.15 else 0.0
 
@@ -201,13 +198,12 @@ def get_factor_accuracy() -> dict:
         "is_master_number": lambda r: r.get("is_master", False),
         "high_math_score": lambda r: r.get("math_score", 0) > 0.6,
         "high_numerology_score": lambda r: r.get("numerology_score", 0) > 0.6,
-        "power_reduced_number": lambda r: r.get("reduced_number", 0)
-        in (1, 8, 9, 11, 22, 33),
+        "power_reduced_number": lambda r: r.get("reduced_number", 0) in (1, 8, 9, 11, 22, 33),
     }
 
     for name, check_fn in factor_checks.items():
         winner_rate = sum(1 for w in winners if check_fn(w)) / len(winners)
-        loser_rate = sum(1 for l in losers if check_fn(l)) / len(losers)
+        loser_rate = sum(1 for entry in losers if check_fn(entry)) / len(losers)
         lift = (winner_rate / loser_rate - 1.0) if loser_rate > 0 else 0.0
 
         result["factors"][name] = {
@@ -229,10 +225,8 @@ def get_solve_stats() -> dict:
         "total_attempts": len(history),
         "total_correct": len(winners),
         "success_rate": len(winners) / max(1, len(history)),
-        "avg_winner_score": sum(r.get("final_score", 0) for r in winners)
-        / max(1, len(winners)),
-        "avg_loser_score": sum(r.get("final_score", 0) for r in losers)
-        / max(1, len(losers)),
+        "avg_winner_score": sum(r.get("final_score", 0) for r in winners) / max(1, len(winners)),
+        "avg_loser_score": sum(r.get("final_score", 0) for r in losers) / max(1, len(losers)),
         "best_puzzle_type": _most_common_type(winners),
         "confidence": confidence_level(),
     }
@@ -379,24 +373,20 @@ def get_scan_insights() -> dict:
 
     # Today's stats
     today_str = time.strftime("%Y-%m-%d", time.gmtime())
-    today_sessions = [
-        s for s in sessions if s.get("timestamp", "").startswith(today_str)
-    ]
+    today_sessions = [s for s in sessions if s.get("timestamp", "").startswith(today_str)]
     today_keys = sum(s.get("keys_tested", 0) for s in today_sessions)
     today_seeds = sum(s.get("seeds_tested", 0) for s in today_sessions)
 
     # Simple recommendation
     best_mode = mode_counts.most_common(1)[0][0] if mode_counts else "both"
     if total_hits > 0:
-        recommendation = (
-            f"You've found {total_hits} hits! Most sessions use '{best_mode}' mode."
-        )
+        recommendation = f"You've found {total_hits} hits! Most sessions use '{best_mode}' mode."
     elif total_keys > 1_000_000:
-        recommendation = f"Over {total_keys:,} keys tested. Consider enabling scoring for high-value candidates."
-    else:
         recommendation = (
-            f"Keep scanning! '{best_mode}' mode is your most-used strategy."
+            f"Over {total_keys:,} keys tested. Consider enabling scoring for high-value candidates."
         )
+    else:
+        recommendation = f"Keep scanning! '{best_mode}' mode is your most-used strategy."
 
     return {
         "total_sessions": len(sessions),

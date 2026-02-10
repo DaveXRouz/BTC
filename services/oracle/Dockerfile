@@ -15,6 +15,10 @@ RUN pip install --no-cache-dir .
 # Copy application code
 COPY . .
 
+# Framework available via volume mount (see docker-compose.yml)
+# PYTHONPATH ensures both app code and framework are importable
+ENV PYTHONPATH="/app:/app/numerology_ai_framework:${PYTHONPATH}"
+
 # Create non-root user and logs directory
 RUN groupadd -r oracle && useradd -r -g oracle -u 1000 oracle && \
     mkdir -p /app/logs && \

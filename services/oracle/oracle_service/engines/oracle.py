@@ -23,12 +23,7 @@ _fc60_available = False
 _numerology_available = False
 
 try:
-    from engines.fc60 import (
-        token60,
-        encode_base60,
-        ANIMALS,
-        ELEMENTS,
-        STEMS,
+    from oracle_service.framework_bridge import (
         compute_jdn,
         moon_phase,
         moon_illumination,
@@ -47,10 +42,10 @@ try:
 
     _fc60_available = True
 except ImportError:
-    logger.warning("engines.fc60 not available — FC60/moon/ganzhi features disabled")
+    logger.warning("framework_bridge not available — FC60/moon/ganzhi features disabled")
 
 try:
-    from engines.numerology import (
+    from oracle_service.framework_bridge import (
         numerology_reduce,
         digit_sum,
         is_master_number,
@@ -63,7 +58,7 @@ try:
 
     _numerology_available = True
 except ImportError:
-    logger.warning("engines.numerology not available — numerology features disabled")
+    logger.warning("framework_bridge not available — numerology features disabled")
 
 
 # ════════════════════════════════════════════════════════════
@@ -470,27 +465,17 @@ def _check_synchronicity(numbers):
 
         # Palindrome check (for numbers with 3+ digits)
         if len(s) >= 3 and s == s[::-1]:
-            syncs.append(
-                f"Palindrome {n}: reflection pattern, what you send out returns"
-            )
+            syncs.append(f"Palindrome {n}: reflection pattern, what you send out returns")
 
         # Sequential ascending (e.g., 123, 1234, 456)
         if len(s) >= 3:
             digits = [int(d) for d in s]
-            is_ascending = all(
-                digits[i + 1] - digits[i] == 1 for i in range(len(digits) - 1)
-            )
-            is_descending = all(
-                digits[i] - digits[i + 1] == 1 for i in range(len(digits) - 1)
-            )
+            is_ascending = all(digits[i + 1] - digits[i] == 1 for i in range(len(digits) - 1))
+            is_descending = all(digits[i] - digits[i + 1] == 1 for i in range(len(digits) - 1))
             if is_ascending:
-                syncs.append(
-                    f"Ascending sequence {n}: forward momentum, step-by-step progress"
-                )
+                syncs.append(f"Ascending sequence {n}: forward momentum, step-by-step progress")
             elif is_descending:
-                syncs.append(
-                    f"Descending sequence {n}: release, letting go, simplification"
-                )
+                syncs.append(f"Descending sequence {n}: release, letting go, simplification")
 
     # Check pairs across numbers
     if len(numbers) >= 2:
@@ -499,16 +484,11 @@ def _check_synchronicity(numbers):
                 a, b = numbers[i], numbers[j]
                 # Same number appearing twice
                 if a == b:
-                    syncs.append(
-                        f"Repeated appearance of {a}: " f"this number demands attention"
-                    )
+                    syncs.append(f"Repeated appearance of {a}: this number demands attention")
                 # Sum to significant number
                 total = a + b
                 if total in ANGEL_NUMBERS:
-                    syncs.append(
-                        f"{a} + {b} = {total} (angel number): "
-                        f"{ANGEL_NUMBERS[total]}"
-                    )
+                    syncs.append(f"{a} + {b} = {total} (angel number): {ANGEL_NUMBERS[total]}")
                 # Complement pair (sum to 9)
                 if _numerology_available:
                     ra = numerology_reduce(digit_sum(a))
@@ -582,8 +562,7 @@ def _generate_interpretation(systems_results, synchronicities):
         lines.append(f"  Stamp: {fc60_data['stamp']}")
         if fc60_data.get("weekday_name"):
             lines.append(
-                f"  Day: {fc60_data['weekday_name']} "
-                f"({fc60_data.get('weekday_planet', '')})"
+                f"  Day: {fc60_data['weekday_name']} ({fc60_data.get('weekday_planet', '')})"
             )
             lines.append(f"  Domain: {fc60_data.get('weekday_domain', '')}")
         lines.append("")
@@ -620,13 +599,11 @@ def _generate_interpretation(systems_results, synchronicities):
             lines.append(f"  Year: {ganzhi_data['year_name']}")
         if ganzhi_data.get("hour_animal"):
             lines.append(
-                f"  Hour: {ganzhi_data['hour_animal']} "
-                f"({ganzhi_data.get('hour_branch', '')})"
+                f"  Hour: {ganzhi_data['hour_animal']} ({ganzhi_data.get('hour_branch', '')})"
             )
         if ganzhi_data.get("stem_element"):
             lines.append(
-                f"  Element: {ganzhi_data['stem_element']} "
-                f"({ganzhi_data.get('stem_polarity', '')})"
+                f"  Element: {ganzhi_data['stem_element']} ({ganzhi_data.get('stem_polarity', '')})"
             )
         lines.append("")
 
@@ -639,9 +616,7 @@ def _generate_interpretation(systems_results, synchronicities):
 
     # Summary line
     system_count = sum(
-        1
-        for k, v in systems_results.items()
-        if v and (isinstance(v, dict) and any(v.values()))
+        1 for k, v in systems_results.items() if v and (isinstance(v, dict) and any(v.values()))
     )
     lines.append(
         f"Reading assembled from {system_count} system(s) "
@@ -710,9 +685,7 @@ def _analyze_fc60(year, month, day, hour=0, minute=0):
         return {}
     try:
         include_time = hour != 0 or minute != 0
-        result = encode_fc60(
-            year, month, day, hour, minute, 0, 0, 0, include_time=include_time
-        )
+        result = encode_fc60(year, month, day, hour, minute, 0, 0, 0, include_time=include_time)
         return {
             "stamp": result.get("stamp", ""),
             "iso": result.get("iso", ""),
@@ -748,9 +721,7 @@ def _analyze_moon(year, month, day):
         return {
             "phase_index": phase_idx,
             "phase_name": MOON_PHASE_NAMES[phase_idx],
-            "emoji": ["New", "WxCr", "1stQ", "WxGb", "Full", "WnGb", "3rdQ", "WnCr"][
-                phase_idx
-            ],
+            "emoji": ["New", "WxCr", "1stQ", "WxGb", "Full", "WnGb", "3rdQ", "WnCr"][phase_idx],
             "age_days": round(age, 2),
             "illumination": round(illum, 1),
             "meaning": MOON_PHASE_MEANINGS[phase_idx],
@@ -1086,17 +1057,11 @@ def read_name(name, birthday=None, mother_name=None):
 
             # Life path meanings
             expr_info = LIFE_PATH_MEANINGS.get(result["expression"])
-            result["expression_meaning"] = (
-                f"{expr_info[0]}: {expr_info[1]}" if expr_info else ""
-            )
+            result["expression_meaning"] = f"{expr_info[0]}: {expr_info[1]}" if expr_info else ""
             soul_info = LIFE_PATH_MEANINGS.get(result["soul_urge"])
-            result["soul_urge_meaning"] = (
-                f"{soul_info[0]}: {soul_info[1]}" if soul_info else ""
-            )
+            result["soul_urge_meaning"] = f"{soul_info[0]}: {soul_info[1]}" if soul_info else ""
             pers_info = LIFE_PATH_MEANINGS.get(result["personality"])
-            result["personality_meaning"] = (
-                f"{pers_info[0]}: {pers_info[1]}" if pers_info else ""
-            )
+            result["personality_meaning"] = f"{pers_info[0]}: {pers_info[1]}" if pers_info else ""
         except Exception as exc:
             logger.debug("Pythagorean name analysis failed: %s", exc)
 
@@ -1108,9 +1073,7 @@ def read_name(name, birthday=None, mother_name=None):
             lp = life_path(year, month, day)
             result["life_path"] = lp
             lp_info = LIFE_PATH_MEANINGS.get(lp)
-            result["life_path_meaning"] = (
-                f"{lp_info[0]}: {lp_info[1]}" if lp_info else ""
-            )
+            result["life_path_meaning"] = f"{lp_info[0]}: {lp_info[1]}" if lp_info else ""
         except Exception as exc:
             logger.debug("Life path calculation failed: %s", exc)
 
@@ -1131,9 +1094,7 @@ def read_name(name, birthday=None, mother_name=None):
             if ch in CHALDEAN_VALUES:
                 breakdown.append(f"{ch}={CHALDEAN_VALUES[ch]}")
         result["chaldean_breakdown"] = " + ".join(breakdown)
-        result["chaldean_raw_sum"] = sum(
-            CHALDEAN_VALUES.get(ch, 0) for ch in name.upper()
-        )
+        result["chaldean_raw_sum"] = sum(CHALDEAN_VALUES.get(ch, 0) for ch in name.upper())
     except Exception as exc:
         logger.debug("Chaldean name analysis failed: %s", exc)
 
@@ -1147,9 +1108,7 @@ def read_name(name, birthday=None, mother_name=None):
             if _numerology_available:
                 mother_result["expression"] = name_to_number(mother_name)
                 m_info = LIFE_PATH_MEANINGS.get(mother_result["expression"])
-                mother_result["expression_meaning"] = (
-                    f"{m_info[0]}: {m_info[1]}" if m_info else ""
-                )
+                mother_result["expression_meaning"] = f"{m_info[0]}: {m_info[1]}" if m_info else ""
             result["mother_influence"] = mother_result
         except Exception as exc:
             logger.debug("Mother name analysis failed: %s", exc)
@@ -1166,8 +1125,7 @@ def read_name(name, birthday=None, mother_name=None):
             f"- {result.get('expression_meaning', '')}"
         )
         lines.append(
-            f"  Soul Urge (vowels): {result['soul_urge']} "
-            f"- {result.get('soul_urge_meaning', '')}"
+            f"  Soul Urge (vowels): {result['soul_urge']} - {result.get('soul_urge_meaning', '')}"
         )
         lines.append(
             f"  Personality (consonants): {result['personality']} "
@@ -1176,15 +1134,13 @@ def read_name(name, birthday=None, mother_name=None):
 
         if result.get("life_path") is not None:
             lines.append(
-                f"  Life Path: {result['life_path']} "
-                f"- {result.get('life_path_meaning', '')}"
+                f"  Life Path: {result['life_path']} - {result.get('life_path_meaning', '')}"
             )
         lines.append("")
 
         lines.append("-- Chaldean Numerology --")
         lines.append(
-            f"  Chaldean value: {result['chaldean']} "
-            f"- {result.get('chaldean_meaning', '')}"
+            f"  Chaldean value: {result['chaldean']} - {result.get('chaldean_meaning', '')}"
         )
         if result.get("chaldean_breakdown"):
             lines.append(f"  Breakdown: {result['chaldean_breakdown']}")
@@ -1194,8 +1150,7 @@ def read_name(name, birthday=None, mother_name=None):
             z = result["birthday_zodiac"]
             lines.append("-- Birthday Zodiac --")
             lines.append(
-                f"  {z['sign']} ({z['element']} / {z['quality']}), "
-                f"ruled by {z['ruling_planet']}"
+                f"  {z['sign']} ({z['element']} / {z['quality']}), ruled by {z['ruling_planet']}"
             )
             lines.append("")
 
@@ -1203,8 +1158,7 @@ def read_name(name, birthday=None, mother_name=None):
             mi = result["mother_influence"]
             lines.append(f"-- Mother's Influence ({mi['name']}) --")
             lines.append(
-                f"  Expression: {mi.get('expression', '?')} "
-                f"- {mi.get('expression_meaning', '')}"
+                f"  Expression: {mi.get('expression', '?')} - {mi.get('expression_meaning', '')}"
             )
             lines.append(f"  Chaldean: {mi.get('chaldean', '?')}")
             lines.append("")
@@ -1339,7 +1293,7 @@ def question_sign(question, timestamp=None):
 
     # Numerology
     if _numerology_available and numbers:
-        from engines.numerology import digit_sum, numerology_reduce, is_master_number
+        from oracle_service.framework_bridge import digit_sum, numerology_reduce
 
         reduced = [numerology_reduce(digit_sum(n)) for n in numbers]
         result["numerology"] = {
@@ -1382,9 +1336,7 @@ def question_sign(question, timestamp=None):
     # Generate reading
     reading_parts = []
     if result["numerology"].get("meanings"):
-        reading_parts.append(
-            "Numerology: " + ", ".join(result["numerology"]["meanings"])
-        )
+        reading_parts.append("Numerology: " + ", ".join(result["numerology"]["meanings"]))
     if result["fc60"].get("meaning"):
         reading_parts.append(f"FC60: {result['fc60']['meaning']}")
     if result["moon"].get("phase"):
@@ -1392,9 +1344,7 @@ def question_sign(question, timestamp=None):
             f"Moon: {result['moon']['phase']} — {result['moon'].get('meaning', '')}"
         )
 
-    result["reading"] = (
-        " | ".join(reading_parts) if reading_parts else "Observe the moment"
-    )
+    result["reading"] = " | ".join(reading_parts) if reading_parts else "Observe the moment"
 
     # Advice based on numerology
     if numbers:
@@ -1406,9 +1356,7 @@ def question_sign(question, timestamp=None):
                 "The numbers carry their message — reflect on what drew your attention"
             )
     else:
-        result["advice"] = (
-            "No numbers in your question — focus on the feeling, not the logic"
-        )
+        result["advice"] = "No numbers in your question — focus on the feeling, not the logic"
 
     return result
 
@@ -1434,7 +1382,7 @@ def daily_insight(date=None):
 
     # Numerology of the date
     if _numerology_available:
-        from engines.numerology import digit_sum, numerology_reduce
+        from oracle_service.framework_bridge import digit_sum, numerology_reduce
 
         date_num = int(date.strftime("%Y%m%d"))
         day_number = numerology_reduce(digit_sum(date_num))
@@ -1457,9 +1405,7 @@ def daily_insight(date=None):
         }
 
         day_meaning = meanings.get(day_number, ("Unique energy", "Exploration"))
-        result["insight"] = (
-            f"Day of {day_meaning[0]} — {day_meaning[1]}. Day number: {day_number}"
-        )
+        result["insight"] = f"Day of {day_meaning[0]} — {day_meaning[1]}. Day number: {day_number}"
         result["energy"] = day_meaning[0]
 
         # Lucky numbers: day number, month, year, their sum

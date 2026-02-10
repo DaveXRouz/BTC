@@ -377,8 +377,11 @@ def numerology_insight_for_key(private_key, addresses):
     if not is_available():
         return defaults
 
-    # Lazy import to avoid circular deps
-    from engines.scoring import hybrid_score
+    # Lazy import — scoring removed in Session 6; graceful fallback
+    try:
+        from engines.scoring import hybrid_score
+    except ImportError:
+        return defaults
 
     key_int = private_key if isinstance(private_key, int) else int(private_key, 16)
     score_result = hybrid_score(key_int)
@@ -405,12 +408,8 @@ def numerology_insight_for_key(private_key, addresses):
         return {**defaults, "fc60_token": token, "score": score}
 
     # Extract highlights from breakdown
-    math_highlights = [
-        k for k, v in math_bd.items() if isinstance(v, (int, float)) and v > 0.7
-    ]
-    numer_highlights = [
-        k for k, v in numer_bd.items() if isinstance(v, (int, float)) and v > 0.7
-    ]
+    math_highlights = [k for k, v in math_bd.items() if isinstance(v, (int, float)) and v > 0.7]
+    numer_highlights = [k for k, v in numer_bd.items() if isinstance(v, (int, float)) and v > 0.7]
 
     return {
         "fc60_token": token,

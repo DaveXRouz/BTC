@@ -11,7 +11,6 @@ To run:
 import logging
 import os
 import signal
-import sys
 import time
 from concurrent import futures
 from datetime import datetime, timezone
@@ -19,26 +18,21 @@ from datetime import datetime, timezone
 import grpc
 from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
-import oracle_service  # triggers sys.path shim
 from oracle_service.grpc_gen import oracle_pb2, oracle_pb2_grpc
 
-# Legacy engines (resolved via sys.path shim in oracle_service/__init__.py)
-from engines.fc60 import (
+# Computation engines via framework bridge
+from oracle_service.framework_bridge import (
     encode_fc60,
     ganzhi_year,
+    numerology_reduce,
+    life_path,
+    name_to_number,
+    personal_year,
+    self_test,
     ANIMAL_NAMES,
-    ELEMENT_NAMES,
     STEM_ELEMENTS,
     STEM_POLARITY,
     STEM_NAMES,
-)
-from engines.numerology import (
-    life_path,
-    numerology_reduce,
-    name_to_number,
-    name_soul_urge,
-    name_personality,
-    personal_year,
     LETTER_VALUES,
     LIFE_PATH_MEANINGS,
 )
@@ -49,7 +43,7 @@ from engines.oracle import (
     daily_insight,
     _get_zodiac,
 )
-from logic.timing_advisor import get_current_quality, get_optimal_hours_today
+from engines.timing_advisor import get_current_quality, get_optimal_hours_today
 
 # Structured logging (graceful fallback if devops package not available)
 try:
@@ -120,8 +114,6 @@ class OracleServiceImpl(oracle_pb2_grpc.OracleServiceServicer):
 
             checks = {}
             try:
-                from engines.fc60 import self_test
-
                 results = self_test()
                 passed = sum(1 for r in results if r[1])
                 checks["fc60"] = f"{passed}/{len(results)} vectors"
@@ -171,7 +163,6 @@ class OracleServiceImpl(oracle_pb2_grpc.OracleServiceServicer):
             stem_idx, branch_idx = ganzhi_year(y)
 
             # FC60Reading proto
-            element_name = ELEMENT_NAMES[branch_idx % 5]
             fc60_reading = oracle_pb2.FC60Reading(
                 cycle=fc60_result.get("jdn", 0) % 60,
                 element=STEM_ELEMENTS[stem_idx],
@@ -198,9 +189,7 @@ class OracleServiceImpl(oracle_pb2_grpc.OracleServiceServicer):
             day_vib = numerology_reduce(d)
             py = personal_year(m, d, y)
             pm = numerology_reduce(m + numerology_reduce(sum(int(c) for c in str(y))))
-            pd = numerology_reduce(
-                d + m + numerology_reduce(sum(int(c) for c in str(y)))
-            )
+            pd = numerology_reduce(d + m + numerology_reduce(sum(int(c) for c in str(y))))
 
             lp_info = LIFE_PATH_MEANINGS.get(lp, ("", ""))
             numerology_reading = oracle_pb2.NumerologyReading(
@@ -323,11 +312,7 @@ class OracleServiceImpl(oracle_pb2_grpc.OracleServiceServicer):
     def GetDailyInsight(self, request, context):
         with _track_rpc("GetDailyInsight"):
             logger.info("GetDailyInsight called: date=%s", request.date)
-            dt = (
-                _parse_datetime(request.date)
-                if request.date
-                else datetime.now(timezone.utc)
-            )
+            dt = _parse_datetime(request.date) if request.date else datetime.now(timezone.utc)
 
             result = daily_insight(dt)
 
@@ -465,9 +450,7 @@ class OracleServiceImpl(oracle_pb2_grpc.OracleServiceServicer):
 
             # Basic statistical insights from session data
             if request.keys_tested > 0:
-                insights.append(
-                    f"Tested {request.keys_tested:,} keys in {request.elapsed:.1f}s"
-                )
+                insights.append(f"Tested {request.keys_tested:,} keys in {request.elapsed:.1f}s")
             if request.seeds_tested > 0:
                 insights.append(f"Tested {request.seeds_tested:,} seeds")
             if request.speed > 0:
@@ -482,9 +465,7 @@ class OracleServiceImpl(oracle_pb2_grpc.OracleServiceServicer):
 
             # Basic recommendations
             if request.speed > 0 and request.speed < 1000:
-                recommendations.append(
-                    "Consider using batch mode for higher throughput"
-                )
+                recommendations.append("Consider using batch mode for higher throughput")
             if request.elapsed > 3600:
                 recommendations.append(
                     "Long session detected — consider checkpointing more frequently"
@@ -536,8 +517,6 @@ def serve(port=None):
         def _health_fn():
             """Reuse HealthCheck RPC logic for HTTP /health endpoint."""
             try:
-                from engines.fc60 import self_test
-
                 checks = {}
                 results = self_test()
                 passed = sum(1 for r in results if r[1])

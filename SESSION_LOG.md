@@ -9,9 +9,9 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 5 of 45
-**Last session:** Session 5 — Location System Upgrade & Persian Keyboard Polish
-**Current block:** Foundation (Sessions 1-5) COMPLETE
+**Sessions completed:** 6 of 45
+**Last session:** Session 6 — Framework Integration: Core Setup
+**Current block:** Calculation Engines (Sessions 6-12)
 
 ---
 
@@ -249,7 +249,66 @@ TEMPLATE — copy this for each new session:
 - PersianKeyboard shift layer shows Persian digits + diacritics + punctuation (not just symbols) — more useful for Oracle Persian text input
 - LocationSelector uses API helpers (fetchCountries/fetchCities) instead of hardcoded data — future-proof for server-side additions
 
-**Next:** Session 6 — FC60 Calculation Engine (core FC60 algorithm implementation, Python engine matching legacy .archive/ outputs)
+**Next:** Session 6 — Framework Integration: Core Setup
+
+---
+
+## Session 6 — 2026-02-11
+
+**Terminal:** SINGLE
+**Block:** Calculation Engines
+**Task:** Framework Integration: Core Setup — integrate numerology_ai_framework via bridge module, delete 26 obsolete files (12 engines + 8 solvers + 6 logic), update all imports, create 53 bridge tests
+**Spec:** .session-specs/SESSION_6_SPEC.md
+
+**Files changed:**
+
+- `services/oracle/oracle_service/framework_bridge.py` — NEW: single integration point between Oracle service and numerology_ai_framework (534 lines); FrameworkBridgeError, generate_single_reading, generate_multi_reading, map_oracle_user_to_framework_kwargs; 30+ backward-compatible function wrappers (encode_fc60, life_path, moon_phase, ganzhi_year, etc. with parameter order/return type translations); 20+ constant re-exports (ANIMALS, ELEMENTS, STEMS, LETTER_VALUES, LIFE_PATH_MEANINGS, etc.)
+- `services/oracle/oracle_service/__init__.py` — Added project root to sys.path for framework imports
+- `services/oracle/Dockerfile` — Added PYTHONPATH for framework availability in container
+- `docker-compose.yml` — Added numerology_ai_framework volume mount (read-only) to oracle-service
+- `services/oracle/oracle_service/server.py` — Redirected all imports from engines.fc60/engines.numerology/logic.timing_advisor to oracle_service.framework_bridge + engines.timing_advisor; removed sys import and redundant oracle_service import
+- `services/oracle/oracle_service/engines/__init__.py` — Rewritten: explicit re-exports from framework_bridge + oracle + ai_interpreter + translation_service
+- `services/oracle/oracle_service/engines/oracle.py` — Updated 4 lazy import blocks from engines.fc60/engines.numerology → oracle_service.framework_bridge
+- `services/oracle/oracle_service/engines/timing_advisor.py` — Moved from logic/ to engines/; updated 6 lazy import blocks to use oracle_service.framework_bridge
+- `services/oracle/oracle_service/engines/multi_user_service.py` — Wrapped 4 deleted module imports in try/except (Session 7 rebuild)
+- `services/oracle/oracle_service/engines/learning.py` — Wrapped engines.math_analysis import in try/except with neutral fallback; redirected engines.numerology to bridge
+- `services/oracle/oracle_service/engines/ai_engine.py` — Wrapped engines.scoring import in try/except with defaults fallback
+- `services/oracle/oracle_service/engines/scanner_brain.py` — Existing try/except blocks handle deleted module gracefully (no changes needed)
+- `services/oracle/oracle_service/engines/notifier.py` — Existing try/except blocks handle deleted modules gracefully (no changes needed)
+- `services/oracle/tests/test_framework_bridge.py` — NEW: 53 tests across 12 test classes covering constants, base-60, Julian dates, FC60 encoding, Ganzhi, moon phases, numerology, self-test, symbolic reading, single/multi reading generation, DB field mapping, error handling
+- `services/oracle/tests/test_engines.py` — Rewritten: imports redirected to framework_bridge; updated key assertions for bridge output format (fc60/chk/jdn/gz_name vs old stamp/iso/moon_phase keys)
+
+**Files deleted (26):**
+
+- `engines/fc60.py` — replaced by framework_bridge wrappers
+- `engines/numerology.py` — replaced by framework_bridge wrappers
+- `engines/multi_user_fc60.py` — Session 7 rewrite
+- `engines/compatibility_analyzer.py` — Session 7 rewrite
+- `engines/compatibility_matrices.py` — Session 7 rewrite
+- `engines/group_dynamics.py` — Session 7 rewrite
+- `engines/group_energy.py` — Session 7 rewrite
+- `engines/math_analysis.py` — Session 8 rewrite
+- `engines/scoring.py` — Session 8 rewrite
+- `engines/balance.py` — unused
+- `engines/perf.py` — replaced by devops monitoring
+- `engines/terminal_manager.py` — scanner-only, not needed
+- `solvers/` (8 files) — Session 8+ rewrite
+- `logic/` (6 files + timing_advisor moved) — timing_advisor moved to engines/; rest replaced by framework
+- `tests/test_multi_user_fc60.py` — tested deleted modules
+
+**Tests:** 75 pass / 0 fail / 53 new (test_framework_bridge: 53, test_engines: 22 updated)
+**Commit:** pending
+**Issues:** None
+**Decisions:**
+
+- Volume mount approach for framework in Docker (not build context change) — simpler, no risk of breaking existing COPY commands
+- Bridge wraps parameter order differences: old life_path(year,month,day) → framework life_path(day,month,year)
+- Bridge converts moon_phase return type: old (index,age) ← framework (name,emoji,age) via PHASE_NAMES.index()
+- Bridge adds backward-compat keys to encode_fc60 output: jdn, weekday_name, weekday_planet, weekday_domain, moon_illumination, gz_name
+- Deleted modules with try/except callers (scoring, math_analysis, terminal_manager, perf) degrade gracefully — no runtime crashes
+- multi_user_service.py wrapped in try/except, awaiting Session 7 rewrite
+
+**Next:** Session 7 — Multi-User Analysis Engine (rewrite compatibility + group analysis using framework bridge)
 
 ---
 

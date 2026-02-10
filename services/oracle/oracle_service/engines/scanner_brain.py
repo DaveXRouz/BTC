@@ -8,7 +8,6 @@ adjustments and post-session analysis.
 
 import json
 import logging
-import os
 import secrets
 import threading
 import time
@@ -43,9 +42,7 @@ class ScannerBrain:
 
     def __init__(self):
         self._knowledge_dir = KNOWLEDGE_DIR
-        self._strategy_log = (
-            {}
-        )  # {strategy_name: {runs, total_keys, high_scores, patterns, hits, last_used}}
+        self._strategy_log = {}  # {strategy_name: {runs, total_keys, high_scores, patterns, hits, last_used}}
         self._pattern_discoveries = []  # [{timestamp, key_hex, score, strategy, ...}]
         self._ai_insights = []  # [{timestamp, type, recommendation, outcome}]
 
@@ -63,9 +60,7 @@ class ScannerBrain:
 
     def start_session(self, mode, chains, tokens) -> dict:
         """Initialize a new scanning session. Returns config dict for the scanner."""
-        self._current_session_id = (
-            f"{time.strftime('%Y-%m-%d_%H%M')}_{uuid.uuid4().hex[:6]}"
-        )
+        self._current_session_id = f"{time.strftime('%Y-%m-%d_%H%M')}_{uuid.uuid4().hex[:6]}"
         self._session_findings = []
         self._session_start_time = time.time()
 
@@ -89,9 +84,7 @@ class ScannerBrain:
             "session_id": self._current_session_id,
             "ai_recommendation": ai_rec,
         }
-        logger.info(
-            f"Brain session started: {self._current_session_id} strategy={strategy}"
-        )
+        logger.info(f"Brain session started: {self._current_session_id} strategy={strategy}")
         return config
 
     def end_session(self, stats) -> dict:
@@ -233,7 +226,7 @@ class ScannerBrain:
     def _generate_numerology_biased_key(self) -> int:
         """Generate 10 candidates, pick highest numerology score."""
         try:
-            from engines.scoring import numerology_score
+            from engines.scoring import numerology_score  # noqa: F811
         except ImportError:
             return self._generate_random_key()
 
@@ -319,9 +312,7 @@ class ScannerBrain:
         total = len(hex_str)
         import math
 
-        entropy = -sum(
-            (cnt / total) * math.log2(cnt / total) for cnt in counts.values()
-        )
+        entropy = -sum((cnt / total) * math.log2(cnt / total) for cnt in counts.values())
         return entropy
 
     def _learned_entropy_range(self) -> tuple:
@@ -443,9 +434,7 @@ class ScannerBrain:
         log["total_keys"] += stats.get("keys_tested", 0)
         log["hits"] += stats.get("hits", 0)
         log["patterns"] += len(self._session_findings)
-        log["high_scores"] += sum(
-            1 for f in self._session_findings if f.get("score", 0) >= 0.7
-        )
+        log["high_scores"] += sum(1 for f in self._session_findings if f.get("score", 0) >= 0.7)
         log["last_used"] = time.time()
         self._dirty = True
 
@@ -483,14 +472,10 @@ class ScannerBrain:
         try:
             from engines.ai_engine import brain_session_summary
 
-            result = brain_session_summary(
-                json.dumps(session_data, indent=2, default=str)
-            )
+            result = brain_session_summary(json.dumps(session_data, indent=2, default=str))
             if result and result.get("effectiveness"):
                 return {
-                    "session_summary": result.get(
-                        "effectiveness", defaults["session_summary"]
-                    ),
+                    "session_summary": result.get("effectiveness", defaults["session_summary"]),
                     "learning_outcomes": result.get("key_learnings", []),
                     "next_recommendations": result.get("recommendations", []),
                 }

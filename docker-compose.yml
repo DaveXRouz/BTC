@@ -101,6 +101,7 @@ services:
     volumes:
       - oracle_logs:/app/logs
       - ./devops:/app/devops:ro
+      - ./numerology_ai_framework:/app/numerology_ai_framework:ro
     restart: unless-stopped
     deploy:
       resources:

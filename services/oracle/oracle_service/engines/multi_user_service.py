@@ -12,10 +12,18 @@ Returns a fully JSON-serializable result with computation time.
 
 import time
 
-from engines.multi_user_fc60 import calculate_profiles
-from engines.compatibility_analyzer import CompatibilityAnalyzer
-from engines.group_energy import GroupEnergyCalculator
-from engines.group_dynamics import GroupDynamicsAnalyzer
+# These modules were removed in Session 6 (framework integration).
+# Session 7 will rewrite multi-user analysis using the framework bridge.
+try:
+    from engines.multi_user_fc60 import calculate_profiles
+    from engines.compatibility_analyzer import CompatibilityAnalyzer
+    from engines.group_energy import GroupEnergyCalculator
+    from engines.group_dynamics import GroupDynamicsAnalyzer
+except ImportError:
+    calculate_profiles = None
+    CompatibilityAnalyzer = None
+    GroupEnergyCalculator = None
+    GroupDynamicsAnalyzer = None
 
 
 class MultiUserAnalysisResult:
@@ -55,9 +63,7 @@ class MultiUserAnalysisResult:
             "pair_count": self.pair_count,
             "computation_ms": round(self.computation_ms, 1),
             "profiles": [p.to_dict() for p in self.profiles],
-            "pairwise_compatibility": [
-                pc.to_dict() for pc in self.pairwise_compatibility
-            ],
+            "pairwise_compatibility": [pc.to_dict() for pc in self.pairwise_compatibility],
             "group_energy": self.group_energy.to_dict(),
             "group_dynamics": self.group_dynamics.to_dict(),
         }

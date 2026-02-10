@@ -1,8 +1,8 @@
 """NPS Oracle Service.
 
-Shim: legacy engines use `from engines.xxx import ...`. By adding this package's
-directory to sys.path, those imports resolve to `oracle_service/engines/xxx`
-without touching the 30+ copied legacy files.
+Path shims:
+1. oracle_service/ directory on sys.path — allows `from engines.xxx` imports
+2. Project root on sys.path — allows `from numerology_ai_framework.xxx` imports
 """
 
 import sys
@@ -12,3 +12,8 @@ from pathlib import Path
 _pkg_dir = str(Path(__file__).parent)
 if _pkg_dir not in sys.path:
     sys.path.insert(0, _pkg_dir)
+
+# Allow `from numerology_ai_framework.xxx` imports
+_project_root = str(Path(__file__).resolve().parents[3])  # NPS/
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
