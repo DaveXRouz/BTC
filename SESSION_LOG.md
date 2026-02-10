@@ -130,7 +130,7 @@ TEMPLATE — copy this for each new session:
 - `api/tests/test_auth.py` — Extended from 15 to 56 tests: moderator scopes (3), refresh tokens (4), blacklist (5), brute-force (5), registration validation (4), token models (3), audit service (8), ORM columns (4), existing tests (15 preserved + 5 HTTP scope tests)
 
 **Tests:** 202 pass / 0 fail / 41 new (56 total in test_auth.py)
-**Commit:** pending
+**Commit:** a9875a6 — [api] auth system hardening: moderator role, refresh tokens, brute-force protection (#session-2)
 **Issues:** None
 **Decisions:**
 
