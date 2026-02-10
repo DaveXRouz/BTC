@@ -200,7 +200,7 @@ TEMPLATE — copy this for each new session:
 - `frontend/vitest.config.ts` — Added e2e exclude to prevent vitest from picking up Playwright tests
 
 **Tests:** 147 pass / 0 fail / 39 new (23 UserForm + 10 UserCard + 6 UserProfileList)
-**Commit:** pending
+**Commit:** 481309f — [frontend] oracle profiles form & validation UI: UserForm rewrite, UserCard, UserProfileList (#session-4)
 **Issues:** None
 **Decisions:**
 
