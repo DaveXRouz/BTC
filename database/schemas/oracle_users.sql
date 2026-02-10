@@ -13,6 +13,12 @@ CREATE TABLE IF NOT EXISTS oracle_users (
     mother_name VARCHAR(200) NOT NULL,
     mother_name_persian VARCHAR(200),
 
+    -- Framework alignment columns (Session 1)
+    gender VARCHAR(20) CHECK(gender IN ('male', 'female') OR gender IS NULL),
+    heart_rate_bpm INTEGER CHECK(heart_rate_bpm IS NULL OR (heart_rate_bpm >= 30 AND heart_rate_bpm <= 220)),
+    timezone_hours INTEGER DEFAULT 0 CHECK(timezone_hours >= -12 AND timezone_hours <= 14),
+    timezone_minutes INTEGER DEFAULT 0 CHECK(timezone_minutes >= 0 AND timezone_minutes <= 59),
+
     -- Location data (optional)
     country VARCHAR(100),
     city VARCHAR(100),

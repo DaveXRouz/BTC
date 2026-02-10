@@ -1,5 +1,6 @@
 -- Oracle Seed Data — Development/testing only
--- 3 users (Persian names, Iranian cities) + 5 readings (3 single + 2 multi-user)
+-- 4 users (3 Persian + 1 framework test vector) + 5 readings (3 single + 2 multi-user)
+-- + oracle_settings for all users
 --
 -- Usage: psql -U nps -d nps -f oracle_seed_data.sql
 -- Idempotent: safe to re-run (truncates Oracle tables first)
@@ -8,21 +9,38 @@ BEGIN;
 
 -- ─── Clean slate (Oracle tables only) ───
 
-TRUNCATE oracle_reading_users, oracle_audit_log, oracle_readings, oracle_users
+TRUNCATE oracle_daily_readings, oracle_settings, oracle_reading_users, oracle_audit_log, oracle_readings, oracle_users
     RESTART IDENTITY CASCADE;
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Users
 -- ═══════════════════════════════════════════════════════════════════
 
-INSERT INTO oracle_users (id, name, name_persian, birthday, mother_name, mother_name_persian, country, city, coordinates)
+INSERT INTO oracle_users (id, name, name_persian, birthday, mother_name, mother_name_persian, gender, heart_rate_bpm, timezone_hours, timezone_minutes, country, city, coordinates)
 VALUES
-    (1, 'Hamzeh', 'حمزه', '1990-03-21', 'Fatemeh', 'فاطمه', 'Iran', 'Tehran', POINT(51.3890, 35.6892)),
-    (2, 'Sara', 'سارا', '1995-07-14', 'Maryam', 'مریم', 'Iran', 'Isfahan', POINT(51.6776, 32.6546)),
-    (3, 'Ali', 'علی', '1988-11-02', 'Zahra', 'زهرا', 'Iran', 'Shiraz', POINT(52.5836, 29.5918));
+    (1, 'Hamzeh', 'حمزه', '1990-03-21', 'Fatemeh', 'فاطمه', 'male', 72, 3, 30, 'Iran', 'Tehran', POINT(51.3890, 35.6892)),
+    (2, 'Sara', 'سارا', '1995-07-14', 'Maryam', 'مریم', 'female', 68, 3, 30, 'Iran', 'Isfahan', POINT(51.6776, 32.6546)),
+    (3, 'Ali', 'علی', '1988-11-02', 'Zahra', 'زهرا', 'male', 75, 3, 30, 'Iran', 'Shiraz', POINT(52.5836, 29.5918));
+
+-- Framework test vector: "Test User" born 2000-01-01, Life Path = 4 (1+1+2+0+0+0 = 4)
+-- Age on 2026-02-11: 26 years | Birth weekday: Saturday (JDN 2451545)
+INSERT INTO oracle_users (id, name, name_persian, birthday, mother_name, mother_name_persian, gender, heart_rate_bpm, timezone_hours, timezone_minutes)
+VALUES (100, 'Test User', 'کاربر آزمایشی', '2000-01-01', 'Test Mother', 'مادر آزمایشی', NULL, NULL, 0, 0);
 
 -- Reset sequence to next available ID
 SELECT setval('oracle_users_id_seq', (SELECT MAX(id) FROM oracle_users));
+
+-- ═══════════════════════════════════════════════════════════════════
+-- User Settings (preferences)
+-- ═══════════════════════════════════════════════════════════════════
+
+INSERT INTO oracle_settings (user_id, language, theme, numerology_system, default_timezone_hours, default_timezone_minutes)
+VALUES
+    (1, 'fa', 'dark', 'auto', 3, 30),
+    (2, 'fa', 'light', 'auto', 3, 30),
+    (3, 'fa', 'light', 'abjad', 3, 30),
+    (100, 'en', 'light', 'pythagorean', 0, 0)
+ON CONFLICT (user_id) DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Readings — Single-user (one per sign_type)

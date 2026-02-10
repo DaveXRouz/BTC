@@ -217,6 +217,10 @@ CREATE TABLE IF NOT EXISTS oracle_users (
     birthday DATE NOT NULL,
     mother_name VARCHAR(200) NOT NULL,
     mother_name_persian VARCHAR(200),
+    gender VARCHAR(20) CHECK(gender IN ('male', 'female') OR gender IS NULL),
+    heart_rate_bpm INTEGER CHECK(heart_rate_bpm IS NULL OR (heart_rate_bpm >= 30 AND heart_rate_bpm <= 220)),
+    timezone_hours INTEGER DEFAULT 0 CHECK(timezone_hours >= -12 AND timezone_hours <= 14),
+    timezone_minutes INTEGER DEFAULT 0 CHECK(timezone_minutes >= 0 AND timezone_minutes <= 59),
     country VARCHAR(100),
     city VARCHAR(100),
     coordinates POINT,
@@ -249,6 +253,9 @@ CREATE TABLE IF NOT EXISTS oracle_readings (
     individual_results JSONB,
     compatibility_matrix JSONB,
     combined_energy JSONB,
+    framework_version VARCHAR(20) DEFAULT NULL,
+    reading_mode VARCHAR(20) DEFAULT 'full' CHECK(reading_mode IN ('full', 'stamp_only')),
+    numerology_system VARCHAR(20) DEFAULT 'pythagorean' CHECK(numerology_system IN ('pythagorean', 'chaldean', 'abjad')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT oracle_readings_sign_type_check CHECK (sign_type IN ('time', 'name', 'question', 'reading', 'multi_user', 'daily')),
     CONSTRAINT oracle_readings_user_check CHECK (
@@ -338,3 +345,65 @@ COMMENT ON INDEX idx_oracle_reading_users_reading_id IS 'B-tree for finding all 
 CREATE TRIGGER oracle_users_updated_at
     BEFORE UPDATE ON oracle_users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ═══════════════════════════════════════════════════════════════════
+-- Oracle Settings & Daily Readings (Session 1: Framework Alignment)
+-- ═══════════════════════════════════════════════════════════════════
+
+-- ─── Oracle Settings (user preferences) ───
+
+CREATE TABLE IF NOT EXISTS oracle_settings (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES oracle_users(id) ON DELETE CASCADE,
+    language VARCHAR(10) NOT NULL DEFAULT 'en' CHECK(language IN ('en', 'fa')),
+    theme VARCHAR(20) NOT NULL DEFAULT 'light' CHECK(theme IN ('light', 'dark', 'auto')),
+    numerology_system VARCHAR(20) NOT NULL DEFAULT 'auto'
+        CHECK(numerology_system IN ('pythagorean', 'chaldean', 'abjad', 'auto')),
+    default_timezone_hours INTEGER DEFAULT 0
+        CHECK(default_timezone_hours >= -12 AND default_timezone_hours <= 14),
+    default_timezone_minutes INTEGER DEFAULT 0
+        CHECK(default_timezone_minutes >= 0 AND default_timezone_minutes <= 59),
+    daily_reading_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    notifications_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id)
+);
+
+COMMENT ON TABLE oracle_settings IS 'User preferences for Oracle service (language, theme, numerology system)';
+
+CREATE INDEX IF NOT EXISTS idx_oracle_settings_user_id ON oracle_settings(user_id);
+
+CREATE TRIGGER oracle_settings_updated_at
+    BEFORE UPDATE ON oracle_settings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ─── Oracle Daily Readings (auto-generated, one per user per day) ───
+
+CREATE TABLE IF NOT EXISTS oracle_daily_readings (
+    id BIGSERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES oracle_users(id) ON DELETE CASCADE,
+    reading_date DATE NOT NULL,
+    reading_result JSONB NOT NULL,
+    daily_insights JSONB,
+    numerology_system VARCHAR(20) NOT NULL DEFAULT 'pythagorean'
+        CHECK(numerology_system IN ('pythagorean', 'chaldean', 'abjad')),
+    confidence_score DOUBLE PRECISION DEFAULT 0,
+    framework_version VARCHAR(20),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id, reading_date)
+);
+
+COMMENT ON TABLE oracle_daily_readings IS 'Auto-generated daily readings, one per user per day';
+
+CREATE INDEX IF NOT EXISTS idx_oracle_daily_readings_user_date
+    ON oracle_daily_readings(user_id, reading_date DESC);
+CREATE INDEX IF NOT EXISTS idx_oracle_daily_readings_date
+    ON oracle_daily_readings(reading_date DESC);
+CREATE INDEX IF NOT EXISTS idx_oracle_daily_readings_result_gin
+    ON oracle_daily_readings(reading_result) USING GIN;
+
+-- ─── Oracle Readings: numerology_system index ───
+
+CREATE INDEX IF NOT EXISTS idx_oracle_readings_numerology_system
+    ON oracle_readings(numerology_system);

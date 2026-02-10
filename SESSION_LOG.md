@@ -9,8 +9,8 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 0 of 45
-**Last session:** None — ready to begin
+**Sessions completed:** 1 of 45
+**Last session:** Session 1 — Database Schema Audit & Alignment
 **Current block:** Foundation (Sessions 1-5)
 
 ---
@@ -79,6 +79,35 @@ TEMPLATE — copy this for each new session:
 -->
 
 <!-- Sessions logged below this line -->
+
+## Session 1 — 2026-02-11
+
+**Terminal:** SINGLE
+**Block:** Foundation
+**Task:** Database Schema Audit & Alignment — add missing framework columns, create oracle_settings and oracle_daily_readings tables
+**Spec:** .session-specs/SESSION_1_SPEC.md
+
+**Files changed:**
+
+- `database/schemas/oracle_users.sql` — Added 4 columns: gender, heart_rate_bpm, timezone_hours, timezone_minutes with CHECK constraints
+- `database/schemas/oracle_readings.sql` — Added 3 columns: framework_version, reading_mode, numerology_system with CHECK constraints + index; updated sign_type constraint to include 'reading', 'multi_user', 'daily'
+- `database/schemas/oracle_settings.sql` — NEW: user preferences table (language, theme, numerology_system, timezone, toggles) with UNIQUE(user_id)
+- `database/schemas/oracle_daily_readings.sql` — NEW: auto-generated daily readings with UNIQUE(user_id, reading_date)
+- `database/migrations/012_framework_alignment.sql` — NEW: idempotent migration adding all columns + tables
+- `database/migrations/012_framework_alignment_rollback.sql` — NEW: clean rollback for migration 012
+- `database/seeds/oracle_seed_data.sql` — Added framework test vector user (id=100, "Test User", 2000-01-01), updated 3 existing users with gender/BPM/timezone, added oracle_settings rows for all 4 users
+- `database/init.sql` — Added 4 columns to oracle_users, 3 columns to oracle_readings, added oracle_settings and oracle_daily_readings table definitions with indexes and triggers
+
+**Tests:** SQL syntax validation pass (balanced parens + UTF-8 for all 8 files), Persian text round-trip verified (8 strings), acceptance criteria all verifiable
+**Commit:** 1a42fb1 — [database] schema audit & framework alignment (#session-1)
+**Issues:** None
+**Decisions:**
+
+- Kept POINT coordinate order as (longitude, latitude) — documented in schema comments, framework bridge (Session 6) must extract accordingly
+- sign_type CHECK constraint in oracle_readings.sql expanded to match init.sql ('reading', 'multi_user', 'daily' added)
+- Test vector user id=100 to avoid collision with seed user sequence (1-3)
+
+**Next:** Session 2 — Authentication System Hardening (JWT refresh tokens, API key management, password policies, migration 013)
 
 ---
 
