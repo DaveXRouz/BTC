@@ -14,6 +14,14 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from oracle_service.models.reading_types import (
+    MultiUserResult,
+    ReadingResult,
+    ReadingType,
+    UserProfile,
+)
+from oracle_service.multi_user_analyzer import MultiUserAnalyzer
+
 from numerology_ai_framework.core.base60_codec import Base60Codec
 from numerology_ai_framework.core.fc60_stamp_engine import FC60StampEngine
 from numerology_ai_framework.core.julian_date_engine import JulianDateEngine
@@ -540,3 +548,301 @@ def generate_symbolic_reading(
     lines.append(f"Moon: {MOON_PHASE_NAMES[phase_idx]} ({illum:.0f}% illuminated)")
     lines.append(f"Year: {STEM_NAMES[stem_idx]} {ANIMAL_NAMES[branch_idx]}")
     return "\n".join(lines)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Typed Reading Functions (Session 7)
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Personal day number -> suggested activities
+_DAY_ACTIVITIES: Dict[int, List[str]] = {
+    1: ["Start new projects", "Take initiative", "Assert yourself"],
+    2: ["Collaborate with others", "Mediate conflicts", "Listen deeply"],
+    3: ["Create art or music", "Write or express ideas", "Socialize"],
+    4: ["Organize your workspace", "Build solid foundations", "Plan ahead"],
+    5: ["Try something new", "Travel or explore", "Embrace change"],
+    6: ["Help someone in need", "Focus on family", "Beautify your space"],
+    7: ["Study or research", "Meditate", "Seek inner wisdom"],
+    8: ["Focus on financial goals", "Exercise leadership", "Make bold decisions"],
+    9: ["Give back", "Complete unfinished tasks", "Release what no longer serves"],
+    11: ["Follow your intuition", "Inspire others", "Pursue spiritual growth"],
+    22: ["Work on big visions", "Manifest your goals", "Build for the future"],
+    33: ["Teach or mentor", "Practice compassion", "Heal through understanding"],
+}
+
+# Personal month number -> focus area
+_MONTH_FOCUS: Dict[int, str] = {
+    1: "New beginnings and self-reliance",
+    2: "Relationships and cooperation",
+    3: "Creative expression and communication",
+    4: "Building foundations and discipline",
+    5: "Freedom and embracing change",
+    6: "Home, family, and responsibility",
+    7: "Inner reflection and spiritual growth",
+    8: "Career advancement and material goals",
+    9: "Completion and humanitarian service",
+    11: "Spiritual awareness and inspiration",
+    22: "Large-scale manifesting and leadership",
+    33: "Compassionate teaching and healing",
+}
+
+
+def _build_daily_insights(user: UserProfile, output: Dict[str, Any]) -> Dict[str, Any]:
+    """Build daily_insights dict from framework output and user profile.
+
+    Returns dict with 5 keys: suggested_activities, energy_forecast,
+    lucky_hours, focus_area, element_of_day.
+    """
+    numerology = output.get("numerology", {})
+    moon_data = output.get("moon", {})
+    ganzhi_data = output.get("ganzhi", {})
+    current = output.get("current", {})
+
+    personal_day = numerology.get("personal_day", 1)
+    moon_energy = moon_data.get("energy", "")
+    moon_phase_name = moon_data.get("phase_name", "")
+    planet = current.get("planet", "")
+    domain = current.get("domain", "")
+    day_element = ganzhi_data.get("day", {}).get("element", "Earth")
+    day_stem_idx = ganzhi_data.get("day", {}).get("stem_index", 0)
+    personal_month = numerology.get("personal_month", 1)
+
+    # Suggested activities from personal day number
+    activities = _DAY_ACTIVITIES.get(personal_day, ["Follow your daily routine"])
+
+    # Energy forecast: moon phase energy + planetary day domain
+    energy_forecast = f"{moon_phase_name} energy ({moon_energy}) meets {planet}'s {domain}"
+
+    # Lucky hours: hours where user's birth year animal appears
+    user_branch = GanzhiEngine.year_ganzhi(user.birth_year)[1]
+    lucky_hours: List[int] = []
+    for h in range(24):
+        _, hour_branch = GanzhiEngine.hour_ganzhi(h, day_stem_idx)
+        if hour_branch == user_branch:
+            lucky_hours.append(h)
+
+    # Focus area from personal month
+    focus_area = _MONTH_FOCUS.get(personal_month, "Balance and awareness")
+
+    return {
+        "suggested_activities": activities,
+        "energy_forecast": energy_forecast,
+        "lucky_hours": lucky_hours,
+        "focus_area": focus_area,
+        "element_of_day": day_element,
+    }
+
+
+def generate_time_reading(
+    user: UserProfile,
+    hour: int,
+    minute: int,
+    second: int,
+    target_date: Optional[datetime] = None,
+) -> ReadingResult:
+    """Generate a reading where the "sign" is a specific time (HH:MM:SS).
+
+    The time overrides any time in target_date.
+
+    Raises:
+        ValueError: If hour/minute/second are out of range.
+        FrameworkBridgeError: If framework reading generation fails.
+    """
+    if not (0 <= hour <= 23):
+        raise ValueError(f"Invalid hour: {hour}")
+    if not (0 <= minute <= 59):
+        raise ValueError(f"Invalid minute: {minute}")
+    if not (0 <= second <= 59):
+        raise ValueError(f"Invalid second: {second}")
+
+    t0 = time.perf_counter()
+    kwargs = user.to_framework_kwargs()
+    kwargs["current_hour"] = hour
+    kwargs["current_minute"] = minute
+    kwargs["current_second"] = second
+    if target_date is not None:
+        kwargs["current_date"] = target_date
+
+    output = generate_single_reading(**kwargs)
+    duration_ms = (time.perf_counter() - t0) * 1000
+    logger.info("Time reading generated in %.1fms", duration_ms)
+
+    return ReadingResult(
+        reading_type=ReadingType.TIME,
+        user_id=user.user_id,
+        framework_output=output,
+        sign_value=f"{hour:02d}:{minute:02d}:{second:02d}",
+        confidence_score=float(output.get("confidence", {}).get("score", 0)),
+    )
+
+
+def generate_name_reading(
+    user: UserProfile,
+    name_to_analyze: str,
+    target_date: Optional[datetime] = None,
+) -> ReadingResult:
+    """Generate a reading where the "sign" is a name string.
+
+    The name_to_analyze overrides user.full_name for numerology calculation.
+    Other personal data (birth date, location, etc.) still comes from the
+    user's profile.
+
+    Raises:
+        ValueError: If name_to_analyze is empty.
+        FrameworkBridgeError: If framework reading generation fails.
+    """
+    if not name_to_analyze or not name_to_analyze.strip():
+        raise ValueError("Name cannot be empty")
+
+    t0 = time.perf_counter()
+    kwargs = user.to_framework_kwargs()
+    kwargs["full_name"] = name_to_analyze
+    if target_date is not None:
+        kwargs["current_date"] = target_date
+
+    output = generate_single_reading(**kwargs)
+    duration_ms = (time.perf_counter() - t0) * 1000
+    logger.info("Name reading for '%s' generated in %.1fms", name_to_analyze, duration_ms)
+
+    return ReadingResult(
+        reading_type=ReadingType.NAME,
+        user_id=user.user_id,
+        framework_output=output,
+        sign_value=name_to_analyze,
+        confidence_score=float(output.get("confidence", {}).get("score", 0)),
+    )
+
+
+def generate_question_reading(
+    user: UserProfile,
+    question_text: str,
+    target_date: Optional[datetime] = None,
+) -> ReadingResult:
+    """Generate a reading where the "sign" is a question typed by the user.
+
+    The question's numerological vibration number is computed via
+    NumerologyEngine.expression_number() and stored in the framework
+    output as 'question_vibration'.
+
+    Raises:
+        ValueError: If question_text is empty.
+        FrameworkBridgeError: If framework reading generation fails.
+    """
+    if not question_text or not question_text.strip():
+        raise ValueError("Question cannot be empty")
+
+    t0 = time.perf_counter()
+
+    vibration = NumerologyEngine.expression_number(question_text, system=user.numerology_system)
+
+    kwargs = user.to_framework_kwargs()
+    if target_date is not None:
+        kwargs["current_date"] = target_date
+
+    output = generate_single_reading(**kwargs)
+    output["question_vibration"] = vibration
+
+    duration_ms = (time.perf_counter() - t0) * 1000
+    logger.info("Question reading (vibration=%d) generated in %.1fms", vibration, duration_ms)
+
+    return ReadingResult(
+        reading_type=ReadingType.QUESTION,
+        user_id=user.user_id,
+        framework_output=output,
+        sign_value=question_text,
+        confidence_score=float(output.get("confidence", {}).get("score", 0)),
+    )
+
+
+def generate_daily_reading(
+    user: UserProfile,
+    target_date: Optional[datetime] = None,
+) -> ReadingResult:
+    """Generate a daily reading — no manual sign input.
+
+    Uses noon (12:00:00) as the neutral midday energy point.
+    Populates daily_insights with suggested_activities, energy_forecast,
+    lucky_hours, focus_area, and element_of_day.
+
+    Raises:
+        FrameworkBridgeError: If framework reading generation fails.
+    """
+    t0 = time.perf_counter()
+
+    kwargs = user.to_framework_kwargs()
+    kwargs["current_hour"] = 12
+    kwargs["current_minute"] = 0
+    kwargs["current_second"] = 0
+    if target_date is not None:
+        kwargs["current_date"] = target_date
+
+    output = generate_single_reading(**kwargs)
+    daily_insights = _build_daily_insights(user, output)
+
+    duration_ms = (time.perf_counter() - t0) * 1000
+    logger.info("Daily reading generated in %.1fms", duration_ms)
+
+    date_str = (target_date or datetime.now()).strftime("%Y-%m-%d")
+
+    return ReadingResult(
+        reading_type=ReadingType.DAILY,
+        user_id=user.user_id,
+        framework_output=output,
+        sign_value=date_str,
+        confidence_score=float(output.get("confidence", {}).get("score", 0)),
+        daily_insights=daily_insights,
+    )
+
+
+def generate_multi_user_reading(
+    users: List[UserProfile],
+    reading_type: ReadingType = ReadingType.TIME,
+    sign_value: Optional[str] = None,
+    target_date: Optional[datetime] = None,
+) -> MultiUserResult:
+    """Generate readings for 2-5 users with pairwise compatibility analysis.
+
+    Generates individual readings using the appropriate single-user function
+    based on reading_type, then passes results to MultiUserAnalyzer.
+
+    Raises:
+        ValueError: If fewer than 2 or more than 5 users.
+        FrameworkBridgeError: If any individual reading fails.
+    """
+    if len(users) < 2:
+        raise ValueError("At least 2 users required")
+    if len(users) > 5:
+        raise ValueError("Maximum 5 users allowed")
+
+    t0 = time.perf_counter()
+    individual: List[ReadingResult] = []
+
+    for user in users:
+        if reading_type == ReadingType.TIME:
+            if sign_value:
+                parts = sign_value.split(":")
+                h = int(parts[0])
+                m = int(parts[1]) if len(parts) > 1 else 0
+                s = int(parts[2]) if len(parts) > 2 else 0
+            else:
+                now = target_date or datetime.now()
+                h, m, s = now.hour, now.minute, now.second
+            reading = generate_time_reading(user, h, m, s, target_date)
+        elif reading_type == ReadingType.NAME:
+            reading = generate_name_reading(user, sign_value or user.full_name, target_date)
+        elif reading_type == ReadingType.QUESTION:
+            reading = generate_question_reading(
+                user, sign_value or "What is our shared destiny?", target_date
+            )
+        elif reading_type == ReadingType.DAILY:
+            reading = generate_daily_reading(user, target_date)
+        else:
+            reading = generate_time_reading(user, 12, 0, 0, target_date)
+        individual.append(reading)
+
+    result = MultiUserAnalyzer.analyze_group(individual)
+
+    duration_ms = (time.perf_counter() - t0) * 1000
+    logger.info("Multi-user reading (%d users) generated in %.1fms", len(users), duration_ms)
+
+    return result

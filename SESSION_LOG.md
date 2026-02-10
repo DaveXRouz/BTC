@@ -9,8 +9,8 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 6 of 45
-**Last session:** Session 6 — Framework Integration: Core Setup
+**Sessions completed:** 7 of 45
+**Last session:** Session 7 — Framework Integration: Reading Types
 **Current block:** Calculation Engines (Sessions 6-12)
 
 ---
@@ -309,6 +309,38 @@ TEMPLATE — copy this for each new session:
 - multi_user_service.py wrapped in try/except, awaiting Session 7 rewrite
 
 **Next:** Session 7 — Multi-User Analysis Engine (rewrite compatibility + group analysis using framework bridge)
+
+---
+
+## Session 7 — 2026-02-11
+
+**Terminal:** SINGLE
+**Block:** Calculation Engines
+**Task:** Framework Integration: Reading Types — implement 5 typed reading functions (Time, Name, Question, Daily, Multi-User), UserProfile dataclass, MultiUserAnalyzer with element/animal/life-path compatibility matrices
+**Spec:** .session-specs/SESSION_7_SPEC.md
+
+**Files changed:**
+
+- `services/oracle/oracle_service/models/__init__.py` — NEW: package init with public exports (UserProfile, ReadingType, ReadingResult, CompatibilityResult, MultiUserResult, ReadingRequest)
+- `services/oracle/oracle_service/models/reading_types.py` — NEW: 6 dataclasses (UserProfile with to_framework_kwargs(), ReadingType enum, ReadingRequest, ReadingResult, CompatibilityResult, MultiUserResult)
+- `services/oracle/oracle_service/multi_user_analyzer.py` — NEW: MultiUserAnalyzer class with Wu Xing element matrix (15 pairs), Chinese zodiac animal relationships (6 secret friends, 4 trine groups, 6 clash pairs), life path scoring, moon alignment, pattern overlap; weighted pairwise scoring (LP 30% + Element 25% + Animal 20% + Moon 15% + Pattern 10%); group harmony analysis
+- `services/oracle/oracle_service/framework_bridge.py` — Added 5 typed reading functions (generate_time_reading, generate_name_reading, generate_question_reading, generate_daily_reading, generate_multi_user_reading), daily insights builder with lucky hours calculation, activity/focus mappings; added imports for new models and MultiUserAnalyzer
+- `services/oracle/tests/test_reading_types.py` — NEW: 27 tests across 7 classes (TimeReading 6, NameReading 5, QuestionReading 4, DailyReading 5, MultiUserReading 5, UserProfileModel 2)
+- `services/oracle/tests/test_multi_user_analyzer.py` — NEW: 31 tests across 7 classes (LifePathScoring 5, ElementScoring 5, AnimalScoring 5, MoonScoring 4, PatternScoring 5, GroupAnalysis 6, weighted formula 1)
+
+**Tests:** 198 pass / 1 pre-existing fail (grpc_server Docker path) / 58 new (27 reading types + 31 multi-user analyzer) | 123 framework pass (no regressions)
+**Commit:** TBD
+**Issues:** None
+**Decisions:**
+
+- Used @dataclass (not Pydantic) for Oracle service models — keeps service dependency-free; Pydantic models go in API layer (Session 13+)
+- Element compatibility matrix checks both orderings → full 5x5 coverage (25 pairs) from 15 explicit entries
+- Lucky hours calculated via GanzhiEngine.hour_ganzhi() matching user's birth year animal branch — each user gets exactly 2 lucky hours per day
+- Daily reading uses noon (12:00:00) as neutral midday energy point for consistent daily readings
+- Question vibration computed via NumerologyEngine.expression_number() with user's preferred numerology system; stored as augmented key in framework_output
+- Multi-user reading dispatches to appropriate single-user function based on reading_type, then passes to MultiUserAnalyzer.analyze_group()
+
+**Next:** Session 8 — Numerology System Selection (auto-detection logic, selector UI, API parameter for pythagorean/chaldean/abjad switching)
 
 ---
 
