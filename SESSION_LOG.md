@@ -329,7 +329,7 @@ TEMPLATE — copy this for each new session:
 - `services/oracle/tests/test_multi_user_analyzer.py` — NEW: 31 tests across 7 classes (LifePathScoring 5, ElementScoring 5, AnimalScoring 5, MoonScoring 4, PatternScoring 5, GroupAnalysis 6, weighted formula 1)
 
 **Tests:** 198 pass / 1 pre-existing fail (grpc_server Docker path) / 58 new (27 reading types + 31 multi-user analyzer) | 123 framework pass (no regressions)
-**Commit:** TBD
+**Commit:** 0863dc3 — [oracle] implement 5 typed reading functions + multi-user compatibility analyzer (#session-7)
 **Issues:** None
 **Decisions:**
 
