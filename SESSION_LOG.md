@@ -371,7 +371,7 @@ TEMPLATE — copy this for each new session:
 - `frontend/src/utils/__tests__/scriptDetector.test.ts` — NEW: 12 tests (detectScript, containsPersian, containsLatin, autoSelectSystem)
 
 **Tests:** 123 framework pass (no regressions) | 15 Abjad tests pass | 17 selection tests pass | 12 frontend script tests pass | 165 total frontend pass (20 files, no regressions)
-**Commit:** (pending)
+**Commit:** f8a38ad — [oracle][api][frontend] numerology system selection: Abjad support, script detection, auto-selection (#session-8)
 **Issues:** None
 **Decisions:**
 
