@@ -399,7 +399,7 @@ TEMPLATE — copy this for each new session:
 - `services/oracle/tests/test_pattern_formatter.py` — NEW: 18 tests across 6 classes (SortByPriority 3, FormatForAI 4, FormatForFrontend 5, FormatForDatabase 2, ConfidenceMapper 4)
 
 **Tests:** 233 pass / 1 pre-existing fail (Docker path) / 18 new | 123 framework pass (no regressions)
-**Commit:** pending
+**Commit:** 1093261 — [oracle] signal processing & patterns: PatternFormatter, ConfidenceMapper, bridge integration (#session-9)
 **Issues:** None
 **Decisions:**
 
