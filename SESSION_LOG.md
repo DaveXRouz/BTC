@@ -959,7 +959,7 @@ TEMPLATE — copy this for each new session:
 - `frontend/src/components/oracle/__tests__/SummaryTab.test.tsx` — Full rewrite with section-based assertions
 
 **Tests:** 316 pass / 0 fail / 15 new (3 ReadingSection + 3 NumerologyNumberDisplay + 2 PatternBadge + 2 ReadingHeader + 2 ReadingFooter + 2 ShareButton + 1 SummaryTab rewrite) | 0 regressions across all 49 test files
-**Commit:** TBD
+**Commit:** d05eef9 — [frontend] reading results display: section-based layout, numerology numbers, patterns, share, print CSS (#session-21)
 **Issues:** None
 **Decisions:**
 
