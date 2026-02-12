@@ -152,13 +152,16 @@ export function MultiUserSelector({
             aria-label={t("oracle.secondary_users")}
             className="flex items-center gap-2 flex-wrap"
           >
-            <UserChip name={selectedUsers.primary.name} isPrimary />
+            <div className="nps-animate-scale-in">
+              <UserChip name={selectedUsers.primary.name} isPrimary />
+            </div>
             {selectedUsers.secondary.map((user) => (
-              <UserChip
-                key={user.id}
-                name={user.name}
-                onRemove={() => handleRemoveSecondary(user.id)}
-              />
+              <div key={user.id} className="nps-animate-scale-in">
+                <UserChip
+                  name={user.name}
+                  onRemove={() => handleRemoveSecondary(user.id)}
+                />
+              </div>
             ))}
 
             {/* Add secondary user */}

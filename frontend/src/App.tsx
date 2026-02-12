@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Layout } from "./components/Layout";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import "./styles/rtl.css";
+import "./styles/animations.css";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Oracle = lazy(() => import("./pages/Oracle"));

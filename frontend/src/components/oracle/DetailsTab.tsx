@@ -27,11 +27,16 @@ function DetailSection({
         className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-nps-text hover:bg-nps-bg-input transition-colors"
       >
         {title}
-        <span className="text-nps-text-dim">{open ? "\u25B2" : "\u25BC"}</span>
+        <span className="nps-chevron text-nps-text-dim" data-open={open}>
+          {"\u25BC"}
+        </span>
       </button>
-      {open && (
-        <div className="px-3 pb-3 border-t border-nps-border">{children}</div>
-      )}
+      <div
+        className="nps-section-content border-t border-nps-border"
+        data-open={open}
+      >
+        <div className="px-3 pb-3 pt-2">{children}</div>
+      </div>
     </div>
   );
 }

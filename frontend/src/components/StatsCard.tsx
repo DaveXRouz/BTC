@@ -1,3 +1,5 @@
+import { CountUp } from "./common/CountUp";
+
 interface StatsCardProps {
   label: string;
   value: string | number;
@@ -19,6 +21,26 @@ const TREND_ARROWS = {
   flat: "\u2192",
 } as const;
 
+function parseNumericValue(value: string | number): {
+  numeric: number | null;
+  suffix: string;
+  prefix: string;
+} {
+  if (typeof value === "number") {
+    return { numeric: value, suffix: "", prefix: "" };
+  }
+  // Match patterns like "123", "0/s", "$100", "45%"
+  const match = value.match(/^([^0-9]*?)(\d+(?:\.\d+)?)(.*)$/);
+  if (match) {
+    return {
+      prefix: match[1],
+      numeric: parseFloat(match[2]),
+      suffix: match[3],
+    };
+  }
+  return { numeric: null, suffix: "", prefix: "" };
+}
+
 export function StatsCard({
   label,
   value,
@@ -27,6 +49,8 @@ export function StatsCard({
   icon,
   trend,
 }: StatsCardProps) {
+  const parsed = parseNumericValue(value);
+
   return (
     <div
       role="group"
@@ -43,7 +67,17 @@ export function StatsCard({
         className="text-xl sm:text-2xl font-mono font-bold mt-1"
         style={color ? { color } : undefined}
       >
-        {value}
+        {parsed.numeric !== null ? (
+          <CountUp
+            value={parsed.numeric}
+            duration={800}
+            prefix={parsed.prefix}
+            suffix={parsed.suffix}
+            decimals={String(value).includes(".") ? 1 : 0}
+          />
+        ) : (
+          value
+        )}
       </p>
       {trend && (
         <p className={`text-xs mt-1 ${TREND_STYLES[trend.direction]}`}>

@@ -67,8 +67,18 @@ export default {
         "slide-in-right": "slideInRight 0.3s ease-out",
         "slide-in-left": "slideInLeft 0.3s ease-out",
         shimmer: "shimmer 1.5s ease-in-out infinite",
+        "nps-fade-in": "nps-fade-in 0.3s ease-out forwards",
+        "nps-pulse-glow": "nps-pulse-glow 2s ease-in-out infinite",
       },
       keyframes: {
+        "nps-fade-in": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "nps-pulse-glow": {
+          "0%, 100%": { boxShadow: "0 0 4px #3fb950" },
+          "50%": { boxShadow: "0 0 16px #3fb950, 0 0 32px #3fb95040" },
+        },
         fadeInUp: {
           "0%": { opacity: "0", transform: "translateY(12px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },

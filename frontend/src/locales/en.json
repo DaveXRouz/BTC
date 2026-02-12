@@ -699,6 +699,7 @@
     "back": "Back",
     "next": "Next",
     "search": "Search",
-    "no_results": "No results found"
+    "no_results": "No results found",
+    "loading_reading": "Consulting the Oracle..."
   }
 }

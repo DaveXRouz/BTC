@@ -1,0 +1,225 @@
+/* NPS Animation System — Session 30 */
+
+:root {
+  --nps-duration-micro: 150ms;
+  --nps-duration-sm: 250ms;
+  --nps-duration-md: 350ms;
+  --nps-duration-lg: 400ms;
+  --nps-duration-count: 800ms;
+}
+
+/* === Keyframes === */
+
+@keyframes nps-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes nps-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes nps-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes nps-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes nps-slide-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes nps-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes nps-pulse-glow {
+  0% {
+    box-shadow: 0 0 4px #3fb950;
+  }
+  50% {
+    box-shadow:
+      0 0 16px #3fb950,
+      0 0 32px rgba(63, 185, 80, 0.25);
+  }
+  100% {
+    box-shadow: 0 0 4px #3fb950;
+  }
+}
+
+@keyframes nps-orb-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes nps-stamp-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.8) rotate(-5deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* === Utility Classes === */
+
+.nps-animate-fade-in {
+  animation: nps-fade-in var(--nps-duration-sm) ease-out forwards;
+}
+
+.nps-animate-fade-in-up {
+  animation: nps-fade-in-up var(--nps-duration-md) ease-out forwards;
+}
+
+.nps-animate-slide-left {
+  animation: nps-slide-in-left var(--nps-duration-sm) ease-out forwards;
+}
+
+.nps-animate-slide-right {
+  animation: nps-slide-in-right var(--nps-duration-sm) ease-out forwards;
+}
+
+.nps-animate-slide-down {
+  animation: nps-slide-in-down var(--nps-duration-sm) ease-out forwards;
+}
+
+.nps-animate-scale-in {
+  animation: nps-scale-in 200ms ease-out forwards;
+}
+
+.nps-animate-orb-pulse {
+  animation: nps-orb-pulse 1.5s ease-in-out infinite;
+}
+
+.nps-animate-stamp {
+  animation: nps-stamp-reveal var(--nps-duration-md) ease-out forwards;
+}
+
+/* === Stagger Delay Classes === */
+
+.nps-delay-1 {
+  animation-delay: 50ms;
+}
+.nps-delay-2 {
+  animation-delay: 100ms;
+}
+.nps-delay-3 {
+  animation-delay: 150ms;
+}
+.nps-delay-4 {
+  animation-delay: 200ms;
+}
+.nps-delay-5 {
+  animation-delay: 250ms;
+}
+.nps-delay-6 {
+  animation-delay: 300ms;
+}
+.nps-delay-7 {
+  animation-delay: 350ms;
+}
+.nps-delay-8 {
+  animation-delay: 400ms;
+}
+
+/* === Initial State for Animated Elements === */
+
+.nps-animate-initial {
+  opacity: 0;
+}
+
+/* === Detail Section Expand/Collapse === */
+
+.nps-section-content {
+  overflow: hidden;
+  transition:
+    max-height var(--nps-duration-md) ease,
+    opacity 200ms ease;
+}
+
+.nps-section-content[data-open="false"] {
+  max-height: 0;
+  opacity: 0;
+}
+
+.nps-section-content[data-open="true"] {
+  max-height: 2000px;
+  opacity: 1;
+}
+
+/* Chevron rotation */
+.nps-chevron {
+  display: inline-block;
+  transition: transform 200ms ease;
+}
+
+.nps-chevron[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+/* === Reduced Motion Override === */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

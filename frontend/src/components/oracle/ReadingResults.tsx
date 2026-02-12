@@ -86,13 +86,13 @@ export function ReadingResults({
         </div>
       </div>
 
-      {/* Tab content — eagerly rendered, hidden via CSS */}
+      {/* Tab content — eagerly rendered, hidden via CSS, fade on show */}
       <div
         id="tabpanel-summary"
         role="tabpanel"
         aria-labelledby="tab-summary"
         aria-live={activeTab === "summary" ? "polite" : undefined}
-        className={activeTab === "summary" ? "" : "hidden"}
+        className={activeTab === "summary" ? "nps-animate-fade-in" : "hidden"}
       >
         {/* Confidence meter at top of summary */}
         {(confidence || boosts.length > 0) && (
@@ -109,7 +109,7 @@ export function ReadingResults({
         role="tabpanel"
         aria-labelledby="tab-details"
         aria-live={activeTab === "details" ? "polite" : undefined}
-        className={activeTab === "details" ? "" : "hidden"}
+        className={activeTab === "details" ? "nps-animate-fade-in" : "hidden"}
       >
         <DetailsTab result={result} />
         {/* Heartbeat display */}
@@ -132,7 +132,7 @@ export function ReadingResults({
         role="tabpanel"
         aria-labelledby="tab-history"
         aria-live={activeTab === "history" ? "polite" : undefined}
-        className={activeTab === "history" ? "" : "hidden"}
+        className={activeTab === "history" ? "nps-animate-fade-in" : "hidden"}
       >
         <ReadingHistory />
       </div>

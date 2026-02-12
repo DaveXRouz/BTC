@@ -3,6 +3,10 @@ import { render, screen } from "@testing-library/react";
 import { StatsCards } from "../StatsCards";
 import type { DashboardStats } from "@/types";
 
+vi.mock("@/hooks/useReducedMotion", () => ({
+  useReducedMotion: () => true,
+}));
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, unknown>) => {

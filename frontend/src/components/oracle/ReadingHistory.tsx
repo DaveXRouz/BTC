@@ -10,6 +10,7 @@ import { ReadingCard } from "./ReadingCard";
 import { ReadingDetail } from "./ReadingDetail";
 import { LoadingSkeleton } from "@/components/common/LoadingSkeleton";
 import { EmptyState } from "@/components/common/EmptyState";
+import { StaggerChildren } from "@/components/common/StaggerChildren";
 import type { StoredReading } from "@/types";
 
 const PAGE_SIZE = 12;
@@ -215,7 +216,10 @@ export function ReadingHistory() {
       {/* Card grid */}
       {data && data.readings.length > 0 && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          <StaggerChildren
+            staggerMs={30}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"
+          >
             {data.readings.map((reading) => (
               <ReadingCard
                 key={reading.id}
@@ -225,7 +229,7 @@ export function ReadingHistory() {
                 onDelete={handleDelete}
               />
             ))}
-          </div>
+          </StaggerChildren>
 
           {/* Pagination */}
           <div className="flex items-center justify-between text-xs">

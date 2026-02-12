@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { PageTransition } from "./common/PageTransition";
 import { Navigation } from "./Navigation";
 import { LanguageToggle } from "./LanguageToggle";
 import { ThemeToggle } from "./ThemeToggle";
@@ -13,6 +14,7 @@ import { useWebSocketConnection } from "@/hooks/useWebSocket";
 export function Layout() {
   const { t } = useTranslation();
   useWebSocketConnection();
+  const location = useLocation();
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -124,7 +126,9 @@ export function Layout() {
             className="flex-1 p-4 lg:p-6 overflow-auto"
             tabIndex={-1}
           >
-            <Outlet />
+            <PageTransition locationKey={location.key}>
+              <Outlet />
+            </PageTransition>
           </main>
 
           {/* Footer */}

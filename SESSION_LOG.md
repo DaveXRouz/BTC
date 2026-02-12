@@ -9,9 +9,9 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 29 of 45
-**Last session:** Session 29 — Error States & Loading UX
-**Current block:** Frontend Advanced (Sessions 26-31) — 4 of 6 sessions complete
+**Sessions completed:** 30 of 45
+**Last session:** Session 30 — Animations & Micro-interactions
+**Current block:** Frontend Advanced (Sessions 26-31) — 5 of 6 sessions complete
 
 ---
 
@@ -1455,6 +1455,78 @@ TEMPLATE — copy this for each new session:
 - E2E test file created but not run (requires Playwright server setup outside scope)
 
 **Next:** Session 30 — Animations & Transitions (page transitions, micro-interactions, motion system)
+
+---
+
+## Session 30 — 2026-02-13
+
+**Objective:** Animations & Micro-interactions — page transitions, card fade-ins, loading orb, number count-up, FC60 stamp reveal, reduced motion support
+**Spec:** `.session-specs/SESSION_30_SPEC.md`
+**Block:** Frontend Advanced (Sessions 26-31) — Session 5 of 6
+
+**What was built:**
+
+1. **animations.css** (`styles/animations.css`) — 10 `@keyframes` definitions (nps-fade-in, nps-fade-in-up, nps-slide-in-left, nps-slide-in-right, nps-slide-in-down, nps-scale-in, nps-pulse-glow, nps-orb-pulse, nps-stamp-reveal); utility classes; stagger delay classes (nps-delay-1 through nps-delay-8); CSS custom properties for duration scale; `@media (prefers-reduced-motion: reduce)` global override; `.nps-section-content` expand/collapse transition; `.nps-chevron` rotation transition
+2. **useReducedMotion hook** (`hooks/useReducedMotion.ts`) — `window.matchMedia("(prefers-reduced-motion: reduce)")`; listens for changes; SSR-safe; returns boolean
+3. **FadeIn component** (`components/common/FadeIn.tsx`) — fade + optional translateY direction (up/down/none); respects useReducedMotion; configurable delay via inline style; supports `as` prop (div/span)
+4. **SlideIn component** (`components/common/SlideIn.tsx`) — slide from left/right/top/bottom; RTL-aware (swaps left/right when `document.dir === "rtl"`); respects useReducedMotion
+5. **CountUp component** (`components/common/CountUp.tsx`) — animates number from 0 to target via requestAnimationFrame; easeOutCubic timing; configurable duration, delay, decimals, prefix, suffix; handles NaN/Infinity with "—" fallback; skips animation when reduced motion
+6. **StaggerChildren component** (`components/common/StaggerChildren.tsx`) — wraps each child in FadeIn with incremental delay; 800ms max stagger cap; respects useReducedMotion
+7. **LoadingOrb component** (`components/common/LoadingOrb.tsx`) — pulsing green orb with nps-success glow; 3 sizes (sm/md/lg); `role="status"` for accessibility; `data-testid="loading-orb"`; respects useReducedMotion (static orb, no pulse)
+8. **PageTransition component** (`components/common/PageTransition.tsx`) — wraps page content with nps-animate-fade-in; keyed by `location.key` for re-animation on route change; respects useReducedMotion
+9. **Page transitions** — Layout.tsx uses `useLocation()` + PageTransition wrapper around `<Outlet />`; all 6 routes get fade-in on navigation
+10. **Oracle reading animations** — Oracle.tsx: 3 sections staggered with FadeIn (0/100/200ms delay); results section wrapped in SlideIn from="bottom" with resultKey for re-animation; ReadingResults: all 3 tab panels get `nps-animate-fade-in` class on show
+11. **Detail section animations** — DetailsTab: DetailSection uses CSS transitions for expand/collapse (max-height + opacity); chevron rotates 180deg via `.nps-chevron[data-open]` CSS
+12. **StatsCard CountUp** — StatsCard parses numeric values from string/number props; renders via CountUp with prefix/suffix; non-numeric values rendered as-is
+13. **Dashboard stagger** — Dashboard.tsx: 5 sections staggered with FadeIn (0/80/160/240/320ms delays)
+14. **MultiUserSelector chip animation** — User chips wrapped in `nps-animate-scale-in` for pop-in effect
+15. **ReadingHistory stagger** — Reading card grid wrapped in StaggerChildren (30ms stagger)
+16. **Tailwind config** — Added `nps-fade-in` and `nps-pulse-glow` keyframes + animations to theme.extend
+17. **i18n** — Added `common.loading_reading` key in en.json ("Consulting the Oracle...") and fa.json ("در حال مشورت با اوراکل...")
+
+**Files created (10):**
+
+- `frontend/src/styles/animations.css`
+- `frontend/src/hooks/useReducedMotion.ts`
+- `frontend/src/components/common/FadeIn.tsx`
+- `frontend/src/components/common/SlideIn.tsx`
+- `frontend/src/components/common/CountUp.tsx`
+- `frontend/src/components/common/StaggerChildren.tsx`
+- `frontend/src/components/common/LoadingOrb.tsx`
+- `frontend/src/components/common/PageTransition.tsx`
+- `frontend/src/__tests__/animations.test.tsx`
+- `frontend/e2e/animations.spec.ts`
+
+**Files modified (12):**
+
+- `frontend/tailwind.config.ts` — added nps-fade-in, nps-pulse-glow keyframes + animations
+- `frontend/src/App.tsx` — import animations.css
+- `frontend/src/components/Layout.tsx` — import useLocation + PageTransition, wrap Outlet
+- `frontend/src/pages/Dashboard.tsx` — FadeIn wrappers with staggered delays
+- `frontend/src/pages/Oracle.tsx` — FadeIn + SlideIn wrappers, resultKey state
+- `frontend/src/components/StatsCard.tsx` — CountUp for numeric values, parseNumericValue helper
+- `frontend/src/components/oracle/ReadingResults.tsx` — nps-animate-fade-in class on active tab panels
+- `frontend/src/components/oracle/DetailsTab.tsx` — CSS transition expand/collapse, chevron rotation
+- `frontend/src/components/oracle/ReadingHistory.tsx` — StaggerChildren wrapper for card grid
+- `frontend/src/components/oracle/MultiUserSelector.tsx` — nps-animate-scale-in for user chips
+- `frontend/src/locales/en.json` — 1 new key (common.loading_reading)
+- `frontend/src/locales/fa.json` — 1 new Persian translation
+- `frontend/src/components/dashboard/__tests__/StatsCards.test.tsx` — mock useReducedMotion for CountUp compatibility
+
+**Tests:** 601 pass / 0 fail / 23 new tests (2 useReducedMotion + 5 FadeIn + 3 SlideIn + 3 CountUp + 2 StaggerChildren + 4 LoadingOrb + 4 PageTransition)
+**Commit:** PENDING
+**Issues:** None
+**Decisions:**
+
+- Used pure CSS animations (no Framer Motion) — zero bundle increase, GPU composited, native prefers-reduced-motion support
+- No exit animations — React unmount is instant; entry-only animations provide 90% of premium feel at 10% complexity
+- CountUp uses requestAnimationFrame with easeOutCubic for smooth count effect; starts at 0 on mount
+- StaggerChildren caps total stagger at 800ms to prevent long waits with many children
+- PageTransition uses React key prop to force remount on route change (simple, no exit animation complexity)
+- DetailsTab uses CSS max-height transition instead of conditional rendering (always renders content, toggles via data-open attribute)
+- StatsCards test mocks useReducedMotion to true so CountUp renders final values immediately in test environment
+
+**Next:** Session 31 — Frontend Polish & Performance (Lighthouse audit, bundle analysis, animation perf on low-end devices, final UX polish)
 
 ---
 
