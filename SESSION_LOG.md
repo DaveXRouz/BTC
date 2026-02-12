@@ -437,7 +437,7 @@ TEMPLATE — copy this for each new session:
 - `frontend/src/components/oracle/__tests__/StampComparison.test.tsx` — NEW: 4 tests (side-by-side rendering, user name headers, shared animals, shared elements)
 
 **Tests:** 239 API pass (10 pre-existing multi_user fail) | 15 oracle stamp pass | 182 frontend pass | 35 new tests total
-**Commit:** pending
+**Commit:** 61fc65a — [oracle][api][frontend] FC60 stamp display & validation (#session-10)
 **Issues:** Fixed pre-existing broken imports in oracle_reading.py (engines.fc60 and engines.numerology deleted in Session 6 but imports not updated)
 **Decisions:**
 
