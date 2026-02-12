@@ -46,9 +46,7 @@ def get_current_quality():
     moon_scores = {0: 0.9, 1: 0.5, 2: 0.6, 3: 0.7, 4: 1.0, 5: 0.7, 6: 0.6, 7: 0.4}
     moon_s = moon_scores.get(phase_idx, 0.5)
     scores.append(moon_s)
-    reasoning.append(
-        "Moon: {} ({:.0f}% illum, score {:.1f})".format(phase_name, illum, moon_s)
-    )
+    reasoning.append("Moon: {} ({:.0f}% illum, score {:.1f})".format(phase_name, illum, moon_s))
 
     # 2. Day numerology
     day_sum = year + month + day
@@ -63,9 +61,7 @@ def get_current_quality():
         day_s = 0.5
     scores.append(day_s)
     reasoning.append(
-        "Day number: {} (master={}, score {:.1f})".format(
-            day_reduced, day_master, day_s
-        )
+        "Day number: {} (master={}, score {:.1f})".format(day_reduced, day_master, day_s)
     )
 
     # 3. Hour numerology
@@ -78,9 +74,7 @@ def get_current_quality():
     else:
         hour_s = 0.45
     scores.append(hour_s)
-    reasoning.append(
-        "Hour {} (reduces to {}, score {:.1f})".format(hour, hour_reduced, hour_s)
-    )
+    reasoning.append("Hour {} (reduces to {}, score {:.1f})".format(hour, hour_reduced, hour_s))
 
     # 4. Weekday alignment
     # Jupiter (Thursday=4) and Venus (Friday=5) are traditionally favorable

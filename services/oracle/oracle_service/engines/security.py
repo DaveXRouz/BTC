@@ -13,7 +13,6 @@ Thread safety: _master_key is set once at startup, read-only after.
 
 import hashlib
 import hmac
-import json
 import logging
 import os
 import threading
@@ -169,9 +168,7 @@ def decrypt(encoded: str) -> str:
     ciphertext = payload[16:-16]
 
     # Verify authentication tag
-    expected_tag = hmac.new(_master_key, nonce + ciphertext, hashlib.sha256).digest()[
-        :16
-    ]
+    expected_tag = hmac.new(_master_key, nonce + ciphertext, hashlib.sha256).digest()[:16]
 
     if not hmac.compare_digest(auth_tag, expected_tag):
         raise ValueError("Decryption failed — wrong password or tampered data")

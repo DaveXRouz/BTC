@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-
 # ─── Fixtures ───────────────────────────────────────────────────────────────
 
 # conftest.py provides: client, setup_database, override_get_db, etc.

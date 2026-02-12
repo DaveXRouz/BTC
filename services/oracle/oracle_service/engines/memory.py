@@ -282,8 +282,7 @@ def get_recommendations() -> list:
         # --- Session count summary ---
         if total_sessions > 0:
             recs.append(
-                f"You've tested {total_keys:,} keys total across "
-                f"{total_sessions} sessions."
+                f"You've tested {total_keys:,} keys total across {total_sessions} sessions."
             )
 
         # --- Speed trend ---
@@ -304,8 +303,7 @@ def get_recommendations() -> list:
         # --- Hit rate ---
         if total_keys > 0 and total_hits == 0:
             recs.append(
-                "No hits yet -- this is normal. Puzzle solving is a "
-                "numbers game; keep scanning!"
+                "No hits yet -- this is normal. Puzzle solving is a numbers game; keep scanning!"
             )
         elif total_keys > 0 and total_hits > 0:
             rate = total_hits / total_keys
@@ -319,9 +317,7 @@ def get_recommendations() -> list:
         # --- Score distribution insight ---
         if dist:
             best_bucket = max(dist, key=lambda k: dist[k])
-            recs.append(
-                f"High scores tend to cluster around {best_bucket} " f"-- focus there."
-            )
+            recs.append(f"High scores tend to cluster around {best_bucket} -- focus there.")
 
         # --- Seeds ---
         if total_seeds > 0:
@@ -395,9 +391,7 @@ def flush_to_disk() -> None:
         try:
             DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-            _cache["last_updated"] = time.strftime(
-                "%Y-%m-%d %H:%M:%S UTC", time.gmtime()
-            )
+            _cache["last_updated"] = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
 
             tmp_path = MEMORY_FILE.with_suffix(".tmp")
             data = json.dumps(_cache, indent=2, ensure_ascii=False)

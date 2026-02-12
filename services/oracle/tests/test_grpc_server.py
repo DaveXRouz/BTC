@@ -1,13 +1,10 @@
 """gRPC server integration tests — start in-process server, test all 8 RPCs."""
 
 import unittest
-import threading
-import time
 from concurrent import futures
 
 import grpc
 
-import oracle_service  # triggers sys.path shim
 from oracle_service.grpc_gen import oracle_pb2, oracle_pb2_grpc
 from oracle_service.server import OracleServiceImpl
 
@@ -63,9 +60,7 @@ class TestGRPCServer(unittest.TestCase):
 
     def test_get_reading_specific_date(self):
         """GetReading with specific ISO datetime."""
-        resp = self.stub.GetReading(
-            oracle_pb2.ReadingRequest(datetime="2026-02-08T14:30:00+00:00")
-        )
+        resp = self.stub.GetReading(oracle_pb2.ReadingRequest(datetime="2026-02-08T14:30:00+00:00"))
         self.assertIsNotNone(resp.fc60)
         self.assertEqual(resp.zodiac.sign, "Aquarius")
         self.assertNotEqual(resp.summary, "")
@@ -145,9 +140,7 @@ class TestGRPCServer(unittest.TestCase):
 
     def test_suggest_range(self):
         """SuggestRange returns valid hex range and strategy."""
-        resp = self.stub.SuggestRange(
-            oracle_pb2.RangeRequest(puzzle_number=66, ai_level=1)
-        )
+        resp = self.stub.SuggestRange(oracle_pb2.RangeRequest(puzzle_number=66, ai_level=1))
         self.assertNotEqual(resp.range_start, "")
         self.assertNotEqual(resp.range_end, "")
         self.assertTrue(resp.range_start.startswith("0x"))

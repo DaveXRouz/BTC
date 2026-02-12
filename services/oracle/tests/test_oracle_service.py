@@ -18,11 +18,7 @@ class TestOracleServicePackage(unittest.TestCase):
             token60,
             encode_fc60,
             life_path,
-            numerology_reduce,
             read_sign,
-            read_name,
-            question_sign,
-            daily_insight,
         )
 
         self.assertTrue(callable(token60))
@@ -41,7 +37,7 @@ class TestOracleServicePackage(unittest.TestCase):
 
     def test_server_module(self):
         """Server module imports and OracleServiceImpl is available."""
-        from oracle_service.server import OracleServiceImpl, serve
+        from oracle_service.server import OracleServiceImpl
 
         impl = OracleServiceImpl()
         self.assertTrue(hasattr(impl, "HealthCheck"))

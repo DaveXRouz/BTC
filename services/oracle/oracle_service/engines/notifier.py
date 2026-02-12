@@ -258,7 +258,7 @@ def _send_raw(token, chat_id, text, parse_mode="HTML"):
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=10, context=_ssl_ctx) as resp:
+        with urllib.request.urlopen(req, timeout=10, context=_ssl_ctx):
             with _lock:
                 _last_send_time = time.time()
             _record_success()
@@ -334,12 +334,10 @@ def send_message_with_buttons(text, buttons=None, parse_mode="HTML"):
 
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     payload = json.dumps(payload_dict).encode("utf-8")
-    req = urllib.request.Request(
-        url, data=payload, headers={"Content-Type": "application/json"}
-    )
+    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
 
     try:
-        with urllib.request.urlopen(req, timeout=10, context=_ssl_ctx) as resp:
+        with urllib.request.urlopen(req, timeout=10, context=_ssl_ctx):
             with _lock:
                 global _last_send_time
                 _last_send_time = time.time()
@@ -408,9 +406,7 @@ def poll_telegram_commands(timeout=10):
                     if cb_id:
                         ack_url = f"https://api.telegram.org/bot{token}/answerCallbackQuery?callback_query_id={cb_id}"
                         threading.Thread(
-                            target=lambda u: urllib.request.urlopen(
-                                u, timeout=5, context=_ssl_ctx
-                            ),
+                            target=lambda u: urllib.request.urlopen(u, timeout=5, context=_ssl_ctx),
                             args=(ack_url,),
                             daemon=True,
                         ).start()
@@ -873,7 +869,7 @@ def _route_callback(callback_data, app_controller=None):
     parts = callback_data.split(":")
     section = parts[0] if parts else ""
     action = parts[1] if len(parts) > 1 else ""
-    param = parts[2] if len(parts) > 2 else ""
+    _ = parts[2] if len(parts) > 2 else ""
 
     if section == "menu":
         # Route menu callbacks to corresponding commands
@@ -987,9 +983,7 @@ def _cmd_perf(arg, app_controller):
         if summary:
             lines = ["<b>\u23f1 Performance</b>"]
             for name, stats in summary.items():
-                lines.append(
-                    f"  {name}: avg={stats['avg']*1000:.1f}ms n={stats['count']}"
-                )
+                lines.append(f"  {name}: avg={stats['avg'] * 1000:.1f}ms n={stats['count']}")
             text = "\n".join(lines)
         else:
             text = "<b>\u23f1 Performance</b>\nNo performance data yet."
@@ -1156,9 +1150,7 @@ def _cmd_memory(arg, app_controller):
 
         level = get_level()
         insights = get_insights(limit=3)
-        insight_text = (
-            "\n".join(f"  - {i}" for i in insights) if insights else "  (none yet)"
-        )
+        insight_text = "\n".join(f"  - {i}" for i in insights) if insights else "  (none yet)"
         text = (
             f"<b>\U0001f9e0 AI Brain</b>\n"
             f"Level: {level.get('level', 1)} -- {level.get('name', 'Novice')}\n"
@@ -1221,8 +1213,7 @@ def _cmd_set(arg, app_controller):
     """Change a setting: /set mode|puzzle|chains|sound <value>."""
     if not arg:
         return (
-            "Usage: /set &lt;setting&gt; &lt;value&gt;\n"
-            "Settings: mode, puzzle, chains, sound",
+            "Usage: /set &lt;setting&gt; &lt;value&gt;\nSettings: mode, puzzle, chains, sound",
             None,
         )
 
@@ -1234,7 +1225,7 @@ def _cmd_set(arg, app_controller):
         return (f"Usage: /set {setting} &lt;value&gt;", None)
 
     try:
-        from engines.config import get, set as config_set
+        from engines.config import set as config_set
 
         setting_map = {
             "mode": "scanner.mode",
@@ -1246,8 +1237,7 @@ def _cmd_set(arg, app_controller):
         config_key = setting_map.get(setting)
         if not config_key:
             return (
-                f"Unknown setting: {setting}\n"
-                "Available: mode, puzzle, chains, sound",
+                f"Unknown setting: {setting}\nAvailable: mode, puzzle, chains, sound",
                 None,
             )
 
@@ -1272,10 +1262,7 @@ def _cmd_export(arg, app_controller):
     """Export vault or report: /export vault csv|json, /export report."""
     if not arg:
         return (
-            "Usage:\n"
-            "  /export vault csv\n"
-            "  /export vault json\n"
-            "  /export report",
+            "Usage:\n  /export vault csv\n  /export vault json\n  /export report",
             None,
         )
 
@@ -1321,7 +1308,7 @@ def _cmd_export(arg, app_controller):
 
     else:
         return (
-            "Usage:\n" "  /export vault csv|json\n" "  /export report",
+            "Usage:\n  /export vault csv|json\n  /export report",
             None,
         )
 
@@ -1392,9 +1379,7 @@ def _init_command_registry():
     _register_command("/stop_all", "Stop all terminals", "control", _cmd_stop_all)
     _register_command("/pause_all", "Pause all terminals", "control", _cmd_pause_all)
     _register_command("/resume_all", "Resume all terminals", "control", _cmd_resume_all)
-    _register_command(
-        "/checkpoint", "Force checkpoint save", "control", _cmd_checkpoint
-    )
+    _register_command("/checkpoint", "Force checkpoint save", "control", _cmd_checkpoint)
     _register_command("/stop", "Stop scanning", "control", _cmd_stop)
     _register_command("/pause", "Pause all terminals", "control", _cmd_pause)
     _register_command("/resume", "Resume all terminals", "control", _cmd_resume)
@@ -1407,9 +1392,7 @@ def _init_command_registry():
     _register_command("/daily", "Daily insight", "oracle", _cmd_daily)
 
     # Settings commands
-    _register_command(
-        "/set", "Change setting (mode|puzzle|chains|sound)", "settings", _cmd_set
-    )
+    _register_command("/set", "Change setting (mode|puzzle|chains|sound)", "settings", _cmd_set)
 
     # Export commands
     _register_command("/export", "Export vault or report", "export", _cmd_export)

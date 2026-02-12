@@ -269,9 +269,7 @@ def validate():
     if not token:
         warnings.append("Telegram bot_token is empty")
     elif len(token) < 20 or ":" not in token:
-        warnings.append(
-            "Telegram bot_token looks malformed (expected digits:alphanumeric)"
-        )
+        warnings.append("Telegram bot_token looks malformed (expected digits:alphanumeric)")
         _config["telegram"]["bot_token"] = ""
 
     if not chat_id:
@@ -326,11 +324,7 @@ def validate():
 
     # --- Scanner checkpoint_interval ---
     cp_interval = get("scanner.checkpoint_interval", 100000)
-    if (
-        not isinstance(cp_interval, int)
-        or cp_interval < 1000
-        or cp_interval > 10_000_000
-    ):
+    if not isinstance(cp_interval, int) or cp_interval < 1000 or cp_interval > 10_000_000:
         warnings.append(
             f"scanner.checkpoint_interval={cp_interval} out of range [1000,10000000] — reset to 100000"
         )
@@ -338,11 +332,7 @@ def validate():
 
     # --- Headless ---
     status_hours = get("headless.status_interval_hours", 24)
-    if (
-        not isinstance(status_hours, (int, float))
-        or status_hours < 1
-        or status_hours > 168
-    ):
+    if not isinstance(status_hours, (int, float)) or status_hours < 1 or status_hours > 168:
         warnings.append(
             f"headless.status_interval_hours={status_hours} out of range [1,168] — reset to 24"
         )
@@ -358,11 +348,7 @@ def validate():
 
     # --- Health ---
     health_interval = get("health.interval_seconds", 60)
-    if (
-        not isinstance(health_interval, int)
-        or health_interval < 10
-        or health_interval > 3600
-    ):
+    if not isinstance(health_interval, int) or health_interval < 10 or health_interval > 3600:
         warnings.append(
             f"health.interval_seconds={health_interval} out of range [10,3600] — reset to 60"
         )
