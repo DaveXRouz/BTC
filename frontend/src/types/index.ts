@@ -772,6 +772,10 @@ export type EventType =
   | "reading_progress"
   | "error";
 
+// ─── Oracle Reading Types ───
+
+export type ReadingType = "time" | "name" | "question" | "daily" | "multi";
+
 // ─── Health ───
 
 export interface HealthStatus {
