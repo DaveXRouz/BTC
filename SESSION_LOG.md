@@ -897,7 +897,7 @@ TEMPLATE — copy this for each new session:
 - `frontend/src/pages/__tests__/Oracle.test.tsx` — Full rewrite: 6 tests with mocked child components verifying two-column layout, reading type selector, select-to-begin, default time type, results section, create form modal
 
 **Tests:** 301 pass / 0 fail / 26 new (6 ReadingTypeSelector + 6 LoadingAnimation + 8 OracleConsultationForm + 6 Oracle) | 0 regressions across all 43 test files
-**Commit:** TBD
+**Commit:** 9e9aa02
 **Issues:** None
 **Decisions:**
 
