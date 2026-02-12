@@ -474,7 +474,7 @@ TEMPLATE — copy this for each new session:
 - `frontend/src/components/oracle/__tests__/CosmicCyclePanel.test.tsx` — NEW: 5 tests (all sections, null moon, null ganzhi, planet-moon insight, all-null placeholder)
 
 **Tests:** 239 API pass (10 pre-existing multi_user fail) | 15 cosmic formatter pass | 197 frontend pass | 123 framework pass (no regressions) | 30 new tests total
-**Commit:** pending
+**Commit:** e6f9aa9 — [oracle][api][frontend] cosmic cycle formatter & display components (#session-11)
 **Issues:** None
 **Decisions:**
 
