@@ -1597,7 +1597,7 @@ TEMPLATE — copy this for each new session:
 | Vendor cacheable | No                               | Yes (4 chunks)                                     | —        |
 
 **Tests:** 612 pass / 0 fail / 14 new tests (4 bundle-size + 5 lighthouse-meta + 5 e2e performance)
-**Commit:** (pending)
+**Commit:** 98efec4
 **Issues:**
 
 - Multiple oracle sub-components (MultiUserReadingDisplay, DailyReadingCard, CosmicCyclePanel, MoonPhaseDisplay, GanzhiDisplay, etc.) use hardcoded gray-\*/white/black Tailwind classes instead of NPS design tokens. These were written in earlier sessions and need a dedicated cleanup pass to migrate to NPS tokens.
