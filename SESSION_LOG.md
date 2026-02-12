@@ -1290,7 +1290,7 @@ TEMPLATE — copy this for each new session:
 - `frontend/src/test/setup.ts` — global matchMedia polyfill
 
 **Tests:** 500 pass / 0 fail / 17 new tests (4 useBreakpoint + 6 MobileNav + 7 MobileKeyboard) + 4 Layout responsive tests + 8 Playwright E2E
-**Commit:** (pending)
+**Commit:** 68d44c3
 **Issues:** None — all pre-existing tsc errors unchanged
 **Decisions:**
 
