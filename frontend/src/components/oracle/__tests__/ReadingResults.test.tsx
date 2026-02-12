@@ -41,10 +41,22 @@ vi.mock("react-i18next", () => ({
         "oracle.export_text": "Export TXT",
         "oracle.export_json": "Export JSON",
         "oracle.translate": "Translate to Persian",
+        "oracle.share": "Share",
+        "oracle.copied": "Copied!",
+        "oracle.current_reading": "Current Reading",
+        "oracle.section_core_identity": "Core Identity",
+        "oracle.section_right_now": "Right Now",
+        "oracle.section_patterns": "Patterns & Synchronicities",
+        "oracle.section_advice": "Today's Advice",
+        "oracle.no_patterns": "No synchronicities detected",
+        "oracle.confidence_label": "Reading Confidence",
+        "oracle.powered_by": "Powered by NPS Numerology Framework",
+        "oracle.disclaimer": "For entertainment purposes only.",
         "common.loading": "Loading...",
       };
       return map[key] ?? key;
     },
+    i18n: { language: "en" },
   }),
 }));
 
@@ -118,7 +130,6 @@ describe("ReadingResults", () => {
   it("shows result on summary tab", () => {
     renderWithProviders(<ReadingResults result={readingResult} />);
     expect(screen.getByText("Test summary for reading")).toBeInTheDocument();
-    expect(screen.getByText("Reading")).toBeInTheDocument();
   });
 
   it("shows export buttons when result exists", () => {
@@ -131,5 +142,15 @@ describe("ReadingResults", () => {
     renderWithProviders(<ReadingResults result={null} />);
     expect(screen.queryByText("Export TXT")).not.toBeInTheDocument();
     expect(screen.queryByText("Export JSON")).not.toBeInTheDocument();
+  });
+
+  it("share button appears when result exists", () => {
+    renderWithProviders(<ReadingResults result={readingResult} />);
+    expect(screen.getByText("Share")).toBeInTheDocument();
+  });
+
+  it("share button hidden when no result", () => {
+    renderWithProviders(<ReadingResults result={null} />);
+    expect(screen.queryByText("Share")).not.toBeInTheDocument();
   });
 });

@@ -5,7 +5,7 @@ import type { ConsultationResult } from "@/types";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string) => {
+    t: (key: string, opts?: Record<string, string>) => {
       const map: Record<string, string> = {
         "oracle.results_placeholder":
           "Results will appear here after a reading.",
@@ -15,14 +15,37 @@ vi.mock("react-i18next", () => ({
         "oracle.element": "Element",
         "oracle.energy": "Energy",
         "oracle.life_path": "Life Path",
+        "oracle.day_vibration": "Day Vibration",
+        "oracle.personal_year": "Personal Year",
         "oracle.question_number_label": "Question Number",
-        "oracle.detected_script": "Detected Script",
+        "oracle.detected_script": `Detected: ${opts?.script ?? ""}`,
         "oracle.confidence": "Confidence",
         "oracle.generated_at": "Generated at",
         "oracle.translate": "Translate to Persian",
+        "oracle.current_reading": "Current Reading",
+        "oracle.section_universal_address": "Universal Address",
+        "oracle.section_core_identity": "Core Identity",
+        "oracle.section_right_now": "Right Now",
+        "oracle.section_patterns": "Patterns & Synchronicities",
+        "oracle.section_message": "The Message",
+        "oracle.section_advice": "Today's Advice",
+        "oracle.section_caution": "Caution",
+        "oracle.no_patterns": "No synchronicities detected",
+        "oracle.confidence_label": "Reading Confidence",
+        "oracle.powered_by": "Powered by NPS Numerology Framework",
+        "oracle.disclaimer": "This reading is for entertainment purposes only.",
+        "oracle.expression": "Expression",
+        "oracle.soul_urge": "Soul Urge",
+        "oracle.personality": "Personality",
+        "oracle.details_letters": "Letter Analysis",
+        "oracle.master_number_badge": "Master Number",
+        "oracle.caution_missing": "missing from chart",
+        "oracle.caution_dominant": "dominant in chart",
+        "oracle.numerology_system": "System",
       };
       return map[key] ?? key;
     },
+    i18n: { language: "en" },
   }),
 }));
 
@@ -87,6 +110,28 @@ const questionResult: ConsultationResult = {
   },
 };
 
+const nameResult: ConsultationResult = {
+  type: "name",
+  data: {
+    name: "John Doe",
+    detected_script: "latin",
+    numerology_system: "pythagorean",
+    expression: 3,
+    soul_urge: 5,
+    personality: 7,
+    life_path: null,
+    personal_year: null,
+    fc60_stamp: null,
+    moon: null,
+    ganzhi: null,
+    patterns: null,
+    confidence: { score: 80, level: "high" },
+    ai_interpretation: "Creative energy",
+    letter_breakdown: [{ letter: "J", value: 1, element: "Fire" }],
+    reading_id: null,
+  },
+};
+
 describe("SummaryTab", () => {
   it("shows placeholder when no result", () => {
     render(<SummaryTab result={null} />);
@@ -95,29 +140,36 @@ describe("SummaryTab", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows type badge for reading", () => {
+  it("reading type shows section-based layout", () => {
     render(<SummaryTab result={readingResult} />);
-    expect(screen.getByText("Reading")).toBeInTheDocument();
-  });
-
-  it("shows summary text for reading", () => {
-    render(<SummaryTab result={readingResult} />);
+    // Sections that should be present
+    expect(screen.getByText("Core Identity")).toBeInTheDocument();
+    expect(screen.getByText("Right Now")).toBeInTheDocument();
+    expect(screen.getByText("Patterns & Synchronicities")).toBeInTheDocument();
+    expect(screen.getByText("Today's Advice")).toBeInTheDocument();
+    // Summary text still present
     expect(
       screen.getByText("This is a test reading summary"),
     ).toBeInTheDocument();
+    // Footer confidence
+    expect(screen.getByText("Reading Confidence")).toBeInTheDocument();
   });
 
-  it("shows quick stats for reading", () => {
-    render(<SummaryTab result={readingResult} />);
-    expect(screen.getByText("Wood")).toBeInTheDocument();
-    expect(screen.getByText("7")).toBeInTheDocument();
-    expect(screen.getByText("5")).toBeInTheDocument();
-  });
-
-  it("shows question number and confidence for question", () => {
+  it("question type shows simplified sections", () => {
     render(<SummaryTab result={questionResult} />);
+    expect(screen.getByText("Will it work?")).toBeInTheDocument();
     expect(screen.getByText("Question")).toBeInTheDocument();
-    expect(screen.getByText("7")).toBeInTheDocument(); // question_number
-    expect(screen.getByText("85%")).toBeInTheDocument(); // confidence.score
+    expect(screen.getByText("Core Identity")).toBeInTheDocument();
+    expect(screen.getByText("The Message")).toBeInTheDocument();
+    expect(screen.getByText("Signs point to yes")).toBeInTheDocument();
+  });
+
+  it("name type shows simplified sections", () => {
+    render(<SummaryTab result={nameResult} />);
+    expect(screen.getByText("John Doe")).toBeInTheDocument();
+    expect(screen.getByText("Name")).toBeInTheDocument();
+    expect(screen.getByText("Core Identity")).toBeInTheDocument();
+    expect(screen.getByText("Letter Analysis")).toBeInTheDocument();
+    expect(screen.getByText("The Message")).toBeInTheDocument();
   });
 });

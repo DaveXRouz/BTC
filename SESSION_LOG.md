@@ -9,9 +9,9 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 20 of 45
-**Last session:** Session 20 — Oracle Main Page UI
-**Current block:** Frontend Core (Sessions 19-25) — Two sessions complete
+**Sessions completed:** 21 of 45
+**Last session:** Session 21 — Reading Results Display
+**Current block:** Frontend Core (Sessions 19-25) — Three sessions complete
 
 ---
 
@@ -911,6 +911,68 @@ TEMPLATE — copy this for each new session:
 - useReadingProgress auto-deactivates 500ms after step === total to allow smooth UI transition
 
 **Next:** Session 21 — Reading History Page (reading history list with filtering, search, pagination, favorites)
+
+---
+
+## Session 21 — 2026-02-13
+
+**Terminal:** SINGLE
+**Block:** Frontend Core (third session in block)
+**Task:** Reading Results Display — Section-based SummaryTab rewrite (9 sections for reading, simplified for question/name), 6 new components (ReadingSection, NumerologyNumberDisplay, PatternBadge, ReadingHeader, ReadingFooter, ShareButton), print CSS, Persian digit support, DetailsTab NumerologyNumberDisplay integration, i18n keys
+**Spec:** .session-specs/SESSION_21_SPEC.md
+
+**Files created (9):**
+
+- `frontend/src/utils/persianDigits.ts` — toPersianDigits(n) converts Western digits to Persian (۰-۹), used by NumerologyNumberDisplay when locale is FA
+- `frontend/src/components/oracle/ReadingSection.tsx` — Collapsible card wrapper with title, icon, priority border (high/medium/low), animate-fade-in-up, aria-expanded, data-reading-section for print CSS
+- `frontend/src/components/oracle/NumerologyNumberDisplay.tsx` — Large styled numerology number with 3 size variants (sm/md/lg), master number detection (11/22/33) with gold accent, Persian digit conversion, data-testid for testing
+- `frontend/src/components/oracle/PatternBadge.tsx` — Color-coded inline badge for detected patterns (high=red, medium=yellow, low=green), optional tooltip
+- `frontend/src/components/oracle/ReadingHeader.tsx` — Top banner with name, reading type badge (reading=blue, question=purple, name=green), date, confidence pill with color thresholds
+- `frontend/src/components/oracle/ReadingFooter.tsx` — Confidence progress bar (aria-valuenow), percentage text, color thresholds (>0.7=green, 0.4-0.7=yellow, <0.4=red), disclaimer + powered-by attribution
+- `frontend/src/components/oracle/ShareButton.tsx` — Generates plain-text summary, copies to clipboard with fallback (textarea+execCommand), "Copied!" feedback with 2s timeout
+- `frontend/src/styles/print.css` — @media print: hides nav/aside/tablist/export-actions/share-button/footer, forces white bg, expands all reading sections, removes animations, page-break-inside:avoid, @page margin:2cm
+- `frontend/src/components/oracle/__tests__/PatternBadge.test.tsx` — 2 tests: renders text, correct color per priority
+
+**Files modified (9):**
+
+- `frontend/tailwind.config.ts` — Added animate-fade-in-up keyframe animation (0.4s ease-out, translateY(12px)→0)
+- `frontend/src/main.tsx` — Added print.css import
+- `frontend/src/components/oracle/SummaryTab.tsx` — Complete rewrite: 3 sub-components (ReadingSummary, QuestionSummary, NameSummary) with 9 sections for reading type (Header→Universal Address→Core Identity→Right Now→Patterns→Message→Advice→Caution→Footer), element balance warnings, uses ReadingSection/NumerologyNumberDisplay/PatternBadge/ReadingHeader/ReadingFooter/TranslatedReading
+- `frontend/src/components/oracle/ReadingResults.tsx` — Added ShareButton import, wrapped ExportButton+ShareButton in export-actions div, conditional ShareButton render
+- `frontend/src/components/oracle/DetailsTab.tsx` — Replaced plain DataRow for life_path/day_vibration/personal_year with NumerologyNumberDisplay in 3-column grid
+- `frontend/src/locales/en.json` — Added 17 new oracle.\* i18n keys (section names, patterns, share, disclaimer, caution, numerology system)
+- `frontend/src/locales/fa.json` — Added matching 17 Persian translation keys
+- `frontend/src/components/oracle/__tests__/SummaryTab.test.tsx` — Rewritten: 4 tests (placeholder, reading sections, question sections, name sections) with updated mocks
+- `frontend/src/components/oracle/__tests__/ReadingResults.test.tsx` — Rewritten: 8 tests (6 original + 2 new for ShareButton visible/hidden)
+
+**Test files created (5):**
+
+- `frontend/src/components/oracle/__tests__/ReadingSection.test.tsx` — 3 tests: renders title+children, collapse/expand toggle, priority border color
+- `frontend/src/components/oracle/__tests__/NumerologyNumberDisplay.test.tsx` — 3 tests: renders number/label/meaning, Persian digits utility, master number highlight
+- `frontend/src/components/oracle/__tests__/ReadingHeader.test.tsx` — 2 tests: name+date display, confidence pill color
+- `frontend/src/components/oracle/__tests__/ReadingFooter.test.tsx` — 2 tests: confidence bar width, disclaimer text
+- `frontend/src/components/oracle/__tests__/ShareButton.test.tsx` — 2 tests: clipboard writeText call, "Copied!" feedback
+
+**Test files modified (2):**
+
+- `frontend/src/components/oracle/__tests__/DetailsTab.test.tsx` — Added i18n mock with language property for NumerologyNumberDisplay compatibility
+- `frontend/src/components/oracle/__tests__/SummaryTab.test.tsx` — Full rewrite with section-based assertions
+
+**Tests:** 316 pass / 0 fail / 15 new (3 ReadingSection + 3 NumerologyNumberDisplay + 2 PatternBadge + 2 ReadingHeader + 2 ReadingFooter + 2 ShareButton + 1 SummaryTab rewrite) | 0 regressions across all 49 test files
+**Commit:** TBD
+**Issues:** None
+**Decisions:**
+
+- SummaryTab uses 3 separate sub-components (ReadingSummary, QuestionSummary, NameSummary) instead of a single switch — cleaner separation of reading type layouts
+- Element balance warnings auto-generated from fc60.element_balance: 0 count = "missing from chart", >3 = "dominant in chart"
+- Caution section only renders when balance warnings exist — avoids empty section noise
+- ShareButton uses clipboard.writeText with textarea fallback for insecure contexts (HTTP)
+- Print CSS uses @media print to hide interactive elements and force white background — works with browser print dialog
+- NumerologyNumberDisplay has 3 sizes (sm for DetailsTab grid, md default, lg for feature numbers)
+- Master numbers (11, 22, 33) get gold accent color (text-nps-score-peak) instead of standard bright text
+- Persian digit conversion driven by i18n.language check — no separate locale prop needed
+
+**Next:** Session 22 — Reading History Page (reading history list with filtering, search, pagination, favorites)
 
 ---
 

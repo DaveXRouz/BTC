@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { NumerologyNumberDisplay } from "./NumerologyNumberDisplay";
 import type { ConsultationResult } from "@/types";
 
 interface DetailsTabProps {
@@ -97,15 +98,26 @@ function ReadingDetails({
 
       {numerology && (
         <DetailSection title={t("oracle.details_numerology")}>
-          <DataRow label={t("oracle.life_path")} value={numerology.life_path} />
-          <DataRow
-            label={t("oracle.day_vibration")}
-            value={numerology.day_vibration}
-          />
-          <DataRow
-            label={t("oracle.personal_year")}
-            value={numerology.personal_year}
-          />
+          <div className="grid grid-cols-3 gap-3 py-2">
+            <NumerologyNumberDisplay
+              number={numerology.life_path}
+              label={t("oracle.life_path")}
+              meaning=""
+              size="sm"
+            />
+            <NumerologyNumberDisplay
+              number={numerology.day_vibration}
+              label={t("oracle.day_vibration")}
+              meaning=""
+              size="sm"
+            />
+            <NumerologyNumberDisplay
+              number={numerology.personal_year}
+              label={t("oracle.personal_year")}
+              meaning=""
+              size="sm"
+            />
+          </div>
           <DataRow
             label={t("oracle.personal_month")}
             value={numerology.personal_month}

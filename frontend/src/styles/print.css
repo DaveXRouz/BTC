@@ -1,0 +1,63 @@
+@media print {
+  /* Hide non-content elements */
+  nav,
+  aside,
+  [role="tablist"],
+  .export-actions,
+  .share-button,
+  footer,
+  .mobile-menu-backdrop,
+  button[aria-label*="menu"],
+  button[aria-label*="collapse"],
+  button[aria-label*="expand"] {
+    display: none !important;
+  }
+
+  /* Force white background */
+  body,
+  html,
+  #root,
+  main,
+  [data-reading-section] {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Clean text */
+  * {
+    color: #1a1a1a !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Expand all sections */
+  [data-reading-section] > div:last-child {
+    display: block !important;
+  }
+
+  /* Clean card styles */
+  [data-reading-section] {
+    border: 1px solid #ddd !important;
+    page-break-inside: avoid;
+    margin-bottom: 1rem;
+    border-radius: 0 !important;
+  }
+
+  /* Remove animations */
+  .animate-fade-in-up {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Confidence bar stays visible */
+  [role="progressbar"] {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Clean margins */
+  @page {
+    margin: 2cm;
+  }
+}

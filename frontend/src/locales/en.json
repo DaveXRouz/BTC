@@ -416,7 +416,24 @@
     "loading_cancel": "Cancel",
     "progress_step": "Step {{step}} of {{total}}",
     "multi_need_users": "Select at least 2 users for a multi-user reading.",
-    "multi_select_hint": "Use the profile selector to add users."
+    "multi_select_hint": "Use the profile selector to add users.",
+
+    "section_universal_address": "Universal Address",
+    "section_core_identity": "Core Identity",
+    "section_right_now": "Right Now",
+    "section_patterns": "Patterns & Synchronicities",
+    "section_message": "The Message",
+    "section_advice": "Today's Advice",
+    "section_caution": "Caution",
+    "no_patterns": "No synchronicities detected",
+    "share": "Share",
+    "copied": "Copied!",
+    "powered_by": "Powered by NPS Numerology Framework",
+    "disclaimer": "This reading is for entertainment and personal reflection purposes only.",
+    "expression": "Expression",
+    "caution_missing": "missing from chart",
+    "caution_dominant": "dominant in chart",
+    "numerology_system": "System"
   },
   "vault": {
     "title": "Vault",

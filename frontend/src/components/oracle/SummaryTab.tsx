@@ -1,47 +1,335 @@
 import { useTranslation } from "react-i18next";
 import { TranslatedReading } from "./TranslatedReading";
+import { ReadingSection } from "./ReadingSection";
+import { NumerologyNumberDisplay } from "./NumerologyNumberDisplay";
+import { PatternBadge } from "./PatternBadge";
+import { ReadingHeader } from "./ReadingHeader";
+import { ReadingFooter } from "./ReadingFooter";
 import type { ConsultationResult } from "@/types";
 
 interface SummaryTabProps {
   result: ConsultationResult | null;
 }
 
-function getSummaryText(result: ConsultationResult): string {
-  switch (result.type) {
-    case "reading":
-      return result.data.summary;
-    case "question":
-      return result.data.ai_interpretation || "";
-    case "name":
-      return result.data.ai_interpretation || "";
-    default:
-      return "";
+function ReadingSummary({
+  result,
+}: {
+  result: Extract<ConsultationResult, { type: "reading" }>;
+}) {
+  const { t } = useTranslation();
+  const { data } = result;
+
+  // Detect element balance warnings: any element at 0 or dominant >3
+  const balanceWarnings: string[] = [];
+  if (data.fc60?.element_balance) {
+    for (const [el, val] of Object.entries(data.fc60.element_balance)) {
+      if (val === 0)
+        balanceWarnings.push(`${el}: ${t("oracle.caution_missing")}`);
+      if (val > 3)
+        balanceWarnings.push(`${el}: ${t("oracle.caution_dominant")}`);
+    }
   }
+
+  return (
+    <div className="space-y-4">
+      {/* Section 1: Header */}
+      <ReadingHeader
+        userName={t("oracle.current_reading")}
+        readingDate={data.generated_at}
+        readingType="reading"
+        confidence={data.fc60 ? data.fc60.energy_level / 10 : undefined}
+      />
+
+      {/* Section 2: Universal Address */}
+      {data.fc60_extended && (
+        <ReadingSection
+          title={t("oracle.section_universal_address")}
+          icon="\uD83C\uDF10"
+        >
+          <div className="space-y-2 pt-2">
+            <p className="font-mono text-sm text-nps-text-bright">
+              {data.fc60_extended.stamp}
+            </p>
+            <div className="flex gap-4 text-xs text-nps-text-dim flex-wrap">
+              <span>
+                {data.fc60_extended.weekday_name} &middot;{" "}
+                {data.fc60_extended.weekday_planet}
+              </span>
+              <span>{data.fc60_extended.weekday_domain}</span>
+            </div>
+          </div>
+        </ReadingSection>
+      )}
+
+      {/* Section 3: Core Identity */}
+      {data.numerology && (
+        <ReadingSection
+          title={t("oracle.section_core_identity")}
+          icon="\uD83D\uDD22"
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
+            <NumerologyNumberDisplay
+              number={data.numerology.life_path}
+              label={t("oracle.life_path")}
+              meaning={data.numerology.interpretation || ""}
+              size="md"
+            />
+            <NumerologyNumberDisplay
+              number={data.numerology.day_vibration}
+              label={t("oracle.day_vibration")}
+              meaning=""
+              size="sm"
+            />
+            <NumerologyNumberDisplay
+              number={data.numerology.personal_year}
+              label={t("oracle.personal_year")}
+              meaning=""
+              size="sm"
+            />
+          </div>
+        </ReadingSection>
+      )}
+
+      {/* Section 4: Right Now */}
+      {(data.fc60 || data.moon || data.ganzhi) && (
+        <ReadingSection title={t("oracle.section_right_now")} icon="\u23F0">
+          <div className="grid grid-cols-2 gap-3 pt-2 text-sm">
+            {data.fc60 && (
+              <div>
+                <span className="text-xs text-nps-text-dim">
+                  {t("oracle.element")}
+                </span>
+                <p className="text-nps-text">{data.fc60.element}</p>
+              </div>
+            )}
+            {data.fc60 && (
+              <div>
+                <span className="text-xs text-nps-text-dim">
+                  {t("oracle.energy")}
+                </span>
+                <p className="text-nps-text">{data.fc60.energy_level}</p>
+              </div>
+            )}
+            {data.moon && (
+              <div>
+                <span className="text-xs text-nps-text-dim">Moon</span>
+                <p className="text-nps-text">
+                  {data.moon.emoji} {data.moon.phase_name} (
+                  {data.moon.illumination}%)
+                </p>
+              </div>
+            )}
+            {data.ganzhi && (
+              <div>
+                <span className="text-xs text-nps-text-dim">Ganzhi</span>
+                <p className="text-nps-text">
+                  {data.ganzhi.year_animal} &middot; {data.ganzhi.stem_element}
+                </p>
+              </div>
+            )}
+          </div>
+        </ReadingSection>
+      )}
+
+      {/* Section 5: Patterns */}
+      <ReadingSection title={t("oracle.section_patterns")} icon="\uD83D\uDD17">
+        <div className="flex gap-2 flex-wrap pt-2">
+          {data.synchronicities && data.synchronicities.length > 0 ? (
+            data.synchronicities.map((s, i) => (
+              <PatternBadge key={i} pattern={s} priority="medium" />
+            ))
+          ) : (
+            <p className="text-xs text-nps-text-dim">
+              {t("oracle.no_patterns")}
+            </p>
+          )}
+          {data.angel &&
+            data.angel.matches.length > 0 &&
+            data.angel.matches.map((m, i) => (
+              <PatternBadge
+                key={`angel-${i}`}
+                pattern={String(m.number)}
+                priority="high"
+                description={m.meaning}
+              />
+            ))}
+        </div>
+      </ReadingSection>
+
+      {/* Section 6: The Message (AI Interpretation) */}
+      {data.ai_interpretation && (
+        <ReadingSection title={t("oracle.section_message")} icon="\u2728">
+          <div className="pt-2 bg-nps-oracle-accent/5 rounded p-3 -mx-1">
+            <TranslatedReading reading={data.ai_interpretation} />
+          </div>
+        </ReadingSection>
+      )}
+
+      {/* Section 7: Today's Advice */}
+      <ReadingSection title={t("oracle.section_advice")} icon="\uD83D\uDCA1">
+        <div className="pt-2 border-l-2 border-nps-oracle-accent/30 pl-3">
+          <TranslatedReading reading={data.summary} />
+        </div>
+      </ReadingSection>
+
+      {/* Section 8: Caution (only if warnings) */}
+      {balanceWarnings.length > 0 && (
+        <ReadingSection
+          title={t("oracle.section_caution")}
+          icon="\u26A0\uFE0F"
+          priority="high"
+        >
+          <div className="pt-2 space-y-1">
+            {balanceWarnings.map((w, i) => (
+              <p key={i} className="text-xs text-nps-warning">
+                {w}
+              </p>
+            ))}
+          </div>
+        </ReadingSection>
+      )}
+
+      {/* Section 9: Footer */}
+      <ReadingFooter
+        confidence={data.fc60 ? data.fc60.energy_level / 10 : 0.5}
+        generatedAt={data.generated_at}
+      />
+    </div>
+  );
 }
 
-function getTypeBadge(
-  type: ConsultationResult["type"],
-  t: (key: string) => string,
-): { label: string; color: string } {
-  switch (type) {
-    case "reading":
-      return {
-        label: t("oracle.type_reading"),
-        color: "bg-blue-600/20 text-blue-400",
-      };
-    case "question":
-      return {
-        label: t("oracle.type_question"),
-        color: "bg-purple-600/20 text-purple-400",
-      };
-    case "name":
-      return {
-        label: t("oracle.type_name"),
-        color: "bg-green-600/20 text-green-400",
-      };
-    default:
-      return { label: "", color: "" };
-  }
+function QuestionSummary({
+  result,
+}: {
+  result: Extract<ConsultationResult, { type: "question" }>;
+}) {
+  const { t } = useTranslation();
+  const { data } = result;
+
+  return (
+    <div className="space-y-4">
+      <ReadingHeader
+        userName={data.question}
+        readingDate={new Date().toISOString()}
+        readingType="question"
+        confidence={data.confidence ? data.confidence.score / 100 : undefined}
+      />
+
+      <ReadingSection title={t("oracle.section_core_identity")} icon="\u2753">
+        <div className="pt-2 space-y-2">
+          <NumerologyNumberDisplay
+            number={data.question_number}
+            label={t("oracle.question_number_label")}
+            meaning={data.numerology_system}
+            size="md"
+          />
+          <div className="flex gap-4 text-xs text-nps-text-dim">
+            <span>
+              {t("oracle.detected_script", { script: data.detected_script })}
+            </span>
+            {data.is_master_number && (
+              <span className="text-nps-score-peak">
+                {t("oracle.master_number_badge")}
+              </span>
+            )}
+          </div>
+        </div>
+      </ReadingSection>
+
+      {data.ai_interpretation && (
+        <ReadingSection title={t("oracle.section_message")} icon="\u2728">
+          <div className="pt-2">
+            <TranslatedReading reading={data.ai_interpretation} />
+          </div>
+        </ReadingSection>
+      )}
+
+      {data.confidence && (
+        <ReadingFooter confidence={data.confidence.score / 100} />
+      )}
+    </div>
+  );
+}
+
+function NameSummary({
+  result,
+}: {
+  result: Extract<ConsultationResult, { type: "name" }>;
+}) {
+  const { t } = useTranslation();
+  const { data } = result;
+
+  return (
+    <div className="space-y-4">
+      <ReadingHeader
+        userName={data.name}
+        readingDate={new Date().toISOString()}
+        readingType="name"
+        confidence={data.confidence ? data.confidence.score / 100 : undefined}
+      />
+
+      <ReadingSection
+        title={t("oracle.section_core_identity")}
+        icon="\uD83D\uDD22"
+      >
+        <div className="grid grid-cols-3 gap-4 pt-2">
+          <NumerologyNumberDisplay
+            number={data.expression}
+            label={t("oracle.expression")}
+            meaning=""
+            size="md"
+          />
+          <NumerologyNumberDisplay
+            number={data.soul_urge}
+            label={t("oracle.soul_urge")}
+            meaning=""
+            size="md"
+          />
+          <NumerologyNumberDisplay
+            number={data.personality}
+            label={t("oracle.personality")}
+            meaning=""
+            size="md"
+          />
+        </div>
+      </ReadingSection>
+
+      {data.letter_breakdown && data.letter_breakdown.length > 0 && (
+        <ReadingSection title={t("oracle.details_letters")} icon="\uD83D\uDD24">
+          <table className="w-full text-xs mt-2">
+            <thead>
+              <tr className="text-nps-text-dim border-b border-nps-border">
+                <th className="text-left py-1">Letter</th>
+                <th className="text-right py-1">Value</th>
+                <th className="text-right py-1">{t("oracle.element")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.letter_breakdown.map((l, i) => (
+                <tr key={i} className="border-b border-nps-border/30">
+                  <td className="py-1 text-nps-text">{l.letter}</td>
+                  <td className="py-1 text-right text-nps-text">{l.value}</td>
+                  <td className="py-1 text-right text-nps-text">{l.element}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ReadingSection>
+      )}
+
+      {data.ai_interpretation && (
+        <ReadingSection title={t("oracle.section_message")} icon="\u2728">
+          <div className="pt-2">
+            <TranslatedReading reading={data.ai_interpretation} />
+          </div>
+        </ReadingSection>
+      )}
+
+      {data.confidence && (
+        <ReadingFooter confidence={data.confidence.score / 100} />
+      )}
+    </div>
+  );
 }
 
 export function SummaryTab({ result }: SummaryTabProps) {
@@ -55,99 +343,11 @@ export function SummaryTab({ result }: SummaryTabProps) {
     );
   }
 
-  const summary = getSummaryText(result);
-  const badge = getTypeBadge(result.type, t);
-
-  return (
-    <div className="space-y-4">
-      {/* Type badge + timestamp */}
-      <div className="flex items-center gap-2">
-        <span className={`px-2 py-0.5 text-xs rounded ${badge.color}`}>
-          {badge.label}
-        </span>
-        {result.type === "reading" && result.data.generated_at && (
-          <span className="text-xs text-nps-text-dim">
-            {t("oracle.generated_at")}:{" "}
-            {new Date(result.data.generated_at).toLocaleString()}
-          </span>
-        )}
-      </div>
-
-      {/* Quick stats for reading type */}
-      {result.type === "reading" && result.data.fc60 && (
-        <div className="flex gap-4 text-xs flex-wrap">
-          <span className="text-nps-text-dim">
-            {t("oracle.element")}:{" "}
-            <span className="text-nps-text">{result.data.fc60.element}</span>
-          </span>
-          <span className="text-nps-text-dim">
-            {t("oracle.energy")}:{" "}
-            <span className="text-nps-text">
-              {result.data.fc60.energy_level}
-            </span>
-          </span>
-          {result.data.numerology && (
-            <span className="text-nps-text-dim">
-              {t("oracle.life_path")}:{" "}
-              <span className="text-nps-text">
-                {result.data.numerology.life_path}
-              </span>
-            </span>
-          )}
-          {result.data.moon && (
-            <span className="text-nps-text-dim">
-              Moon:{" "}
-              <span className="text-nps-text">
-                {result.data.moon.emoji} {result.data.moon.phase_name}
-              </span>
-            </span>
-          )}
-          {result.data.synchronicities &&
-            result.data.synchronicities.length > 0 && (
-              <span className="text-nps-text-dim">
-                Syncs:{" "}
-                <span className="text-nps-text">
-                  {result.data.synchronicities.length}
-                </span>
-              </span>
-            )}
-        </div>
-      )}
-
-      {/* Quick stats for question type */}
-      {result.type === "question" && (
-        <div className="flex gap-4 text-xs flex-wrap">
-          <span className="text-nps-text-dim">
-            {t("oracle.question_number_label")}:{" "}
-            <span className="text-nps-text">{result.data.question_number}</span>
-          </span>
-          <span className="text-nps-text-dim">
-            {t("oracle.detected_script")}:{" "}
-            <span className="text-nps-text">{result.data.detected_script}</span>
-          </span>
-          {result.data.confidence && (
-            <span className="text-nps-text-dim">
-              {t("oracle.confidence")}:{" "}
-              <span className="text-nps-text">
-                {result.data.confidence.score}%
-              </span>
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* AI Interpretation (with translation support) */}
-      {result.type === "reading" && result.data.ai_interpretation && (
-        <div className="border border-nps-oracle-border rounded p-3 bg-nps-oracle-accent/5">
-          <h4 className="text-xs font-medium text-nps-oracle-accent mb-2">
-            AI Interpretation
-          </h4>
-          <TranslatedReading reading={result.data.ai_interpretation} />
-        </div>
-      )}
-
-      {/* Summary text with translation support */}
-      <TranslatedReading reading={summary} />
-    </div>
-  );
+  if (result.type === "reading") {
+    return <ReadingSummary result={result} />;
+  }
+  if (result.type === "question") {
+    return <QuestionSummary result={result} />;
+  }
+  return <NameSummary result={result} />;
 }

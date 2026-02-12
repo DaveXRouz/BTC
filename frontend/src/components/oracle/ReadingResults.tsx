@@ -4,6 +4,7 @@ import { SummaryTab } from "./SummaryTab";
 import { DetailsTab } from "./DetailsTab";
 import { ReadingHistory } from "./ReadingHistory";
 import { ExportButton } from "./ExportButton";
+import { ShareButton } from "./ShareButton";
 import { HeartbeatDisplay } from "./HeartbeatDisplay";
 import { LocationDisplay } from "./LocationDisplay";
 import { ConfidenceMeter } from "./ConfidenceMeter";
@@ -69,7 +70,10 @@ export function ReadingResults({
             </button>
           ))}
         </div>
-        <ExportButton result={result} />
+        <div className="flex gap-2 export-actions">
+          {result && <ShareButton result={result} />}
+          <ExportButton result={result} />
+        </div>
       </div>
 
       {/* Tab content — eagerly rendered, hidden via CSS */}
