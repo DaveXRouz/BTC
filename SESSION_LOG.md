@@ -854,7 +854,7 @@ TEMPLATE — copy this for each new session:
 - `frontend/src/pages/__tests__/Oracle.test.tsx` — Fixed import: named → default export
 
 **Tests:** 287 pass / 0 fail / 28 new (6 useTheme + 4 ThemeToggle + 7 Navigation + 6 Layout + 5 App routing) | 0 regressions across all 41 test files
-**Commit:** pending
+**Commit:** abe5187 — [frontend] layout & navigation: theme system, collapsible sidebar, lazy routing (#session-19)
 **Issues:** None
 **Decisions:**
 
