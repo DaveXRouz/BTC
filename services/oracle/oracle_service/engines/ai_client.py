@@ -5,10 +5,8 @@ Low-level wrapper for the Anthropic Python SDK. Provides:
   - Availability checking (API key + SDK import)
   - In-memory dict cache with TTL and max size
   - Thread-safe rate limiting
+  - Retry logic (1 retry for rate-limit/server/connection errors)
   - Graceful degradation when SDK/key unavailable
-
-Mirrors patterns from ai_engine.py (cache key, rate limiting, result shape)
-but uses the SDK instead of CLI subprocess.
 """
 
 import hashlib
@@ -25,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_MODEL = "claude-sonnet-4-20250514"
 _DEFAULT_MAX_TOKENS = 1024
+_DEFAULT_MAX_TOKENS_SINGLE = 2000
+_DEFAULT_MAX_TOKENS_MULTI = 3000
 _DEFAULT_TIMEOUT = 30
 
 # Cache config
@@ -34,6 +34,10 @@ _CACHE_MAX = 200
 # Rate limiting
 _MIN_INTERVAL = 1.0  # seconds between API calls
 
+# Retry config
+_RETRY_WAIT = 2.0  # seconds between retries
+_MAX_RETRIES = 1
+
 # ════════════════════════════════════════════════════════════
 # Internal state
 # ════════════════════════════════════════════════════════════
@@ -42,7 +46,7 @@ _rate_lock = threading.Lock()
 _last_call_time = 0.0
 
 _cache_lock = threading.Lock()
-_cache = {}  # key -> {"response": str, "timestamp": float}
+_cache: dict = {}  # key -> {"response": str, "timestamp": float}
 
 _client = None
 _client_lock = threading.Lock()
@@ -50,12 +54,35 @@ _available = None
 
 # Try importing the SDK at module level — but don't fail
 _sdk_available = False
+_RateLimitError = None
+_InternalServerError = None
+_APIConnectionError = None
+_AuthenticationError = None
+_BadRequestError = None
+
 try:
     import anthropic as _anthropic_module
 
     _sdk_available = True
+    _RateLimitError = _anthropic_module.RateLimitError
+    _InternalServerError = _anthropic_module.InternalServerError
+    _APIConnectionError = _anthropic_module.APIConnectionError
+    _AuthenticationError = _anthropic_module.AuthenticationError
+    _BadRequestError = _anthropic_module.BadRequestError
 except ImportError:
     _anthropic_module = None
+
+
+# ════════════════════════════════════════════════════════════
+# Retryable error check
+# ════════════════════════════════════════════════════════════
+
+
+def _is_retryable(exc: Exception) -> bool:
+    """Return True if the exception is retryable (rate limit, server, connection)."""
+    if not _sdk_available:
+        return False
+    return isinstance(exc, (_RateLimitError, _InternalServerError, _APIConnectionError))
 
 
 # ════════════════════════════════════════════════════════════
@@ -63,7 +90,7 @@ except ImportError:
 # ════════════════════════════════════════════════════════════
 
 
-def is_available():
+def is_available() -> bool:
     """Check if AI features are available (API key set + SDK importable).
 
     Result is cached after first call.
@@ -93,8 +120,12 @@ def is_available():
 
 
 def generate(
-    prompt, system_prompt="", max_tokens=None, temperature=0.7, use_cache=True
-):
+    prompt: str,
+    system_prompt: str = "",
+    max_tokens: int | None = None,
+    temperature: float = 0.7,
+    use_cache: bool = True,
+) -> dict:
     """Generate a response from the Anthropic API.
 
     Parameters
@@ -114,7 +145,7 @@ def generate(
     -------
     dict
         {"success": bool, "response": str, "error": str|None,
-         "elapsed": float, "cached": bool}
+         "elapsed": float, "cached": bool, "retried": bool}
     """
     if not is_available():
         return {
@@ -123,6 +154,7 @@ def generate(
             "error": "AI not available (no SDK or API key)",
             "elapsed": 0.0,
             "cached": False,
+            "retried": False,
         }
 
     # Cache lookup
@@ -136,6 +168,7 @@ def generate(
                 "error": None,
                 "elapsed": 0.0,
                 "cached": True,
+                "retried": False,
             }
 
     # Rate limiting
@@ -155,66 +188,135 @@ def generate(
 
     model = os.environ.get("NPS_AI_MODEL", _DEFAULT_MODEL)
 
-    # Make the API call
+    # Make the API call with retry logic
     start = time.time()
-    try:
-        client = _get_client()
-        kwargs = {
-            "model": model,
-            "max_tokens": max_tokens,
-            "temperature": temperature,
-            "messages": [{"role": "user", "content": prompt}],
-        }
-        if system_prompt:
-            kwargs["system"] = system_prompt
-        if timeout:
-            kwargs["timeout"] = float(timeout)
+    retried = False
 
-        response = client.messages.create(**kwargs)
-        elapsed = time.time() - start
+    for attempt in range(_MAX_RETRIES + 1):
+        try:
+            client = _get_client()
+            kwargs: dict = {
+                "model": model,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+            if system_prompt:
+                kwargs["system"] = system_prompt
+            if timeout:
+                kwargs["timeout"] = float(timeout)
 
-        # Extract text from response
-        text = ""
-        if response.content:
-            text = response.content[0].text
+            response = client.messages.create(**kwargs)
+            elapsed = time.time() - start
 
-        # Cache the result
-        if use_cache and text:
-            _write_cache(key, text)
+            # Extract text from response
+            text = ""
+            if response.content:
+                text = response.content[0].text
 
-        return {
-            "success": True,
-            "response": text,
-            "error": None,
-            "elapsed": elapsed,
-            "cached": False,
-        }
+            # Cache the result
+            if use_cache and text:
+                _write_cache(key, text)
 
-    except Exception as e:
-        elapsed = time.time() - start
-        error_msg = str(e)
-        # Avoid leaking API key in error messages
-        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        if api_key and api_key in error_msg:
-            error_msg = error_msg.replace(api_key, "***")
-        logger.warning("AI client error: %s (%.1fs)", error_msg, elapsed)
-        return {
-            "success": False,
-            "response": "",
-            "error": error_msg,
-            "elapsed": elapsed,
-            "cached": False,
-        }
+            return {
+                "success": True,
+                "response": text,
+                "error": None,
+                "elapsed": elapsed,
+                "cached": False,
+                "retried": retried,
+            }
+
+        except Exception as e:
+            # Check if retryable and haven't exhausted retries
+            if _is_retryable(e) and attempt < _MAX_RETRIES:
+                retried = True
+                logger.warning(
+                    "AI client retryable error (attempt %d): %s — retrying in %.1fs",
+                    attempt + 1,
+                    type(e).__name__,
+                    _RETRY_WAIT,
+                )
+                time.sleep(_RETRY_WAIT)
+                continue
+
+            # Non-retryable or retries exhausted
+            elapsed = time.time() - start
+            error_msg = str(e)
+            # Avoid leaking API key in error messages
+            api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+            if api_key and api_key in error_msg:
+                error_msg = error_msg.replace(api_key, "***")
+
+            if _sdk_available and isinstance(e, (_AuthenticationError, _BadRequestError)):
+                logger.error("AI client non-retryable error: %s (%.1fs)", error_msg, elapsed)
+            else:
+                logger.warning("AI client error: %s (%.1fs)", error_msg, elapsed)
+
+            return {
+                "success": False,
+                "response": "",
+                "error": error_msg,
+                "elapsed": elapsed,
+                "cached": False,
+                "retried": retried,
+            }
+
+    # Should not reach here, but safety net
+    elapsed = time.time() - start
+    return {
+        "success": False,
+        "response": "",
+        "error": "Retry exhausted",
+        "elapsed": elapsed,
+        "cached": False,
+        "retried": True,
+    }
 
 
-def clear_cache():
+def generate_reading(
+    user_prompt: str,
+    system_prompt: str,
+    locale: str = "en",
+    max_tokens: int = _DEFAULT_MAX_TOKENS_SINGLE,
+    use_cache: bool = True,
+) -> dict:
+    """Convenience wrapper for reading generation.
+
+    Parameters
+    ----------
+    user_prompt : str
+        The formatted user prompt from ai_prompt_builder.
+    system_prompt : str
+        The Wisdom system prompt from prompt_templates.
+    locale : str
+        "en" or "fa" — for logging only; prompt already handles locale.
+    max_tokens : int
+        Max tokens for the response.
+    use_cache : bool
+        Whether to use caching.
+
+    Returns
+    -------
+    dict
+        Same shape as generate() return value.
+    """
+    return generate(
+        prompt=user_prompt,
+        system_prompt=system_prompt,
+        max_tokens=max_tokens,
+        use_cache=use_cache,
+    )
+
+
+def clear_cache() -> None:
     """Remove all cached responses."""
     with _cache_lock:
         _cache.clear()
     logger.info("AI client cache cleared")
 
 
-def reset_availability():
+def reset_availability() -> None:
     """Reset the cached availability check. Useful for testing."""
     global _available, _client
     _available = None
@@ -227,13 +329,13 @@ def reset_availability():
 # ════════════════════════════════════════════════════════════
 
 
-def _cache_key(prompt, system_prompt=""):
+def _cache_key(prompt: str, system_prompt: str = "") -> str:
     """Generate SHA-256 cache key from prompt + system prompt."""
     content = f"{system_prompt}|||{prompt}"
     return hashlib.sha256(content.encode()).hexdigest()
 
 
-def _read_cache(key):
+def _read_cache(key: str) -> str | None:
     """Read cached response if it exists and hasn't expired.
 
     Returns the response string or None.
@@ -248,24 +350,23 @@ def _read_cache(key):
         return entry["response"]
 
 
-def _write_cache(key, response):
+def _write_cache(key: str, response: str) -> None:
     """Write response to in-memory cache, evicting oldest if over limit."""
     with _cache_lock:
         _cache[key] = {"response": response, "timestamp": time.time()}
         _evict_cache()
 
 
-def _evict_cache():
+def _evict_cache() -> None:
     """Remove oldest entries if cache exceeds max size. Must hold _cache_lock."""
     if len(_cache) <= _CACHE_MAX:
         return
-    # Sort by timestamp, remove oldest
     sorted_keys = sorted(_cache.keys(), key=lambda k: _cache[k]["timestamp"])
     while len(_cache) > _CACHE_MAX:
         del _cache[sorted_keys.pop(0)]
 
 
-def _enforce_rate_limit():
+def _enforce_rate_limit() -> None:
     """Block until minimum interval has passed since last API call."""
     global _last_call_time
     with _rate_lock:

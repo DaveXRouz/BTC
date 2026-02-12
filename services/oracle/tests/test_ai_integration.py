@@ -1,428 +1,351 @@
 """
-Tests for AI Integration (T3-S3)
-==================================
-8 test classes, 50+ tests covering:
-  - AI client availability (SDK + key checks)
-  - AI client generate (success, error, cache, rate limiting)
-  - Prompt templates (all defined, placeholders, build_prompt)
-  - AI interpreter single (4 formats, fallbacks, context building)
-  - AI interpreter group (multi-user, fallbacks, narratives)
-  - Translation service (en→fa, fa→en, batch, term protection, detection)
-  - Integration (end-to-end with mocked AI, JSON serializable)
-  - Result classes (__slots__, to_dict, repr)
+Tests for AI Integration (Session 13)
+=======================================
+7 test classes, 27+ tests covering:
+  - Prompt building (build_reading_prompt, build_multi_user_prompt)
+  - System prompts (EN/FA, signal hierarchy, locale fallback)
+  - AI client retry logic (rate limit, auth error, exhaustion)
+  - Response parsing (9 sections EN/FA, fallback, partial)
+  - Interpreter (AI success, fallback, FA, multi-user, to_dict)
+  - Fallback (translation sections, synthesis, minimal)
+  - Cache key (deterministic, locale differentiation)
 
-All AI calls mocked — zero real API calls.
+All AI calls mocked -- zero real API calls.
 """
 
 import json
-import os
-import time
 import unittest
 from unittest.mock import patch, MagicMock
 
-import oracle_service  # triggers sys.path shim
 
+from oracle_service.ai_prompt_builder import (
+    build_reading_prompt,
+    build_multi_user_prompt,
+    _safe_get,
+)
 from engines.ai_client import (
-    is_available,
     generate,
+    generate_reading,
     clear_cache,
     reset_availability,
-    _cache_key,
-    _read_cache,
-    _write_cache,
-    _CACHE_TTL,
-    _CACHE_MAX,
-)
-from engines.prompt_templates import (
-    FC60_SYSTEM_PROMPT,
-    SIMPLE_TEMPLATE,
-    ADVICE_TEMPLATE,
-    ACTION_STEPS_TEMPLATE,
-    UNIVERSE_MESSAGE_TEMPLATE,
-    GROUP_NARRATIVE_TEMPLATE,
-    COMPATIBILITY_NARRATIVE_TEMPLATE,
-    ENERGY_NARRATIVE_TEMPLATE,
-    TRANSLATE_EN_FA_TEMPLATE,
-    TRANSLATE_FA_EN_TEMPLATE,
-    BATCH_TRANSLATE_TEMPLATE,
-    FC60_PRESERVED_TERMS,
-    build_prompt,
-    _ALL_KEYS,
 )
 from engines.ai_interpreter import (
     interpret_reading,
-    interpret_name,
-    interpret_all_formats,
-    interpret_group,
-    InterpretationResult,
-    MultiFormatResult,
-    GroupInterpretationResult,
-    _build_reading_context,
-    _build_group_context,
+    interpret_multi_user,
+    ReadingInterpretation,
+    MultiUserInterpretation,
+    _parse_sections,
+    _build_fallback,
+    _make_daily_cache_key,
 )
-from engines.translation_service import (
-    translate,
-    batch_translate,
-    detect_language,
-    TranslationResult,
-    _protect_terms,
-    _restore_terms,
-    _parse_batch_response,
+from engines.prompt_templates import (
+    get_system_prompt,
+    WISDOM_SYSTEM_PROMPT_EN,
+    WISDOM_SYSTEM_PROMPT_FA,
+    FC60_PRESERVED_TERMS,
+    build_prompt,
 )
 
 # ════════════════════════════════════════════════════════════
-# Test fixtures
+# Test fixtures — framework output format
 # ════════════════════════════════════════════════════════════
 
-ALICE = {"name": "Alice", "birth_year": 1990, "birth_month": 5, "birth_day": 15}
-BOB = {"name": "Bob", "birth_year": 1992, "birth_month": 3, "birth_day": 20}
-CAROL = {"name": "Carol", "birth_year": 1988, "birth_month": 11, "birth_day": 7}
-DAVE = {"name": "Dave", "birth_year": 1995, "birth_month": 8, "birth_day": 25}
-
-SAMPLE_READING = {
-    "sign": "42",
-    "numbers": [42, 4, 2],
-    "systems": {
-        "fc60": {
-            "token": "MT-HO",
-            "element": "Metal",
-            "animal": "Horse",
-            "full_output": "Metal Horse (MT-HO)",
-        },
-        "numerology": {
-            "life_path": 7,
-            "reductions": [{"value": 42, "reduced": 6}],
-            "expression": 5,
-            "soul_urge": 3,
-            "personality": 2,
-        },
-        "moon": {"phase": "Waxing Gibbous"},
-        "ganzhi": {"year_pillar": "Geng-Wu", "hour_pillar": "Bing-Xu"},
-        "zodiac": {"sign": "Taurus"},
-        "angel": {},
-        "chaldean": {},
+SAMPLE_FRAMEWORK_READING = {
+    "person": {
+        "name": "Alice Johnson",
+        "birthdate": "1990-07-15",
+        "age_years": 35,
+        "age_days": 12993,
     },
-    "interpretation": "The number 42 carries deep significance across multiple systems.",
-    "synchronicities": ["Mirror pattern detected in 42"],
-    "timestamp": time.time(),
-    "location": None,
-    "context": None,
-}
-
-SAMPLE_NAME_DATA = {
-    "name": "Hamzeh",
-    "expression": 7,
-    "soul_urge": 5,
-    "personality": 2,
-    "life_path": 9,
-    "chaldean": 6,
-    "interpretation": "The name Hamzeh resonates with analytical and spiritual energy.",
-    "birthday_zodiac": {"sign": "Leo", "element": "Fire"},
-}
-
-SAMPLE_ANALYSIS_DICT = {
-    "user_count": 2,
-    "pair_count": 1,
-    "computation_ms": 5.2,
-    "profiles": [
-        {
-            "name": "Alice",
-            "birth_year": 1990,
-            "birth_month": 5,
-            "birth_day": 15,
-            "fc60_sign": "MT-HO",
-            "element": "Metal",
-            "animal": "Horse",
-            "life_path": 3,
-            "destiny_number": 5,
-            "name_energy": 7,
-        },
-        {
-            "name": "Bob",
-            "birth_year": 1992,
-            "birth_month": 3,
-            "birth_day": 20,
-            "fc60_sign": "WA-MO",
-            "element": "Water",
-            "animal": "Monkey",
-            "life_path": 8,
-            "destiny_number": 2,
-            "name_energy": 4,
-        },
-    ],
-    "pairwise_compatibility": [
-        {
-            "user1": "Alice",
-            "user2": "Bob",
-            "scores": {
-                "life_path": 0.65,
-                "element": 0.55,
-                "animal": 0.70,
-                "destiny": 0.50,
-                "name_energy": 0.60,
-                "overall": 0.62,
-            },
-            "classification": "Good",
-            "strengths": ["Strong animal resonance", "Complementary elements"],
-            "challenges": ["Destiny number tension"],
-        }
-    ],
-    "group_energy": {
-        "joint_life_path": 2,
-        "dominant_element": "Metal",
-        "dominant_animal": "Horse",
-        "archetype": "Complementary Duo",
-        "archetype_description": "Two forces creating balance through difference",
-        "element_distribution": {"Metal": 1, "Water": 1},
-        "animal_distribution": {"Horse": 1, "Monkey": 1},
-        "life_path_distribution": {"3": 1, "8": 1},
+    "fc60_stamp": {
+        "fc60": "LU-OX-OXWA",
+        "j60": "TIFI-DRMT-GOMT-RAFI",
+        "y60": "SNWA",
+        "chk": "OK",
+        "iso": "2026-02-09T14:30:00-05:00",
     },
-    "group_dynamics": {
-        "roles": {"Alice": "Harmonizer", "Bob": "Leader"},
-        "synergies": ["Alice and Bob share complementary elements"],
-        "challenges": ["Potential tension between Leader and Harmonizer"],
-        "growth_areas": ["Build on animal resonance"],
-        "avg_compatibility": 0.62,
-        "strongest_bond": {"pair": "Alice & Bob", "score": 0.62},
-        "weakest_bond": {"pair": "Alice & Bob", "score": 0.62},
+    "birth": {
+        "jdn": 2448090,
+        "weekday": "Sunday",
+        "planet": "Sun",
     },
-}
-
-# 4-user analysis dict for larger group tests
-SAMPLE_4USER_ANALYSIS = {
-    "user_count": 4,
-    "pair_count": 6,
-    "computation_ms": 12.5,
-    "profiles": [
-        {
-            "name": "Alice",
-            "element": "Metal",
-            "animal": "Horse",
-            "life_path": 3,
-            "destiny_number": 5,
-            "name_energy": 7,
-            "birth_year": 1990,
-            "birth_month": 5,
-            "birth_day": 15,
-            "fc60_sign": "MT-HO",
+    "current": {
+        "date": "2026-02-09",
+        "weekday": "Monday",
+        "planet": "Moon",
+        "domain": "Emotion",
+    },
+    "numerology": {
+        "life_path": {
+            "number": 5,
+            "title": "The Explorer",
+            "message": "Freedom and change are your driving forces.",
         },
-        {
-            "name": "Bob",
-            "element": "Water",
-            "animal": "Monkey",
-            "life_path": 8,
-            "destiny_number": 2,
-            "name_energy": 4,
-            "birth_year": 1992,
-            "birth_month": 3,
-            "birth_day": 20,
-            "fc60_sign": "WA-MO",
-        },
-        {
-            "name": "Carol",
-            "element": "Earth",
-            "animal": "Dragon",
-            "life_path": 1,
-            "destiny_number": 9,
-            "name_energy": 3,
-            "birth_year": 1988,
-            "birth_month": 11,
-            "birth_day": 7,
-            "fc60_sign": "ER-DR",
-        },
-        {
-            "name": "Dave",
+        "expression": 7,
+        "soul_urge": 3,
+        "personality": 4,
+        "personal_year": 3,
+        "personal_month": 5,
+        "personal_day": 7,
+        "gender_polarity": {"label": "Feminine"},
+        "mother_influence": 6,
+    },
+    "moon": {
+        "phase_name": "Waxing Gibbous",
+        "emoji": "\U0001f314",
+        "age": 12.3,
+        "illumination": 87,
+        "energy": "Building",
+        "best_for": "Refining plans, detail work",
+        "avoid": "Starting new projects",
+    },
+    "ganzhi": {
+        "year": {
+            "traditional_name": "Bing-Wu",
             "element": "Fire",
-            "animal": "Pig",
-            "life_path": 5,
-            "destiny_number": 6,
-            "name_energy": 8,
-            "birth_year": 1995,
-            "birth_month": 8,
-            "birth_day": 25,
-            "fc60_sign": "FI-PI",
+            "animal_name": "Horse",
         },
-    ],
-    "pairwise_compatibility": [
-        {
-            "user1": "Alice",
-            "user2": "Bob",
-            "scores": {
-                "life_path": 0.65,
-                "element": 0.55,
-                "animal": 0.70,
-                "destiny": 0.50,
-                "name_energy": 0.60,
-                "overall": 0.62,
-            },
-            "classification": "Good",
-            "strengths": ["Animal resonance"],
-            "challenges": ["Destiny tension"],
+        "day": {
+            "gz_token": "Geng-Xu",
+            "element": "Metal",
+            "animal_name": "Dog",
         },
-        {
-            "user1": "Alice",
-            "user2": "Carol",
-            "scores": {
-                "life_path": 0.70,
-                "element": 0.80,
-                "animal": 0.45,
-                "destiny": 0.55,
-                "name_energy": 0.65,
-                "overall": 0.66,
-            },
-            "classification": "Good",
-            "strengths": ["Element harmony"],
-            "challenges": ["Animal clash"],
+        "hour": {
+            "animal_name": "Goat",
         },
-        {
-            "user1": "Alice",
-            "user2": "Dave",
-            "scores": {
-                "life_path": 0.50,
-                "element": 0.30,
-                "animal": 0.60,
-                "destiny": 0.45,
-                "name_energy": 0.55,
-                "overall": 0.46,
-            },
-            "classification": "Neutral",
-            "strengths": ["Animal affinity"],
-            "challenges": ["Element conflict"],
-        },
-        {
-            "user1": "Bob",
-            "user2": "Carol",
-            "scores": {
-                "life_path": 0.85,
-                "element": 0.70,
-                "animal": 0.75,
-                "destiny": 0.60,
-                "name_energy": 0.50,
-                "overall": 0.74,
-            },
-            "classification": "Good",
-            "strengths": ["Life path synergy"],
-            "challenges": ["Name energy gap"],
-        },
-        {
-            "user1": "Bob",
-            "user2": "Dave",
-            "scores": {
-                "life_path": 0.55,
-                "element": 0.90,
-                "animal": 0.40,
-                "destiny": 0.65,
-                "name_energy": 0.70,
-                "overall": 0.65,
-            },
-            "classification": "Good",
-            "strengths": ["Element excellence"],
-            "challenges": ["Animal distance"],
-        },
-        {
-            "user1": "Carol",
-            "user2": "Dave",
-            "scores": {
-                "life_path": 0.75,
-                "element": 0.60,
-                "animal": 0.55,
-                "destiny": 0.70,
-                "name_energy": 0.45,
-                "overall": 0.63,
-            },
-            "classification": "Good",
-            "strengths": ["Life path harmony"],
-            "challenges": ["Name energy gap"],
-        },
-    ],
-    "group_energy": {
-        "joint_life_path": 8,
-        "dominant_element": "Metal",
-        "dominant_animal": "Horse",
-        "archetype": "Dynamic Innovators",
-        "archetype_description": "High-energy group driven by change and new ideas",
-        "element_distribution": {"Metal": 1, "Water": 1, "Earth": 1, "Fire": 1},
-        "animal_distribution": {"Horse": 1, "Monkey": 1, "Dragon": 1, "Pig": 1},
-        "life_path_distribution": {"3": 1, "8": 1, "1": 1, "5": 1},
     },
-    "group_dynamics": {
-        "roles": {
-            "Alice": "Harmonizer",
-            "Bob": "Leader",
-            "Carol": "Leader",
-            "Dave": "Challenger",
-        },
-        "synergies": [
-            "Bob and Carol share strong life path synergy",
-            "All four elements represented",
+    "heartbeat": {
+        "bpm": 68,
+        "bpm_source": "actual",
+        "element": "Water",
+        "total_lifetime_beats": 2_450_000_000,
+        "rhythm_token": "WA-SNFI",
+    },
+    "location": {
+        "latitude": 40.7,
+        "lat_hemisphere": "N",
+        "longitude": -74.0,
+        "lon_hemisphere": "W",
+        "element": "Metal",
+    },
+    "patterns": {
+        "count": 2,
+        "detected": [
+            {
+                "type": "repeated_animal",
+                "strength": "high",
+                "message": "Horse appears 2 times (year + element).",
+            },
+            {
+                "type": "element_dominance",
+                "strength": "medium",
+                "message": "Metal appears 3 times across dimensions.",
+            },
         ],
-        "challenges": ["Two Leaders may compete", "Alice-Dave tension"],
-        "growth_areas": ["Balance Leader energy", "Strengthen weakest pair"],
-        "avg_compatibility": 0.627,
-        "strongest_bond": {"pair": "Bob & Carol", "score": 0.74},
-        "weakest_bond": {"pair": "Alice & Dave", "score": 0.46},
+    },
+    "confidence": {
+        "score": 95,
+        "level": "very_high",
+        "factors": ["name", "DOB", "time", "location", "heartbeat", "mother"],
+    },
+    "synthesis": "Alice Johnson has a Life Path of 5 (Explorer). Today is Monday (Moon, Emotion). Horse appears 2 times. Metal dominates.",
+    "translation": {
+        "header": "ALICE JOHNSON",
+        "universal_address": "FC60: LU-OX-OXWA",
+        "core_identity": "Life Path 5 - The Explorer",
+        "right_now": "Monday, Moon day, Emotion domain",
+        "patterns": "Horse x2, Metal x3",
+        "message": "The Ox and Horse both appear twice, suggesting patience and forward motion.",
+        "advice": "1. Move with intention\n2. Share what you know\n3. Trust your emotional compass",
+        "caution": "Watch for overwhelm with Metal dominance.",
+        "footer": "Confidence: 95% (very high)",
+        "full_text": "ALICE JOHNSON\nFC60: LU-OX-OXWA\n...",
     },
 }
 
+SAMPLE_MINIMAL_READING = {
+    "person": {
+        "name": "Bob Smith",
+        "birthdate": "1985-03-20",
+        "age_years": 40,
+    },
+    "fc60_stamp": {
+        "fc60": "RA-TI-DRFI",
+        "j60": "MOER-OXWA",
+        "y60": "OXFI",
+        "chk": "OK",
+    },
+    "birth": {
+        "jdn": 2446147,
+        "weekday": "Wednesday",
+        "planet": "Mercury",
+    },
+    "current": {
+        "date": "2026-02-09",
+        "weekday": "Monday",
+        "planet": "Moon",
+        "domain": "Emotion",
+    },
+    "numerology": {
+        "life_path": {
+            "number": 1,
+            "title": "The Leader",
+            "message": "Independence and initiative define you.",
+        },
+        "expression": 3,
+        "soul_urge": 9,
+        "personality": 3,
+        "personal_year": 6,
+        "personal_month": 8,
+        "personal_day": 4,
+    },
+    "moon": {
+        "phase_name": "Waxing Gibbous",
+        "emoji": "\U0001f314",
+        "age": 12.3,
+        "illumination": 87,
+        "energy": "Building",
+        "best_for": "Refining plans",
+        "avoid": "Starting new projects",
+    },
+    "ganzhi": {
+        "year": {
+            "traditional_name": "Yi-Chou",
+            "element": "Wood",
+            "animal_name": "Ox",
+        },
+        "day": {
+            "gz_token": "Ren-Chen",
+            "element": "Water",
+            "animal_name": "Dragon",
+        },
+    },
+    "heartbeat": {
+        "bpm": 72,
+        "bpm_source": "estimated",
+        "element": "Earth",
+        "total_lifetime_beats": 2_100_000_000,
+        "rhythm_token": "ER-RAWA",
+    },
+    "location": None,
+    "patterns": {
+        "count": 0,
+        "detected": [],
+    },
+    "confidence": {
+        "score": 80,
+        "level": "high",
+        "factors": ["name", "DOB"],
+    },
+    "synthesis": "Bob Smith has Life Path 1 (Leader). Today is Monday (Moon).",
+}
 
-def _mock_generate_success(
-    prompt, system_prompt="", max_tokens=None, temperature=0.7, use_cache=True
-):
-    """Mock generate that returns a plausible AI response."""
-    return {
-        "success": True,
-        "response": f"AI interpretation for: {prompt[:50]}...",
-        "error": None,
-        "elapsed": 0.5,
-        "cached": False,
-    }
+
+SAMPLE_AI_RESPONSE_EN = """READING FOR ALICE JOHNSON
+Date: 2026-02-09
+Confidence: 95% (very high)
+
+---
+
+YOUR UNIVERSAL ADDRESS
+
+FC60: LU-OX-OXWA
+J60: TIFI-DRMT-GOMT-RAFI
+
+---
+
+CORE IDENTITY
+
+Your Life Path is 5 -- the Explorer. Freedom and change are your driving forces.
+
+---
+
+RIGHT NOW
+
+Today is Monday, a Moon day. The domain is Emotion. The Waxing Gibbous moon is building.
+
+---
+
+PATTERNS DETECTED
+
+The Horse appears 2 times in your chart. Metal appears 3 times.
+
+---
+
+THE MESSAGE
+
+The numbers suggest patience and forward motion. Horse energy brings determination while Metal provides structure.
+
+---
+
+TODAY'S ADVICE
+
+1. Move with intention -- the Horse energy supports deliberate action.
+2. Share what you know -- Expression 7 and Moon day favor communication.
+3. Trust your emotional compass -- the Moon domain amplifies intuition.
+
+---
+
+CAUTION
+
+Watch for overwhelm. Metal dominance (3x) can create rigidity. Balance with Water energy.
+
+---
+
+Confidence: 95% (very high)
+Data sources: FC60 stamp, Pythagorean numerology, lunar phase, heartbeat, location, Ganzhi
+Disclaimer: This reading suggests patterns, not predictions."""
 
 
-def _mock_generate_cached(
-    prompt, system_prompt="", max_tokens=None, temperature=0.7, use_cache=True
-):
-    """Mock generate that returns a cached response."""
-    return {
-        "success": True,
-        "response": f"Cached AI response for: {prompt[:50]}...",
-        "error": None,
-        "elapsed": 0.0,
-        "cached": True,
-    }
+SAMPLE_AI_RESPONSE_FA = """\u062e\u0648\u0627\u0646\u0634 \u0628\u0631\u0627\u06cc ALICE JOHNSON
+\u062a\u0627\u0631\u06cc\u062e: 2026-02-09
 
+---
 
-def _mock_generate_failure(
-    prompt, system_prompt="", max_tokens=None, temperature=0.7, use_cache=True
-):
-    """Mock generate that simulates an API error."""
-    return {
-        "success": False,
-        "response": "",
-        "error": "API rate limit exceeded",
-        "elapsed": 1.2,
-        "cached": False,
-    }
+\u0622\u062f\u0631\u0633 \u062c\u0647\u0627\u0646\u06cc
 
+FC60: LU-OX-OXWA
 
-def _mock_generate_translation(
-    prompt, system_prompt="", max_tokens=None, temperature=0.7, use_cache=True
-):
-    """Mock generate that returns a Persian translation."""
-    if "batch" in prompt.lower() or "numbered" in prompt.lower():
-        return {
-            "success": True,
-            "response": "1. ترجمه اول\n2. ترجمه دوم\n3. ترجمه سوم",
-            "error": None,
-            "elapsed": 0.8,
-            "cached": False,
-        }
-    return {
-        "success": True,
-        "response": "این یک ترجمه آزمایشی است با FC60 و Wu Xing",
-        "error": None,
-        "elapsed": 0.5,
-        "cached": False,
-    }
+---
+
+\u0647\u0648\u06cc\u062a \u0627\u0635\u0644\u06cc
+
+Life Path \u0634\u0645\u0627 5 \u0627\u0633\u062a -- Explorer.
+
+---
+
+\u0627\u06a9\u0646\u0648\u0646
+
+\u0627\u0645\u0631\u0648\u0632 \u062f\u0648\u0634\u0646\u0628\u0647 \u0627\u0633\u062a.
+
+---
+
+\u0627\u0644\u06af\u0648\u0647\u0627
+
+Horse 2 \u0628\u0627\u0631 \u062a\u06a9\u0631\u0627\u0631 \u0634\u062f\u0647.
+
+---
+
+\u067e\u06cc\u0627\u0645
+
+\u0627\u0639\u062f\u0627\u062f \u0646\u0634\u0627\u0646 \u0645\u06cc\u200c\u062f\u0647\u0646\u062f \u06a9\u0647 \u0635\u0628\u0631 \u0648 \u062d\u0631\u06a9\u062a \u0631\u0648 \u0628\u0647 \u062c\u0644\u0648 \u0645\u0647\u0645 \u0627\u0633\u062a.
+
+---
+
+\u062a\u0648\u0635\u06cc\u0647
+
+1. \u0628\u0627 \u0647\u062f\u0641 \u062d\u0631\u06a9\u062a \u06a9\u0646\u06cc\u062f.
+
+---
+
+\u0647\u0634\u062f\u0627\u0631
+
+\u0645\u0631\u0627\u0642\u0628 \u0641\u0634\u0627\u0631 \u0628\u0627\u0634\u06cc\u062f.
+
+---
+
+\u0627\u0637\u0645\u06cc\u0646\u0627\u0646: 95%
+\u0645\u0646\u0627\u0628\u0639 \u062f\u0627\u062f\u0647: FC60"""
 
 
 # ════════════════════════════════════════════════════════════
@@ -430,48 +353,115 @@ def _mock_generate_translation(
 # ════════════════════════════════════════════════════════════
 
 
-class TestAIClientAvailability(unittest.TestCase):
-    """Tests for ai_client.is_available()."""
+class TestPromptBuilder(unittest.TestCase):
+    """Tests for ai_prompt_builder.py."""
 
-    def setUp(self):
-        reset_availability()
+    def test_build_full_reading_prompt(self):
+        """Full reading prompt includes all 12 data sections."""
+        prompt = build_reading_prompt(SAMPLE_FRAMEWORK_READING)
+        self.assertIn("READING TYPE: daily", prompt)
+        self.assertIn("--- PERSON ---", prompt)
+        self.assertIn("Alice Johnson", prompt)
+        self.assertIn("--- FC60 STAMP ---", prompt)
+        self.assertIn("LU-OX-OXWA", prompt)
+        self.assertIn("--- BIRTH DATA ---", prompt)
+        self.assertIn("--- CURRENT DATA ---", prompt)
+        self.assertIn("--- NUMEROLOGY ---", prompt)
+        self.assertIn("Life Path: 5", prompt)
+        self.assertIn("--- MOON ---", prompt)
+        self.assertIn("Waxing Gibbous", prompt)
+        self.assertIn("--- GANZHI ---", prompt)
+        self.assertIn("--- HEARTBEAT ---", prompt)
+        self.assertIn("--- LOCATION ---", prompt)
+        self.assertIn("40.7", prompt)
+        self.assertIn("--- PATTERNS ---", prompt)
+        self.assertIn("--- CONFIDENCE ---", prompt)
+        self.assertIn("--- FRAMEWORK SYNTHESIS ---", prompt)
 
-    def tearDown(self):
-        reset_availability()
+    def test_build_minimal_reading_prompt(self):
+        """Minimal reading prompt shows 'not provided' for missing sections."""
+        prompt = build_reading_prompt(SAMPLE_MINIMAL_READING)
+        self.assertIn("Bob Smith", prompt)
+        self.assertIn("--- LOCATION ---", prompt)
+        self.assertIn("not provided", prompt)
+        # No hour in ganzhi
+        self.assertNotIn("Hour:", prompt.split("--- HEARTBEAT ---")[0].split("--- GANZHI ---")[1])
 
-    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test-key"})
-    @patch("engines.ai_client._sdk_available", True)
-    def test_available_with_key_and_sdk(self):
-        """Available when both SDK and key are present."""
-        self.assertTrue(is_available())
+    def test_build_question_prompt(self):
+        """Question type includes user question text."""
+        prompt = build_reading_prompt(
+            SAMPLE_FRAMEWORK_READING,
+            reading_type="question",
+            question="Will I find success in my new career?",
+        )
+        self.assertIn("READING TYPE: question", prompt)
+        self.assertIn("QUESTION: Will I find success", prompt)
 
-    @patch.dict(os.environ, {}, clear=True)
-    @patch("engines.ai_client._sdk_available", True)
-    def test_unavailable_without_key(self):
-        """Unavailable when API key is not set."""
-        # Remove the key if it's set
-        os.environ.pop("ANTHROPIC_API_KEY", None)
-        self.assertFalse(is_available())
+    def test_build_multi_user_prompt(self):
+        """Multi-user prompt includes both user readings."""
+        prompt = build_multi_user_prompt(
+            [SAMPLE_FRAMEWORK_READING, SAMPLE_MINIMAL_READING],
+            ["Alice", "Bob"],
+        )
+        self.assertIn("READING TYPE: multi", prompt)
+        self.assertIn("USER COUNT: 2", prompt)
+        self.assertIn("USER 1: Alice", prompt)
+        self.assertIn("USER 2: Bob", prompt)
+        self.assertIn("GROUP ANALYSIS", prompt)
 
-    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test-key"})
-    @patch("engines.ai_client._sdk_available", False)
-    def test_unavailable_without_sdk(self):
-        """Unavailable when SDK is not importable."""
-        self.assertFalse(is_available())
-
-    @patch("engines.ai_client._sdk_available", False)
-    def test_availability_caching(self):
-        """Result is cached after first call."""
-        os.environ.pop("ANTHROPIC_API_KEY", None)
-        result1 = is_available()
-        # Change state — should still return cached value
-        # (We've already set _available via first call)
-        result2 = is_available()
-        self.assertEqual(result1, result2)
+    def test_safe_get_nested(self):
+        """_safe_get traverses nested dicts safely."""
+        data = {"a": {"b": {"c": "found"}}}
+        self.assertEqual(_safe_get(data, "a", "b", "c"), "found")
+        self.assertEqual(_safe_get(data, "a", "x", "c"), "not provided")
+        self.assertEqual(_safe_get(data, "missing", default="N/A"), "N/A")
 
 
-class TestAIClientGenerate(unittest.TestCase):
-    """Tests for ai_client.generate()."""
+class TestSystemPrompt(unittest.TestCase):
+    """Tests for prompt_templates.py system prompts."""
+
+    def test_en_system_prompt_content(self):
+        """EN system prompt contains rules, tone, 9-section structure."""
+        prompt = get_system_prompt("en")
+        self.assertIn("Wisdom", prompt)
+        self.assertIn("RULES", prompt)
+        self.assertIn("TONE", prompt)
+        self.assertIn("READING STRUCTURE", prompt)
+        self.assertIn("Header", prompt)
+        self.assertIn("Universal Address", prompt)
+        self.assertIn("Core Identity", prompt)
+        self.assertIn("The Message", prompt)
+        self.assertIn("Caution", prompt)
+        self.assertIn("Footer", prompt)
+        self.assertIn("FC60", prompt)
+
+    def test_fa_system_prompt_content(self):
+        """FA system prompt contains Persian instructions with FC60 terms in English."""
+        prompt = get_system_prompt("fa")
+        # Persian content
+        self.assertIn("\u062e\u0631\u062f", prompt)  # "Wisdom" in Persian
+        self.assertIn("\u0642\u0648\u0627\u0646\u06cc\u0646", prompt)  # "Rules"
+        # FC60 terms preserved in English
+        self.assertIn("FC60", prompt)
+        self.assertIn("Life Path", prompt)
+        self.assertIn("Soul Urge", prompt)
+        self.assertIn("Wu Xing", prompt)
+
+    def test_system_prompt_includes_signal_hierarchy(self):
+        """EN system prompt contains signal hierarchy."""
+        prompt = get_system_prompt("en")
+        self.assertIn("SIGNAL HIERARCHY", prompt)
+        self.assertIn("Very High", prompt)
+        self.assertIn("Repeated animals", prompt)
+
+    def test_unknown_locale_defaults_to_en(self):
+        """Unknown locale falls back to English prompt."""
+        prompt = get_system_prompt("de")
+        self.assertEqual(prompt, WISDOM_SYSTEM_PROMPT_EN)
+
+
+class TestAIClientRetry(unittest.TestCase):
+    """Tests for ai_client.py retry logic."""
 
     def setUp(self):
         reset_availability()
@@ -480,599 +470,411 @@ class TestAIClientGenerate(unittest.TestCase):
     def tearDown(self):
         reset_availability()
         clear_cache()
-
-    @patch("engines.ai_client.is_available", return_value=False)
-    def test_generate_unavailable(self, mock_avail):
-        """Returns error dict when AI is not available."""
-        result = generate("test prompt")
-        self.assertFalse(result["success"])
-        self.assertEqual(result["response"], "")
-        self.assertIn("not available", result["error"])
-        self.assertFalse(result["cached"])
 
     @patch("engines.ai_client.is_available", return_value=True)
-    @patch("engines.ai_client._get_client")
     @patch("engines.ai_client._enforce_rate_limit")
-    def test_generate_success(self, mock_rate, mock_client_fn, mock_avail):
-        """Returns success dict with response text."""
+    @patch("engines.ai_client._get_client")
+    def test_retry_on_rate_limit(self, mock_client_fn, mock_rate, mock_avail):
+        """Retries once on rate limit error, then succeeds."""
+        import engines.ai_client as client_mod
+
+        mock_client = MagicMock()
+        # First call raises a retryable error, second succeeds
+        rate_limit_exc = Exception("rate limit exceeded")
+        # Make it retryable by patching _is_retryable
         mock_response = MagicMock()
-        mock_response.content = [MagicMock(text="Test AI response")]
+        mock_response.content = [MagicMock(text="Success after retry")]
+        mock_client.messages.create.side_effect = [rate_limit_exc, mock_response]
+        mock_client_fn.return_value = mock_client
+
+        with patch.object(client_mod, "_is_retryable", side_effect=lambda e: e is rate_limit_exc):
+            with patch.object(client_mod, "_RETRY_WAIT", 0.01):
+                result = generate("test prompt", use_cache=False)
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["response"], "Success after retry")
+        self.assertTrue(result["retried"])
+
+    @patch("engines.ai_client.is_available", return_value=True)
+    @patch("engines.ai_client._enforce_rate_limit")
+    @patch("engines.ai_client._get_client")
+    def test_no_retry_on_auth_error(self, mock_client_fn, mock_rate, mock_avail):
+        """Does NOT retry on authentication error."""
+        mock_client = MagicMock()
+        auth_exc = Exception("authentication failed")
+        mock_client.messages.create.side_effect = auth_exc
+        mock_client_fn.return_value = mock_client
+
+        result = generate("test prompt", use_cache=False)
+        self.assertFalse(result["success"])
+        self.assertIn("authentication failed", result["error"])
+        self.assertFalse(result["retried"])
+        # Should only have been called once (no retry)
+        self.assertEqual(mock_client.messages.create.call_count, 1)
+
+    @patch("engines.ai_client.is_available", return_value=True)
+    @patch("engines.ai_client._enforce_rate_limit")
+    @patch("engines.ai_client._get_client")
+    def test_retry_exhausted(self, mock_client_fn, mock_rate, mock_avail):
+        """Returns error after retry is exhausted."""
+        import engines.ai_client as client_mod
+
+        mock_client = MagicMock()
+        rate_exc = Exception("rate limit")
+        mock_client.messages.create.side_effect = rate_exc
+        mock_client_fn.return_value = mock_client
+
+        with patch.object(client_mod, "_is_retryable", return_value=True):
+            with patch.object(client_mod, "_RETRY_WAIT", 0.01):
+                result = generate("test prompt", use_cache=False)
+
+        self.assertFalse(result["success"])
+        self.assertTrue(result["retried"])
+        # 1 original + 1 retry = 2 calls
+        self.assertEqual(mock_client.messages.create.call_count, 2)
+
+    @patch("engines.ai_client.is_available", return_value=True)
+    @patch("engines.ai_client._enforce_rate_limit")
+    @patch("engines.ai_client._get_client")
+    def test_retried_field_in_result(self, mock_client_fn, mock_rate, mock_avail):
+        """Result includes 'retried' field set to False on first success."""
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(text="Immediate success")]
         mock_client = MagicMock()
         mock_client.messages.create.return_value = mock_response
         mock_client_fn.return_value = mock_client
 
         result = generate("test prompt", use_cache=False)
         self.assertTrue(result["success"])
-        self.assertEqual(result["response"], "Test AI response")
-        self.assertIsNone(result["error"])
-        self.assertFalse(result["cached"])
-        self.assertGreaterEqual(result["elapsed"], 0)
-
-    @patch("engines.ai_client.is_available", return_value=True)
-    @patch("engines.ai_client._get_client")
-    @patch("engines.ai_client._enforce_rate_limit")
-    def test_generate_api_error(self, mock_rate, mock_client_fn, mock_avail):
-        """Returns error dict on API exception."""
-        mock_client = MagicMock()
-        mock_client.messages.create.side_effect = Exception("API error: rate limited")
-        mock_client_fn.return_value = mock_client
-
-        result = generate("test prompt", use_cache=False)
-        self.assertFalse(result["success"])
-        self.assertEqual(result["response"], "")
-        self.assertIn("rate limited", result["error"])
-
-    @patch("engines.ai_client.is_available", return_value=True)
-    @patch("engines.ai_client._get_client")
-    @patch("engines.ai_client._enforce_rate_limit")
-    def test_generate_timeout(self, mock_rate, mock_client_fn, mock_avail):
-        """Handles timeout gracefully."""
-        mock_client = MagicMock()
-        mock_client.messages.create.side_effect = TimeoutError("Request timed out")
-        mock_client_fn.return_value = mock_client
-
-        result = generate("test prompt", use_cache=False)
-        self.assertFalse(result["success"])
-        self.assertIn("timed out", result["error"])
-
-    @patch("engines.ai_client.is_available", return_value=True)
-    @patch("engines.ai_client._get_client")
-    @patch("engines.ai_client._enforce_rate_limit")
-    def test_generate_cache_hit(self, mock_rate, mock_client_fn, mock_avail):
-        """Returns cached response on second call with same prompt."""
-        mock_response = MagicMock()
-        mock_response.content = [MagicMock(text="Cached response")]
-        mock_client = MagicMock()
-        mock_client.messages.create.return_value = mock_response
-        mock_client_fn.return_value = mock_client
-
-        # First call — populates cache
-        result1 = generate("cache test prompt", system_prompt="sys")
-        self.assertTrue(result1["success"])
-        self.assertFalse(result1["cached"])
-
-        # Second call — should hit cache
-        result2 = generate("cache test prompt", system_prompt="sys")
-        self.assertTrue(result2["success"])
-        self.assertTrue(result2["cached"])
-        self.assertEqual(result2["response"], "Cached response")
-        self.assertEqual(result2["elapsed"], 0.0)
-
-    def test_cache_ttl_expiry(self):
-        """Cache entries expire after TTL."""
-        key = _cache_key("ttl test", "sys")
-        _write_cache(key, "old response")
-
-        # Manually expire
-        import engines.ai_client as client_mod
-
-        with client_mod._cache_lock:
-            client_mod._cache[key]["timestamp"] = time.time() - _CACHE_TTL - 1
-
-        result = _read_cache(key)
-        self.assertIsNone(result)
-
-    def test_cache_eviction(self):
-        """Cache evicts oldest entries when over max size."""
-        import engines.ai_client as client_mod
-
-        clear_cache()
-
-        # Fill beyond max
-        for i in range(_CACHE_MAX + 10):
-            _write_cache(f"key_{i}", f"response_{i}")
-
-        with client_mod._cache_lock:
-            self.assertLessEqual(len(client_mod._cache), _CACHE_MAX)
-
-    def test_clear_cache(self):
-        """clear_cache removes all entries."""
-        import engines.ai_client as client_mod
-
-        _write_cache("test_key", "test_response")
-        with client_mod._cache_lock:
-            self.assertGreater(len(client_mod._cache), 0)
-
-        clear_cache()
-        with client_mod._cache_lock:
-            self.assertEqual(len(client_mod._cache), 0)
+        self.assertFalse(result["retried"])
+        self.assertIn("retried", result)
 
 
-class TestPromptTemplates(unittest.TestCase):
-    """Tests for prompt_templates.py."""
+class TestResponseParsing(unittest.TestCase):
+    """Tests for _parse_sections in ai_interpreter.py."""
 
-    def test_all_templates_are_strings(self):
-        """All template constants are non-empty strings."""
-        templates = [
-            FC60_SYSTEM_PROMPT,
-            SIMPLE_TEMPLATE,
-            ADVICE_TEMPLATE,
-            ACTION_STEPS_TEMPLATE,
-            UNIVERSE_MESSAGE_TEMPLATE,
-            GROUP_NARRATIVE_TEMPLATE,
-            COMPATIBILITY_NARRATIVE_TEMPLATE,
-            ENERGY_NARRATIVE_TEMPLATE,
-            TRANSLATE_EN_FA_TEMPLATE,
-            TRANSLATE_FA_EN_TEMPLATE,
-            BATCH_TRANSLATE_TEMPLATE,
-        ]
-        for t in templates:
-            self.assertIsInstance(t, str)
-            self.assertGreater(len(t), 20)
+    def test_parse_9_sections_en(self):
+        """Parses all 9 EN sections from sample response."""
+        sections = _parse_sections(SAMPLE_AI_RESPONSE_EN, "en")
+        self.assertGreater(len(sections["header"]), 0)
+        self.assertGreater(len(sections["universal_address"]), 0)
+        self.assertGreater(len(sections["core_identity"]), 0)
+        self.assertGreater(len(sections["right_now"]), 0)
+        self.assertGreater(len(sections["patterns"]), 0)
+        self.assertGreater(len(sections["message"]), 0)
+        self.assertGreater(len(sections["advice"]), 0)
+        self.assertGreater(len(sections["caution"]), 0)
+        self.assertGreater(len(sections["footer"]), 0)
 
-    def test_preserved_terms_list(self):
-        """FC60_PRESERVED_TERMS contains expected key terms."""
-        self.assertIn("FC60", FC60_PRESERVED_TERMS)
-        self.assertIn("Wu Xing", FC60_PRESERVED_TERMS)
-        self.assertIn("Wood", FC60_PRESERVED_TERMS)
-        self.assertIn("Dragon", FC60_PRESERVED_TERMS)
-        self.assertIn("Life Path", FC60_PRESERVED_TERMS)
-        self.assertGreater(len(FC60_PRESERVED_TERMS), 20)
+    def test_parse_9_sections_fa(self):
+        """Parses all 9 FA sections from sample response."""
+        sections = _parse_sections(SAMPLE_AI_RESPONSE_FA, "fa")
+        self.assertGreater(len(sections["header"]), 0)
+        self.assertGreater(len(sections["universal_address"]), 0)
+        self.assertGreater(len(sections["core_identity"]), 0)
+        self.assertGreater(len(sections["right_now"]), 0)
+        self.assertGreater(len(sections["patterns"]), 0)
+        self.assertGreater(len(sections["message"]), 0)
+        self.assertGreater(len(sections["advice"]), 0)
+        self.assertGreater(len(sections["caution"]), 0)
 
-    def test_system_prompt_content(self):
-        """System prompt covers all key domains."""
-        self.assertIn("FC60", FC60_SYSTEM_PROMPT)
-        self.assertIn("Wu Xing", FC60_SYSTEM_PROMPT)
-        self.assertIn("numerology", FC60_SYSTEM_PROMPT.lower())
-        self.assertIn("Ganzhi", FC60_SYSTEM_PROMPT)
+    def test_parse_fallback_unparseable(self):
+        """Unparseable text puts everything in 'message' section."""
+        sections = _parse_sections("Just some plain text with no section markers.")
+        self.assertEqual(sections["message"], "Just some plain text with no section markers.")
+        self.assertEqual(sections["header"], "")
+        self.assertEqual(sections["universal_address"], "")
+        self.assertEqual(sections["core_identity"], "")
 
-    def test_simple_template_has_format_keys(self):
-        """SIMPLE_TEMPLATE contains expected placeholders."""
-        self.assertIn("{name}", SIMPLE_TEMPLATE)
-        self.assertIn("{fc60_sign}", SIMPLE_TEMPLATE)
-        self.assertIn("{element}", SIMPLE_TEMPLATE)
-        self.assertIn("{life_path}", SIMPLE_TEMPLATE)
+    def test_parse_partial_sections(self):
+        """Partial response populates found sections, leaves others empty."""
+        partial = """READING FOR TEST
+Some header content
 
-    def test_build_prompt_fills_keys(self):
-        """build_prompt correctly fills template placeholders."""
-        result = build_prompt(
-            SIMPLE_TEMPLATE,
-            {
-                "name": "Alice",
-                "fc60_sign": "MT-HO",
-                "element": "Metal",
-                "animal": "Horse",
-                "life_path": "7",
-            },
-        )
-        self.assertIn("Alice", result)
-        self.assertIn("MT-HO", result)
-        self.assertIn("Metal", result)
+---
 
-    def test_build_prompt_missing_keys_fallback(self):
-        """build_prompt uses '(not available)' for missing keys."""
-        result = build_prompt(SIMPLE_TEMPLATE, {"name": "Alice"})
-        self.assertIn("Alice", result)
-        self.assertIn("(not available)", result)
+THE MESSAGE
 
-    def test_all_keys_set_complete(self):
-        """_ALL_KEYS contains all keys used across templates."""
-        # Verify core keys are present
-        core_keys = {
-            "name",
-            "element",
-            "animal",
-            "life_path",
-            "fc60_sign",
-            "zodiac_sign",
-            "moon_phase",
-            "ganzhi",
-            "interpretation",
+This is the main message.
+
+---
+
+CAUTION
+
+Be careful."""
+        sections = _parse_sections(partial, "en")
+        self.assertGreater(len(sections["header"]), 0)
+        self.assertGreater(len(sections["message"]), 0)
+        self.assertGreater(len(sections["caution"]), 0)
+        # Unprovided sections should be empty
+        self.assertEqual(sections["universal_address"], "")
+        self.assertEqual(sections["core_identity"], "")
+
+
+class TestInterpreter(unittest.TestCase):
+    """Tests for interpret_reading and interpret_multi_user."""
+
+    @patch("engines.ai_interpreter.generate_reading")
+    @patch("engines.ai_interpreter.is_available", return_value=True)
+    def test_interpret_reading_ai_success(self, mock_avail, mock_gen):
+        """Returns ReadingInterpretation with ai_generated=True on AI success."""
+        mock_gen.return_value = {
+            "success": True,
+            "response": SAMPLE_AI_RESPONSE_EN,
+            "cached": False,
         }
-        for k in core_keys:
-            self.assertIn(k, _ALL_KEYS)
-
-
-class TestAIInterpreterSingle(unittest.TestCase):
-    """Tests for ai_interpreter single reading interpretation."""
-
-    @patch("engines.ai_interpreter.generate", side_effect=_mock_generate_success)
-    @patch("engines.ai_interpreter.is_available", return_value=True)
-    def test_interpret_simple_success(self, mock_avail, mock_gen):
-        """Simple format returns AI-generated interpretation."""
-        result = interpret_reading(SAMPLE_READING, "simple", "Hamzeh")
-        self.assertIsInstance(result, InterpretationResult)
-        self.assertEqual(result.format, "simple")
+        result = interpret_reading(SAMPLE_FRAMEWORK_READING)
+        self.assertIsInstance(result, ReadingInterpretation)
         self.assertTrue(result.ai_generated)
-        self.assertGreater(len(result.text), 0)
+        self.assertEqual(result.locale, "en")
+        self.assertGreater(len(result.full_text), 0)
+        self.assertGreater(len(result.message), 0)
+        self.assertEqual(result.confidence_score, 95)
 
-    @patch("engines.ai_interpreter.generate", side_effect=_mock_generate_success)
+    @patch("engines.ai_interpreter.is_available", return_value=False)
+    def test_interpret_reading_fallback(self, mock_avail):
+        """Uses reading['translation'] when AI unavailable."""
+        result = interpret_reading(SAMPLE_FRAMEWORK_READING)
+        self.assertIsInstance(result, ReadingInterpretation)
+        self.assertFalse(result.ai_generated)
+        # Should use translation sections
+        self.assertIn("ALICE JOHNSON", result.header)
+        self.assertIn("FC60", result.universal_address)
+        self.assertIn("Explorer", result.core_identity)
+        self.assertEqual(result.confidence_score, 95)
+
+    @patch("engines.ai_interpreter.generate_reading")
     @patch("engines.ai_interpreter.is_available", return_value=True)
-    def test_interpret_advice_success(self, mock_avail, mock_gen):
-        """Advice format returns AI-generated interpretation."""
-        result = interpret_reading(SAMPLE_READING, "advice", "Hamzeh")
-        self.assertEqual(result.format, "advice")
+    def test_interpret_reading_fa(self, mock_avail, mock_gen):
+        """FA locale uses FA system prompt."""
+        mock_gen.return_value = {
+            "success": True,
+            "response": SAMPLE_AI_RESPONSE_FA,
+            "cached": False,
+        }
+        result = interpret_reading(SAMPLE_FRAMEWORK_READING, locale="fa")
         self.assertTrue(result.ai_generated)
+        self.assertEqual(result.locale, "fa")
+        # Verify FA system prompt was passed
+        call_args = mock_gen.call_args
+        self.assertIn("fa", call_args.kwargs.get("locale", ""))
 
-    @patch("engines.ai_interpreter.generate", side_effect=_mock_generate_success)
+    @patch("engines.ai_interpreter.generate_reading")
     @patch("engines.ai_interpreter.is_available", return_value=True)
-    def test_interpret_action_steps_success(self, mock_avail, mock_gen):
-        """Action steps format returns AI-generated interpretation."""
-        result = interpret_reading(SAMPLE_READING, "action_steps")
-        self.assertEqual(result.format, "action_steps")
+    def test_interpret_multi_user(self, mock_avail, mock_gen):
+        """Multi-user returns MultiUserInterpretation with 2 individual readings."""
+        mock_gen.return_value = {
+            "success": True,
+            "response": "Group: Alice and Bob COMPATIBILITY analysis here.",
+            "cached": False,
+        }
+        result = interpret_multi_user(
+            [SAMPLE_FRAMEWORK_READING, SAMPLE_MINIMAL_READING],
+            ["Alice", "Bob"],
+        )
+        self.assertIsInstance(result, MultiUserInterpretation)
+        self.assertEqual(len(result.individual_readings), 2)
+        self.assertIn("Alice", result.individual_readings)
+        self.assertIn("Bob", result.individual_readings)
         self.assertTrue(result.ai_generated)
+        self.assertGreater(len(result.group_narrative), 0)
 
-    @patch("engines.ai_interpreter.generate", side_effect=_mock_generate_success)
-    @patch("engines.ai_interpreter.is_available", return_value=True)
-    def test_interpret_universe_message_success(self, mock_avail, mock_gen):
-        """Universe message format returns AI-generated interpretation."""
-        result = interpret_reading(SAMPLE_READING, "universe_message", "Hamzeh")
-        self.assertEqual(result.format, "universe_message")
-        self.assertTrue(result.ai_generated)
-
-    @patch("engines.ai_interpreter.is_available", return_value=False)
-    def test_fallback_simple(self, mock_avail):
-        """Simple fallback uses raw data when AI unavailable."""
-        result = interpret_reading(SAMPLE_READING, "simple", "Hamzeh")
-        self.assertFalse(result.ai_generated)
-        self.assertIn("Metal", result.text)
-        self.assertIn("Horse", result.text)
-
-    @patch("engines.ai_interpreter.is_available", return_value=False)
-    def test_fallback_advice(self, mock_avail):
-        """Advice fallback produces warm, personal text."""
-        result = interpret_reading(SAMPLE_READING, "advice", "Hamzeh")
-        self.assertFalse(result.ai_generated)
-        self.assertIn("Hamzeh", result.text)
-        self.assertIn("Metal", result.text)
-
-    @patch("engines.ai_interpreter.is_available", return_value=False)
-    def test_fallback_actions(self, mock_avail):
-        """Action steps fallback has 3 categories."""
-        result = interpret_reading(SAMPLE_READING, "action_steps")
-        self.assertFalse(result.ai_generated)
-        self.assertIn("Daily Practice", result.text)
-        self.assertIn("Decision-Making", result.text)
-        self.assertIn("Relationships", result.text)
-
-    @patch("engines.ai_interpreter.is_available", return_value=False)
-    def test_fallback_universe(self, mock_avail):
-        """Universe message fallback starts with 'The universe sees'."""
-        result = interpret_reading(SAMPLE_READING, "universe_message", "Hamzeh")
-        self.assertFalse(result.ai_generated)
-        self.assertIn("universe sees", result.text)
-
-    def test_invalid_format(self):
-        """Invalid format type returns error message."""
-        result = interpret_reading(SAMPLE_READING, "invalid_format")
-        self.assertFalse(result.ai_generated)
-        self.assertIn("Unknown format", result.text)
-
-    def test_context_building(self):
-        """_build_reading_context extracts correct values from reading."""
-        ctx = _build_reading_context(SAMPLE_READING, "Hamzeh")
-        self.assertEqual(ctx["name"], "Hamzeh")
-        self.assertEqual(ctx["element"], "Metal")
-        self.assertEqual(ctx["animal"], "Horse")
-        self.assertEqual(ctx["zodiac_sign"], "Taurus")
-        self.assertEqual(ctx["moon_phase"], "Waxing Gibbous")
-        self.assertIn("Geng-Wu", ctx["ganzhi"])
-
-
-class TestAIInterpreterGroup(unittest.TestCase):
-    """Tests for ai_interpreter group interpretation."""
-
-    @patch("engines.ai_interpreter.generate", side_effect=_mock_generate_success)
-    @patch("engines.ai_interpreter.is_available", return_value=True)
-    def test_interpret_group_2user(self, mock_avail, mock_gen):
-        """2-user group interpretation returns all narratives."""
-        result = interpret_group(SAMPLE_ANALYSIS_DICT)
-        self.assertIsInstance(result, GroupInterpretationResult)
-        self.assertTrue(result.ai_available)
-        self.assertGreater(len(result.dynamics_narrative), 0)
-        self.assertGreater(len(result.energy_narrative), 0)
-        self.assertGreater(len(result.compatibility_narrative), 0)
-        self.assertEqual(len(result.individual_insights), 2)
-        self.assertIn("Alice", result.individual_insights)
-        self.assertIn("Bob", result.individual_insights)
-
-    @patch("engines.ai_interpreter.generate", side_effect=_mock_generate_success)
-    @patch("engines.ai_interpreter.is_available", return_value=True)
-    def test_interpret_group_4user(self, mock_avail, mock_gen):
-        """4-user group interpretation handles all 6 pairs."""
-        result = interpret_group(SAMPLE_4USER_ANALYSIS)
-        self.assertEqual(len(result.individual_insights), 4)
-        self.assertIn("Carol", result.individual_insights)
-        self.assertIn("Dave", result.individual_insights)
-
-    @patch("engines.ai_interpreter.is_available", return_value=False)
-    def test_group_fallback(self, mock_avail):
-        """Group fallback produces deterministic narratives."""
-        result = interpret_group(SAMPLE_ANALYSIS_DICT)
-        self.assertFalse(result.ai_available)
-        self.assertGreater(len(result.dynamics_narrative), 0)
-        self.assertGreater(len(result.energy_narrative), 0)
-        self.assertGreater(len(result.compatibility_narrative), 0)
-
-    @patch("engines.ai_interpreter.is_available", return_value=False)
-    def test_group_fallback_narratives_content(self, mock_avail):
-        """Fallback narratives contain actual data from analysis."""
-        result = interpret_group(SAMPLE_ANALYSIS_DICT)
-        # Dynamics narrative references actual members
-        self.assertIn("Alice", result.dynamics_narrative)
-        # Compatibility narrative references actual pairs
-        self.assertIn("Alice", result.compatibility_narrative)
-        self.assertIn("Bob", result.compatibility_narrative)
-        # Energy narrative references actual energy
-        self.assertIn("Metal", result.energy_narrative)
-
-    @patch("engines.ai_interpreter.is_available", return_value=False)
-    def test_group_to_dict(self, mock_avail):
-        """GroupInterpretationResult.to_dict() is JSON-serializable."""
-        result = interpret_group(SAMPLE_ANALYSIS_DICT)
+    def test_reading_interpretation_to_dict(self):
+        """ReadingInterpretation.to_dict() is JSON-serializable with all keys."""
+        result = ReadingInterpretation(
+            header="TEST HEADER",
+            universal_address="FC60: TEST",
+            core_identity="Life Path 5",
+            right_now="Monday",
+            patterns="Horse x2",
+            message="Numbers suggest...",
+            advice="1. Move with intention",
+            caution="Watch for overwhelm",
+            footer="Confidence: 95%",
+            full_text="Full reading text",
+            ai_generated=True,
+            locale="en",
+            elapsed_ms=150.5,
+            cached=False,
+            confidence_score=95,
+        )
         d = result.to_dict()
-        self.assertIn("compatibility_narrative", d)
-        self.assertIn("dynamics_narrative", d)
-        self.assertIn("energy_narrative", d)
-        self.assertIn("individual_insights", d)
+        # All 9 section keys present
+        for key in [
+            "header",
+            "universal_address",
+            "core_identity",
+            "right_now",
+            "patterns",
+            "message",
+            "advice",
+            "caution",
+            "footer",
+        ]:
+            self.assertIn(key, d)
+        self.assertIn("full_text", d)
+        self.assertIn("ai_generated", d)
+        self.assertIn("confidence_score", d)
         # JSON serializable
         json_str = json.dumps(d)
-        self.assertGreater(len(json_str), 0)
-
-    @patch("engines.ai_interpreter.generate", side_effect=_mock_generate_success)
-    @patch("engines.ai_interpreter.is_available", return_value=True)
-    def test_group_context_building(self, mock_avail, mock_gen):
-        """_build_group_context extracts correct values."""
-        ctx = _build_group_context(SAMPLE_ANALYSIS_DICT)
-        self.assertEqual(ctx["user_count"], "2")
-        self.assertIn("Alice", ctx["member_summaries"])
-        self.assertIn("Bob", ctx["member_summaries"])
-        self.assertIn("Harmonizer", ctx["roles"])
-        self.assertEqual(ctx["dominant_element"], "Metal")
-
-
-class TestTranslation(unittest.TestCase):
-    """Tests for translation_service.py."""
-
-    @patch(
-        "engines.translation_service.generate", side_effect=_mock_generate_translation
-    )
-    @patch("engines.translation_service.is_available", return_value=True)
-    def test_translate_en_to_fa(self, mock_avail, mock_gen):
-        """English to Persian translation works."""
-        result = translate("Your FC60 sign is Metal Horse.", "en", "fa")
-        self.assertIsInstance(result, TranslationResult)
-        self.assertTrue(result.ai_generated)
-        self.assertEqual(result.source_lang, "en")
-        self.assertEqual(result.target_lang, "fa")
-        self.assertGreater(len(result.translated_text), 0)
-
-    @patch(
-        "engines.translation_service.generate", side_effect=_mock_generate_translation
-    )
-    @patch("engines.translation_service.is_available", return_value=True)
-    def test_translate_fa_to_en(self, mock_avail, mock_gen):
-        """Persian to English translation works."""
-        result = translate("این یک متن فارسی است", "fa", "en")
-        self.assertTrue(result.ai_generated)
-        self.assertEqual(result.source_lang, "fa")
-        self.assertEqual(result.target_lang, "en")
-
-    @patch("engines.translation_service.is_available", return_value=False)
-    def test_translate_fallback(self, mock_avail):
-        """Returns original text when AI unavailable."""
-        original = "Your FC60 sign is Metal Horse."
-        result = translate(original, "en", "fa")
-        self.assertFalse(result.ai_generated)
-        self.assertEqual(result.translated_text, original)
-
-    @patch(
-        "engines.translation_service.generate", side_effect=_mock_generate_translation
-    )
-    @patch("engines.translation_service.is_available", return_value=True)
-    def test_batch_translate(self, mock_avail, mock_gen):
-        """Batch translation processes multiple texts."""
-        texts = ["Hello world", "FC60 sign", "Metal Horse"]
-        results = batch_translate(texts, "en", "fa")
-        self.assertEqual(len(results), 3)
-        for r in results:
-            self.assertIsInstance(r, TranslationResult)
-            self.assertTrue(r.ai_generated)
-
-    def test_detect_language_english(self):
-        """Detects English text correctly."""
-        self.assertEqual(detect_language("Hello, your FC60 sign is Metal Horse"), "en")
-
-    def test_detect_language_persian(self):
-        """Detects Persian text correctly."""
-        self.assertEqual(detect_language("سلام، نشانه شما اسب فلزی است"), "fa")
-
-    def test_detect_language_empty(self):
-        """Returns 'en' for empty text."""
-        self.assertEqual(detect_language(""), "en")
-
-    def test_term_protection_and_restoration(self):
-        """FC60 terms are protected and restored correctly."""
-        text = "Your element is Metal and animal is Dragon in the FC60 system."
-        protected, replacements = _protect_terms(text)
-
-        # Terms should be replaced with placeholders
-        self.assertNotIn("Metal", protected)
-        self.assertNotIn("Dragon", protected)
-        self.assertNotIn("FC60", protected)
-
-        # Restore
-        restored = _restore_terms(protected, replacements)
-        self.assertEqual(restored, text)
-
-    def test_term_protection_preserves_list(self):
-        """Protected terms list is correctly populated."""
-        text = "FC60 shows Wood Dragon with Wu Xing harmony"
-        _, replacements = _protect_terms(text)
-        terms = [r[0] for r in replacements]
-        self.assertIn("FC60", terms)
-        self.assertIn("Wood", terms)
-        self.assertIn("Dragon", terms)
-        self.assertIn("Wu Xing", terms)
-
-    def test_batch_parse_response(self):
-        """Batch response parsing extracts numbered items."""
-        response = "1. First translation\n2. Second translation\n3. Third translation"
-        parsed = _parse_batch_response(response, 3)
-        self.assertEqual(len(parsed), 3)
-        self.assertEqual(parsed[0], "First translation")
-        self.assertEqual(parsed[1], "Second translation")
-        self.assertEqual(parsed[2], "Third translation")
-
-    def test_batch_parse_with_padding(self):
-        """Batch parse pads missing items with empty strings."""
-        response = "1. Only one"
-        parsed = _parse_batch_response(response, 3)
-        self.assertEqual(len(parsed), 3)
-        self.assertEqual(parsed[0], "Only one")
-
-    def test_translate_empty_text(self):
-        """Empty text returns immediately without API call."""
-        result = translate("", "en", "fa")
-        self.assertFalse(result.ai_generated)
-        self.assertEqual(result.translated_text, "")
-
-    def test_batch_translate_empty_list(self):
-        """Empty list returns empty list."""
-        results = batch_translate([], "en", "fa")
-        self.assertEqual(results, [])
-
-
-class TestIntegration(unittest.TestCase):
-    """Integration tests combining multiple modules."""
-
-    @patch("engines.ai_interpreter.generate", side_effect=_mock_generate_success)
-    @patch("engines.ai_interpreter.is_available", return_value=True)
-    def test_reading_to_interpret(self, mock_avail, mock_gen):
-        """read_sign output → interpret_reading produces valid result."""
-        # Use fixture data mimicking read_sign output
-        result = interpret_reading(SAMPLE_READING, "simple", "Hamzeh")
-        self.assertTrue(result.ai_generated)
-        self.assertEqual(result.format, "simple")
-
-    @patch("engines.ai_interpreter.generate", side_effect=_mock_generate_success)
-    @patch("engines.ai_interpreter.is_available", return_value=True)
-    def test_name_to_interpret(self, mock_avail, mock_gen):
-        """read_name output → interpret_name produces valid result."""
-        result = interpret_name(SAMPLE_NAME_DATA, "simple")
-        self.assertIsInstance(result, InterpretationResult)
-
-    @patch("engines.ai_interpreter.generate", side_effect=_mock_generate_success)
-    @patch("engines.ai_interpreter.is_available", return_value=True)
-    def test_analysis_to_group_interpret(self, mock_avail, mock_gen):
-        """MultiUserAnalysisResult.to_dict() → interpret_group."""
-        result = interpret_group(SAMPLE_ANALYSIS_DICT)
-        self.assertIsInstance(result, GroupInterpretationResult)
-        self.assertTrue(result.ai_available)
-
-    @patch("engines.ai_interpreter.generate", side_effect=_mock_generate_success)
-    @patch("engines.ai_interpreter.is_available", return_value=True)
-    def test_all_formats_integration(self, mock_avail, mock_gen):
-        """interpret_all_formats returns all 4 formats."""
-        result = interpret_all_formats(SAMPLE_READING, "Hamzeh")
-        self.assertIsInstance(result, MultiFormatResult)
-        self.assertEqual(result.simple.format, "simple")
-        self.assertEqual(result.advice.format, "advice")
-        self.assertEqual(result.action_steps.format, "action_steps")
-        self.assertEqual(result.universe_message.format, "universe_message")
-
-    @patch("engines.ai_interpreter.generate", side_effect=_mock_generate_success)
-    @patch("engines.ai_interpreter.is_available", return_value=True)
-    def test_all_formats_json_serializable(self, mock_avail, mock_gen):
-        """MultiFormatResult.to_dict() is fully JSON-serializable."""
-        result = interpret_all_formats(SAMPLE_READING, "Hamzeh")
-        d = result.to_dict()
-        json_str = json.dumps(d)
         parsed = json.loads(json_str)
-        self.assertIn("simple", parsed)
-        self.assertIn("advice", parsed)
-        self.assertIn("action_steps", parsed)
-        self.assertIn("universe_message", parsed)
+        self.assertEqual(parsed["header"], "TEST HEADER")
+        self.assertEqual(parsed["confidence_score"], 95)
+
+
+class TestFallback(unittest.TestCase):
+    """Tests for _build_fallback in ai_interpreter.py."""
+
+    def test_fallback_uses_translation_sections(self):
+        """Fallback populates sections from reading['translation']."""
+        result = _build_fallback(SAMPLE_FRAMEWORK_READING, "en")
+        self.assertFalse(result.ai_generated)
+        self.assertIn("ALICE JOHNSON", result.header)
+        self.assertIn("FC60", result.universal_address)
+        self.assertIn("Explorer", result.core_identity)
+        self.assertIn("Monday", result.right_now)
+        self.assertIn("Horse", result.patterns)
+        self.assertGreater(len(result.message), 0)
+        self.assertGreater(len(result.advice), 0)
+        self.assertGreater(len(result.caution), 0)
+
+    def test_fallback_uses_synthesis_when_no_translation(self):
+        """Uses synthesis as full_text when no translation sections."""
+        reading_no_trans = {
+            "synthesis": "Bob has Life Path 1. Today is Monday.",
+        }
+        result = _build_fallback(reading_no_trans, "en")
+        self.assertFalse(result.ai_generated)
+        self.assertEqual(result.full_text, "Bob has Life Path 1. Today is Monday.")
+        # Sections should be empty
+        self.assertEqual(result.header, "")
+        self.assertEqual(result.core_identity, "")
+
+    def test_fallback_minimal_reading(self):
+        """Minimal reading (no translation, no synthesis) still returns valid result."""
+        result = _build_fallback({}, "en")
+        self.assertFalse(result.ai_generated)
+        self.assertGreater(len(result.message), 0)
+        self.assertGreater(len(result.full_text), 0)
+
+
+class TestCacheKey(unittest.TestCase):
+    """Tests for _make_daily_cache_key."""
+
+    def test_daily_cache_key_deterministic(self):
+        """Same inputs produce same cache key."""
+        key1 = _make_daily_cache_key("user1", "2026-02-09", "en")
+        key2 = _make_daily_cache_key("user1", "2026-02-09", "en")
+        self.assertEqual(key1, key2)
+        self.assertEqual(len(key1), 64)  # SHA-256 hex digest
+
+    def test_daily_cache_key_differs_by_locale(self):
+        """Different locales produce different cache keys."""
+        key_en = _make_daily_cache_key("user1", "2026-02-09", "en")
+        key_fa = _make_daily_cache_key("user1", "2026-02-09", "fa")
+        self.assertNotEqual(key_en, key_fa)
+
+
+class TestIntegrationPipeline(unittest.TestCase):
+    """Integration tests verifying full pipelines end-to-end."""
+
+    @patch("engines.ai_interpreter.generate_reading")
+    @patch("engines.ai_interpreter.is_available", return_value=True)
+    def test_full_pipeline_mocked_ai(self, mock_avail, mock_gen):
+        """Full pipeline: reading -> prompt -> AI -> parse -> ReadingInterpretation."""
+        mock_gen.return_value = {
+            "success": True,
+            "response": SAMPLE_AI_RESPONSE_EN,
+            "cached": False,
+        }
+        result = interpret_reading(SAMPLE_FRAMEWORK_READING)
+        self.assertTrue(result.ai_generated)
+        self.assertGreater(len(result.header), 0)
+        self.assertGreater(len(result.message), 0)
+        self.assertGreater(len(result.footer), 0)
+        # to_dict is JSON-serializable
+        d = result.to_dict()
+        json.dumps(d)
 
     @patch("engines.ai_interpreter.is_available", return_value=False)
-    def test_fallback_json_serializable(self, mock_avail):
-        """Fallback results are also JSON-serializable."""
-        result = interpret_all_formats(SAMPLE_READING, "Hamzeh")
+    def test_full_pipeline_ai_unavailable(self, mock_avail):
+        """Fallback pipeline: reading -> _build_fallback -> ReadingInterpretation."""
+        result = interpret_reading(SAMPLE_FRAMEWORK_READING)
+        self.assertFalse(result.ai_generated)
+        # Uses translation sections
+        self.assertGreater(len(result.header), 0)
+        self.assertGreater(len(result.message), 0)
         d = result.to_dict()
-        json_str = json.dumps(d)
-        self.assertGreater(len(json_str), 0)
+        json.dumps(d)
 
+    @patch("engines.ai_interpreter.generate_reading")
+    @patch("engines.ai_interpreter.is_available", return_value=True)
+    def test_persian_pipeline(self, mock_avail, mock_gen):
+        """Persian pipeline: FA system prompt, FA parsing."""
+        mock_gen.return_value = {
+            "success": True,
+            "response": SAMPLE_AI_RESPONSE_FA,
+            "cached": False,
+        }
+        result = interpret_reading(SAMPLE_FRAMEWORK_READING, locale="fa")
+        self.assertTrue(result.ai_generated)
+        self.assertEqual(result.locale, "fa")
 
-class TestResultClasses(unittest.TestCase):
-    """Tests for result class structure and behavior."""
+    @patch("engines.ai_interpreter.generate_reading")
+    @patch("engines.ai_interpreter.is_available", return_value=True)
+    def test_multi_user_pipeline(self, mock_avail, mock_gen):
+        """Multi-user pipeline: 2 readings -> interpret -> MultiUserInterpretation."""
+        mock_gen.return_value = {
+            "success": True,
+            "response": "Group COMPATIBILITY narrative for Alice and Bob.",
+            "cached": False,
+        }
+        result = interpret_multi_user(
+            [SAMPLE_FRAMEWORK_READING, SAMPLE_MINIMAL_READING],
+            ["Alice", "Bob"],
+        )
+        self.assertIsInstance(result, MultiUserInterpretation)
+        self.assertEqual(len(result.individual_readings), 2)
+        d = result.to_dict()
+        json.dumps(d)
 
-    def test_interpretation_result_slots(self):
-        """InterpretationResult uses __slots__."""
-        self.assertTrue(hasattr(InterpretationResult, "__slots__"))
-        r = InterpretationResult("simple", "text", True, 10.0, False)
-        with self.assertRaises(AttributeError):
-            r.nonexistent_attr = "fail"
+    def test_import_verification(self):
+        """All new module imports work correctly."""
+        # These imports already succeeded at module level, but verify explicitly
+        self.assertTrue(callable(build_reading_prompt))
+        self.assertTrue(callable(build_multi_user_prompt))
+        self.assertTrue(callable(get_system_prompt))
+        self.assertTrue(callable(interpret_reading))
+        self.assertTrue(callable(interpret_multi_user))
+        self.assertTrue(callable(generate_reading))
+        self.assertIsInstance(WISDOM_SYSTEM_PROMPT_EN, str)
+        self.assertIsInstance(WISDOM_SYSTEM_PROMPT_FA, str)
+        self.assertIsInstance(FC60_PRESERVED_TERMS, list)
 
-    def test_interpretation_result_to_dict(self):
-        """InterpretationResult.to_dict() returns correct keys."""
-        r = InterpretationResult("advice", "some text", True, 15.5, True)
-        d = r.to_dict()
-        self.assertEqual(d["format"], "advice")
-        self.assertEqual(d["text"], "some text")
-        self.assertTrue(d["ai_generated"])
-        self.assertEqual(d["elapsed_ms"], 15.5)
-        self.assertTrue(d["cached"])
+    def test_preserved_terms_complete(self):
+        """FC60_PRESERVED_TERMS contains all required terms."""
+        required = [
+            "FC60",
+            "Wu Xing",
+            "Wood",
+            "Fire",
+            "Earth",
+            "Metal",
+            "Water",
+            "Dragon",
+            "Horse",
+            "Life Path",
+            "Soul Urge",
+            "Ganzhi",
+        ]
+        for term in required:
+            self.assertIn(term, FC60_PRESERVED_TERMS)
 
-    def test_interpretation_result_repr(self):
-        """InterpretationResult has informative repr."""
-        r = InterpretationResult("simple", "hello world", True, 5.0, False)
-        rep = repr(r)
-        self.assertIn("simple", rep)
-        self.assertIn("AI", rep)
-
-    def test_multi_format_result_slots(self):
-        """MultiFormatResult uses __slots__."""
-        self.assertTrue(hasattr(MultiFormatResult, "__slots__"))
-
-    def test_group_interpretation_result_slots(self):
-        """GroupInterpretationResult uses __slots__."""
-        self.assertTrue(hasattr(GroupInterpretationResult, "__slots__"))
-
-    def test_translation_result_slots(self):
-        """TranslationResult uses __slots__."""
-        self.assertTrue(hasattr(TranslationResult, "__slots__"))
-        r = TranslationResult("src", "dst", "en", "fa", [], True, 5.0)
-        with self.assertRaises(AttributeError):
-            r.nonexistent_attr = "fail"
-
-    def test_translation_result_to_dict(self):
-        """TranslationResult.to_dict() returns correct keys."""
-        r = TranslationResult("hello", "سلام", "en", "fa", ["FC60"], True, 8.3)
-        d = r.to_dict()
-        self.assertEqual(d["source_text"], "hello")
-        self.assertEqual(d["translated_text"], "سلام")
-        self.assertEqual(d["source_lang"], "en")
-        self.assertEqual(d["target_lang"], "fa")
-        self.assertEqual(d["preserved_terms"], ["FC60"])
-        self.assertTrue(d["ai_generated"])
-
-    def test_translation_result_repr(self):
-        """TranslationResult has informative repr."""
-        r = TranslationResult("hello", "سلام", "en", "fa", [], True, 5.0)
-        rep = repr(r)
-        self.assertIn("en", rep)
-        self.assertIn("fa", rep)
-        self.assertIn("AI", rep)
+    def test_build_prompt_legacy_compat(self):
+        """build_prompt still works with _SafeDict for missing keys."""
+        result = build_prompt("Hello {name}, your path is {life_path}.", {"name": "Test"})
+        self.assertIn("Test", result)
+        self.assertIn("(not available)", result)
 
 
 if __name__ == "__main__":

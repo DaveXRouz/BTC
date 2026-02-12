@@ -13,13 +13,40 @@ import time
 
 from engines.ai_client import generate, is_available
 from engines.prompt_templates import (
-    FC60_SYSTEM_PROMPT,
-    TRANSLATE_EN_FA_TEMPLATE,
-    TRANSLATE_FA_EN_TEMPLATE,
-    BATCH_TRANSLATE_TEMPLATE,
     FC60_PRESERVED_TERMS,
     build_prompt,
+    get_system_prompt,
 )
+
+# ════════════════════════════════════════════════════════════
+# Translation-specific templates
+# ════════════════════════════════════════════════════════════
+
+TRANSLATE_EN_FA_TEMPLATE = """\
+Translate the following English text to Persian (Farsi).
+Preserve these terms in English: {preserved_terms}
+
+Text to translate:
+{text}
+
+Provide ONLY the translated text, nothing else."""
+
+TRANSLATE_FA_EN_TEMPLATE = """\
+Translate the following Persian (Farsi) text to English.
+Preserve these terms as-is: {preserved_terms}
+
+Text to translate:
+{text}
+
+Provide ONLY the translated text, nothing else."""
+
+BATCH_TRANSLATE_TEMPLATE = """\
+Translate the following numbered items from {source_lang} to {target_lang}.
+Preserve these terms as-is: {preserved_terms}
+
+{numbered_items}
+
+Provide ONLY the numbered translated items, one per line."""
 
 # ════════════════════════════════════════════════════════════
 # Result class
@@ -148,7 +175,7 @@ def translate(text, source_lang="en", target_lang="fa", fc60_context=None):
         },
     )
 
-    result = generate(prompt, system_prompt=FC60_SYSTEM_PROMPT, temperature=0.3)
+    result = generate(prompt, system_prompt=get_system_prompt("en"), temperature=0.3)
     elapsed_ms = (time.time() - start) * 1000
 
     if result["success"]:
@@ -233,7 +260,7 @@ def batch_translate(texts, source_lang="en", target_lang="fa"):
         },
     )
 
-    result = generate(prompt, system_prompt=FC60_SYSTEM_PROMPT, temperature=0.3)
+    result = generate(prompt, system_prompt=get_system_prompt("en"), temperature=0.3)
     elapsed_ms = (time.time() - start) * 1000
 
     if result["success"]:

@@ -9,8 +9,8 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 12 of 45
-**Last session:** Session 12 — Heartbeat & Location Engines (FINAL in Calculation Engines block)
+**Sessions completed:** 13 of 45
+**Last session:** Session 13 — AI Interpretation Engine: Anthropic Integration
 **Current block:** AI & Reading Types (Sessions 13-18)
 
 ---
@@ -531,6 +531,40 @@ TEMPLATE — copy this for each new session:
 - ReadingResults accepts optional heartbeat/location/confidence props — parent component passes data from framework output when available
 
 **Next:** Session 13 — Wisdom AI Connection (connect Anthropic API to framework output, create AI interpretation pipeline, reading enrichment with AI-generated text)
+
+---
+
+## Session 13 — 2026-02-13
+
+**Terminal:** SINGLE
+**Block:** AI & Reading Types (first session in block)
+**Task:** AI Interpretation Engine — Anthropic Integration: rewrite system prompts, AI client with retry logic, prompt builder, AI interpreter with 9-section parsing, bilingual EN/FA support, graceful fallback
+**Spec:** .session-specs/SESSION_13_SPEC.md
+
+**Files changed:**
+
+- `services/oracle/oracle_service/engines/prompt_templates.py` — Replaced 11 old templates (FC60_SYSTEM_PROMPT, SIMPLE_TEMPLATE, etc.) with WISDOM_SYSTEM_PROMPT_EN and WISDOM_SYSTEM_PROMPT_FA sourced from framework logic docs; added get_system_prompt(locale); kept FC60_PRESERVED_TERMS and build_prompt with new \_SafeDict pattern
+- `services/oracle/oracle_service/engines/ai_client.py` — Added retry logic (\_is_retryable, \_RETRY_WAIT, \_MAX_RETRIES), generate_reading() convenience wrapper, \_DEFAULT_MAX_TOKENS_SINGLE=2000/\_MULTI=3000, SDK error type imports, `retried` field in return dict
+- `services/oracle/oracle_service/ai_prompt_builder.py` — NEW: constructs user prompts from MasterOrchestrator.generate_reading() output; 11 format helpers (\_format_person, \_format_fc60_stamp, \_format_birth, \_format_current, \_format_numerology, \_format_moon, \_format_ganzhi, \_format_heartbeat, \_format_location, \_format_patterns, \_format_confidence); build_reading_prompt() and build_multi_user_prompt()
+- `services/oracle/oracle_service/engines/ai_interpreter.py` — Complete rewrite: replaced old classes (InterpretationResult, MultiFormatResult, GroupInterpretationResult) with dataclass-based ReadingInterpretation and MultiUserInterpretation; 9-section parsing with EN/FA markers; interpret_reading() and interpret_multi_user(); \_build_fallback() uses reading['translation'] or reading['synthesis']; \_make_daily_cache_key() placeholder
+- `services/oracle/oracle_service/engines/translation_service.py` — Moved translation-specific templates (TRANSLATE_EN_FA_TEMPLATE, TRANSLATE_FA_EN_TEMPLATE, BATCH_TRANSLATE_TEMPLATE) inline; updated imports from removed FC60_SYSTEM_PROMPT to get_system_prompt("en")
+- `services/oracle/oracle_service/engines/__init__.py` — Updated re-exports: replaced interpret_all_formats/interpret_group with interpret_multi_user/ReadingInterpretation/MultiUserInterpretation
+- `services/oracle/tests/test_ai_integration.py` — Complete rewrite: 8 test classes (TestPromptBuilder 5, TestSystemPrompt 4, TestAIClientRetry 4, TestResponseParsing 4, TestInterpreter 5, TestFallback 3, TestCacheKey 2, TestIntegrationPipeline 7) = 34 tests; framework output fixtures; all AI calls mocked
+
+**Tests:** 247 oracle pass (1 pre-existing Docker path fail) | 34 new AI integration tests all pass | 0 regressions
+**Commit:** pending
+**Issues:** None
+**Decisions:**
+
+- Native bilingual generation (not translate-after) — FA system prompt generates Persian natively for better prose quality
+- 9-section structure replaces old 4-format model (simple/advice/action_steps/universe_message) — consistent with framework's 04_READING_COMPOSITION_GUIDE.md
+- Framework synthesis as high-quality fallback when AI unavailable — reading['translation'] sections or reading['synthesis'] text
+- Deferred DB caching — \_make_daily_cache_key() prepared but oracle_daily_readings table doesn't exist yet (Sessions 1-5 schema)
+- Single retry for retryable errors (rate limit, server, connection) with 2s wait — simple and effective
+- Translation templates moved into translation_service.py — they're translation-specific, not reading prompt templates
+- Kept translation_service.py intact — may be useful for non-reading translation needs in later sessions
+
+**Next:** Session 14 — Daily Reading Flow (uses interpret_reading() for the daily reading endpoint, connects API→Oracle→AI pipeline)
 
 ---
 

@@ -20,10 +20,11 @@ from engines.oracle import read_name as read_name
 from engines.oracle import question_sign as question_sign
 from engines.oracle import daily_insight as daily_insight
 
-# AI interpretation (T3-S3)
+# AI interpretation (Session 13)
 from engines.ai_interpreter import interpret_reading as interpret_reading
-from engines.ai_interpreter import interpret_all_formats as interpret_all_formats
-from engines.ai_interpreter import interpret_group as interpret_group
+from engines.ai_interpreter import interpret_multi_user as interpret_multi_user
+from engines.ai_interpreter import ReadingInterpretation as ReadingInterpretation
+from engines.ai_interpreter import MultiUserInterpretation as MultiUserInterpretation
 from engines.translation_service import translate as translate
 from engines.translation_service import batch_translate as batch_translate
 from engines.translation_service import detect_language as detect_language
