@@ -776,6 +776,26 @@ export type EventType =
 
 export type ReadingType = "time" | "name" | "question" | "daily" | "multi";
 
+// ─── Dashboard ───
+
+export interface DashboardStats {
+  total_readings: number;
+  readings_by_type: Record<string, number>;
+  average_confidence: number | null;
+  most_used_type: string | null;
+  streak_days: number;
+  readings_today: number;
+  readings_this_week: number;
+  readings_this_month: number;
+}
+
+export interface MoonPhaseInfo {
+  phase_name: string;
+  illumination: number;
+  emoji: string;
+  age_days: number;
+}
+
 // ─── Health ───
 
 export interface HealthStatus {

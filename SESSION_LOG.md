@@ -9,9 +9,9 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 21 of 45
-**Last session:** Session 21 — Reading Results Display
-**Current block:** Frontend Core (Sessions 19-25) — Three sessions complete
+**Sessions completed:** 22 of 45
+**Last session:** Session 22 — Dashboard Page
+**Current block:** Frontend Core (Sessions 19-25) — Four sessions complete
 
 ---
 
@@ -972,7 +972,65 @@ TEMPLATE — copy this for each new session:
 - Master numbers (11, 22, 33) get gold accent color (text-nps-score-peak) instead of standard bright text
 - Persian digit conversion driven by i18n.language check — no separate locale prop needed
 
-**Next:** Session 22 — Reading History Page (reading history list with filtering, search, pagination, favorites)
+**Next:** Session 22 — Dashboard Page (Oracle-centric homepage with welcome, daily, stats, recent, quick actions)
+
+---
+
+## Session 22 — 2026-02-13
+
+**Terminal:** SINGLE
+**Block:** Frontend Core (fourth session in block)
+**Task:** Dashboard Page — Rewrite scanner-centric Dashboard to Oracle-centric homepage with WelcomeBanner, DailyReadingCard, StatsCards, RecentReadings, QuickActions, MoonPhaseWidget; add API endpoint GET /oracle/stats; add useDashboard hooks; full bilingual support
+**Spec:** .session-specs/SESSION_22_SPEC.md
+
+**Files created (16):**
+
+- `frontend/src/components/dashboard/WelcomeBanner.tsx` — Welcome greeting with time-of-day greeting, user name, Jalali/Gregorian date, MoonPhaseWidget
+- `frontend/src/components/dashboard/MoonPhaseWidget.tsx` — Compact inline widget showing moon emoji, phase name, illumination percentage
+- `frontend/src/components/dashboard/DailyReadingCard.tsx` — Today's reading summary or "Generate" button with loading/error states
+- `frontend/src/components/dashboard/StatsCards.tsx` — 4-card grid: total readings, avg confidence, most used type, streak days; locale-aware number formatting
+- `frontend/src/components/dashboard/RecentReadings.tsx` — Card grid of recent readings with type badges, dates, summaries, empty state CTA, "View All" link
+- `frontend/src/components/dashboard/QuickActions.tsx` — 3 action buttons (Time Reading, Ask a Question, Name Reading) navigating to Oracle page with type params
+- `frontend/src/hooks/useDashboard.ts` — React Query hooks: useDashboardStats (60s refetch), useRecentReadings, useDailyReading
+- `api/app/models/dashboard.py` — Pydantic DashboardStatsResponse model
+- `api/tests/test_dashboard_stats.py` — 5 tests for dashboard stats (empty, with data, streak, confidence, response model)
+- `frontend/src/components/dashboard/__tests__/MoonPhaseWidget.test.tsx` — 3 tests: renders phase, loading skeleton, empty state
+- `frontend/src/components/dashboard/__tests__/WelcomeBanner.test.tsx` — 4 tests: greeting with name, explorer fallback, date display, moon widget
+- `frontend/src/components/dashboard/__tests__/DailyReadingCard.test.tsx` — 4 tests: reading summary, generate button, loading, error retry
+- `frontend/src/components/dashboard/__tests__/StatsCards.test.tsx` — 3 tests: four cards, loading skeletons, zero stats
+- `frontend/src/components/dashboard/__tests__/RecentReadings.test.tsx` — 6 tests: card count, type badges, empty CTA, navigation, loading, view all link
+- `frontend/src/components/dashboard/__tests__/QuickActions.test.tsx` — 4 tests: three buttons, navigation for each type
+- `frontend/src/pages/__tests__/Dashboard.test.tsx` — 3 tests: all five sections present, quick actions, accessibility title
+
+**Files modified (7):**
+
+- `frontend/src/pages/Dashboard.tsx` — Full rewrite: imports 5 dashboard components + useDashboard hooks, renders WelcomeBanner → DailyReadingCard → StatsCards → RecentReadings → QuickActions
+- `frontend/src/components/StatsCard.tsx` — Enhanced with optional `icon` prop (emoji), `trend` prop (up/down/flat with arrow + color), backward-compatible
+- `frontend/src/services/api.ts` — Added `dashboard.stats()` method calling GET /oracle/stats
+- `frontend/src/types/index.ts` — Added `DashboardStats` and `MoonPhaseInfo` interfaces
+- `frontend/src/locales/en.json` — Replaced 4 scanner dashboard keys with 34 Oracle dashboard keys (greetings, stats, recent, quick actions, moon, types)
+- `frontend/src/locales/fa.json` — Added matching 34 Persian translation keys
+- `api/app/routers/oracle.py` — Added GET /stats endpoint returning DashboardStatsResponse, imported DashboardStatsResponse model
+
+**Backend modified (1):**
+
+- `api/app/services/oracle_reading.py` — Added `get_dashboard_stats()` method: total readings, by-type counts, average confidence (parsed from JSONB reading_result), streak calculation (consecutive days backwards from today), readings today/week/month
+
+**Tests:** 343 pass / 0 fail / 27 new frontend (3 MoonPhase + 4 WelcomeBanner + 4 DailyReading + 3 StatsCards + 6 RecentReadings + 4 QuickActions + 3 Dashboard page) + 5 new API | 0 regressions across all 56 frontend test files
+**Commit:** TBD
+**Issues:** None
+**Decisions:**
+
+- Dashboard uses 5 standalone components (WelcomeBanner, DailyReadingCard, StatsCards, RecentReadings, QuickActions) rather than a monolithic page — easier to test and reuse
+- StatsCard enhanced with icon/trend props (backward-compatible) — reusable across dashboard and future admin panel
+- MoonPhaseWidget is a compact inline widget inside WelcomeBanner, not a separate card — saves vertical space
+- RecentReadings uses card grid (not horizontal scroll) — better for RTL layout and accessibility
+- Streak calculation done in Python service layer (backwards from today) — simple, no complex SQL window functions needed
+- Average confidence extracted from JSONB reading_result field with graceful fallback — handles both `{confidence: {score: N}}` and `{confidence: N}` shapes
+- Locale-aware number formatting uses `Intl.NumberFormat` with `fa-IR` locale for Persian numerals — no custom utility needed
+- Jalali date in WelcomeBanner uses existing `jalaali-js` dependency — no new packages
+
+**Next:** Session 23 — Settings Page (user preferences, language toggle, theme, numerology system defaults, profile management)
 
 ---
 

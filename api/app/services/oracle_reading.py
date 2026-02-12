@@ -1052,6 +1052,113 @@ class OracleReadingService:
             "most_active_day": most_active_day,
         }
 
+    def get_dashboard_stats(self) -> dict:
+        """Aggregated stats for the dashboard: totals, streak, confidence."""
+        from datetime import date, timedelta
+
+        from sqlalchemy import cast, func as sqla_func, Date
+
+        base = self.db.query(OracleReading).filter(
+            OracleReading.deleted_at.is_(None),
+        )
+
+        total = base.count()
+
+        # By type
+        type_counts = (
+            base.with_entities(OracleReading.sign_type, sqla_func.count())
+            .group_by(OracleReading.sign_type)
+            .all()
+        )
+        readings_by_type = {t: c for t, c in type_counts}
+
+        # Most used type
+        most_used_type: str | None = None
+        if readings_by_type:
+            most_used_type = max(readings_by_type, key=readings_by_type.get)  # type: ignore[arg-type]
+
+        # Average confidence from reading_result JSONB
+        average_confidence: float | None = None
+        try:
+            # PostgreSQL: extract confidence from JSONB reading_result
+            conf_rows = (
+                base.with_entities(OracleReading.reading_result)
+                .filter(OracleReading.reading_result.isnot(None))
+                .all()
+            )
+            conf_values: list[float] = []
+            for (result_str,) in conf_rows:
+                if not result_str:
+                    continue
+                try:
+                    import json as _json
+
+                    parsed = _json.loads(result_str) if isinstance(result_str, str) else result_str
+                    conf = parsed.get("confidence")
+                    if isinstance(conf, dict):
+                        score = conf.get("score")
+                    else:
+                        score = conf
+                    if score is not None:
+                        conf_values.append(float(score))
+                except (ValueError, TypeError, AttributeError):
+                    continue
+            if conf_values:
+                average_confidence = sum(conf_values) / len(conf_values)
+        except Exception:
+            pass
+
+        # Streak: consecutive days with readings (backwards from today)
+        today = date.today()
+        streak_days = 0
+        try:
+            distinct_dates = (
+                base.with_entities(
+                    cast(OracleReading.created_at, Date).label("reading_date"),
+                )
+                .distinct()
+                .order_by(cast(OracleReading.created_at, Date).desc())
+                .all()
+            )
+            date_set = {d[0] for d in distinct_dates if d[0] is not None}
+            check = today
+            while check in date_set:
+                streak_days += 1
+                check -= timedelta(days=1)
+        except Exception:
+            pass
+
+        # Readings today / this week / this month
+        readings_today = 0
+        readings_this_week = 0
+        readings_this_month = 0
+        try:
+            for (result_date,) in base.with_entities(
+                cast(OracleReading.created_at, Date).label("rd"),
+            ).all():
+                if result_date is None:
+                    continue
+                if result_date == today:
+                    readings_today += 1
+                diff = (today - result_date).days
+                if diff < 7:
+                    readings_this_week += 1
+                if result_date.month == today.month and result_date.year == today.year:
+                    readings_this_month += 1
+        except Exception:
+            pass
+
+        return {
+            "total_readings": total,
+            "readings_by_type": readings_by_type,
+            "average_confidence": average_confidence,
+            "most_used_type": most_used_type,
+            "streak_days": streak_days,
+            "readings_today": readings_today,
+            "readings_this_week": readings_this_week,
+            "readings_this_month": readings_this_month,
+        }
+
     def _decrypt_reading(self, row: OracleReading) -> dict:
         """ORM row → dict with decrypted fields + parsed JSON."""
         question = row.question

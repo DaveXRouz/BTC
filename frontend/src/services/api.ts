@@ -153,6 +153,12 @@ export const oracle = {
     }),
 };
 
+// ─── Dashboard ───
+
+export const dashboard = {
+  stats: () => request<import("@/types").DashboardStats>("/oracle/stats"),
+};
+
 // ─── Oracle Users ───
 
 export const oracleUsers = {

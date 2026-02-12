@@ -23,6 +23,7 @@ from pydantic import ValidationError
 
 from starlette.responses import Response as StarletteResponse
 
+from app.models.dashboard import DashboardStatsResponse
 from app.models.oracle import (
     DailyInsightResponse,
     DailyReadingCacheResponse,
@@ -545,6 +546,23 @@ def get_daily_framework_reading(
         cached=False,
         generated_at=None,
     )
+
+
+# ─── Dashboard Stats Endpoint (Session 22) ───────────────────────────────────
+
+
+@router.get(
+    "/stats",
+    response_model=DashboardStatsResponse,
+    dependencies=[Depends(require_scope("oracle:read"))],
+)
+def get_dashboard_stats(
+    _user: dict = Depends(get_current_user),
+    svc: OracleReadingService = Depends(get_oracle_reading_service),
+) -> DashboardStatsResponse:
+    """Aggregated reading statistics for the dashboard."""
+    stats = svc.get_dashboard_stats()
+    return DashboardStatsResponse(**stats)
 
 
 # ─── Reading History Endpoints ───────────────────────────────────────────────
