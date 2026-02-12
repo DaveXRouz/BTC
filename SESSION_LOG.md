@@ -1368,7 +1368,7 @@ TEMPLATE — copy this for each new session:
 - `frontend/src/components/oracle/__tests__/CalendarPicker.test.tsx` — updated for i18n aria-labels
 
 **Tests:** 532 pass / 0 fail / 40 new tests (30 Accessibility.test.tsx + 3 SkipNavLink + 5 useFocusTrap + 6 useArrowNavigation) — replaced 11 old a11y tests with 30 comprehensive tests
-**Commit:** TBD
+**Commit:** 061b686
 **Issues:** None — all pre-existing tsc errors unchanged
 **Decisions:**
 
