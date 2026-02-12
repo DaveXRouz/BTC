@@ -397,6 +397,39 @@ export interface CosmicCycleData {
   planet_moon: PlanetMoonCombo | null;
 }
 
+// ─── Heartbeat & Location (Session 12) ───
+
+export interface HeartbeatData {
+  bpm: number;
+  bpm_source: "actual" | "estimated";
+  element: string;
+  beats_per_day: number;
+  total_lifetime_beats: number;
+  rhythm_token: string;
+}
+
+export interface LocationElementData {
+  element: string;
+  timezone_estimate: number;
+  lat_hemisphere: "N" | "S";
+  lon_hemisphere: "E" | "W";
+  lat_polarity: "Yang" | "Yin";
+  lon_polarity: "Yang" | "Yin";
+}
+
+export interface ConfidenceData {
+  score: number;
+  level: "low" | "medium" | "high" | "very_high";
+  factors: string;
+}
+
+export interface ConfidenceBoost {
+  field: string;
+  label: string;
+  boost: number;
+  filled: boolean;
+}
+
 // ─── Translation ───
 
 export interface TranslateResponse {

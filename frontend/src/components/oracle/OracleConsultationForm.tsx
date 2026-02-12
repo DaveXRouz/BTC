@@ -9,6 +9,7 @@ import { CalendarPicker } from "./CalendarPicker";
 import { SignTypeSelector } from "./SignTypeSelector";
 import { LocationSelector } from "./LocationSelector";
 import { NumerologySystemSelector } from "./NumerologySystemSelector";
+import { HeartbeatInput } from "./HeartbeatInput";
 
 interface OracleConsultationFormProps {
   userId: number;
@@ -33,6 +34,8 @@ export function OracleConsultationForm({
     useState<NumerologySystem>("auto");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [consultationBpm, setConsultationBpm] = useState<number | null>(null);
 
   function handleKeyboardChar(char: string) {
     setQuestion((prev) => prev + char);
@@ -137,6 +140,34 @@ export function OracleConsultationForm({
 
       {/* Location selector */}
       <LocationSelector value={location} onChange={setLocation} />
+
+      {/* Advanced Options — expandable */}
+      <div className="border border-nps-border/30 rounded">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="w-full flex items-center justify-between px-3 py-2 text-xs text-nps-text-dim hover:text-nps-text transition-colors"
+          aria-expanded={showAdvanced}
+          data-testid="advanced-options-toggle"
+        >
+          <span>{t("oracle.advanced_options")}</span>
+          <span className="text-[10px]">{showAdvanced ? "▲" : "▼"}</span>
+        </button>
+        {showAdvanced && (
+          <div
+            className="px-3 pb-3 space-y-2"
+            data-testid="advanced-options-content"
+          >
+            <p className="text-[10px] text-nps-text-dim">
+              {t("oracle.advanced_options_hint")}
+            </p>
+            <HeartbeatInput
+              value={consultationBpm}
+              onChange={setConsultationBpm}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Submit */}
       <button

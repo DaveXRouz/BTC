@@ -9,9 +9,9 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 11 of 45
-**Last session:** Session 11 — Moon, Ganzhi & Cosmic Cycles
-**Current block:** Calculation Engines (Sessions 6-12)
+**Sessions completed:** 12 of 45
+**Last session:** Session 12 — Heartbeat & Location Engines (FINAL in Calculation Engines block)
+**Current block:** AI & Reading Types (Sessions 13-18)
 
 ---
 
@@ -487,6 +487,50 @@ TEMPLATE — copy this for each new session:
 - Planet-Moon insight rendered as indigo callout card — visually distinct from data sections
 
 **Next:** Session 12 — Heartbeat & Location Display (HeartbeatDisplay component, LocationSignatureDisplay component, reading results integration)
+
+---
+
+## Session 12 — 2026-02-13
+
+**Terminal:** SINGLE
+**Block:** Calculation Engines (FINAL session in block)
+**Task:** Framework Integration: Heartbeat & Location Engines — HeartbeatInput with manual + tap-to-count, HeartbeatDisplay, LocationDisplay, ConfidenceMeter components, TypeScript types, i18n translations, consultation form integration, reading results integration, bridge verification tests
+**Spec:** .session-specs/SESSION_12_SPEC.md
+
+**Files changed:**
+
+- `frontend/src/types/index.ts` — Added 4 interfaces: HeartbeatData, LocationElementData, ConfidenceData, ConfidenceBoost
+- `frontend/src/components/oracle/HeartbeatInput.tsx` — NEW: dual-mode BPM input (manual entry 30-220 with validation + tap-to-count with 5-tap minimum, interval averaging, >3s discard, pulse animation)
+- `frontend/src/components/oracle/HeartbeatDisplay.tsx` — NEW: renders BPM with pulsing heart at actual rate, Wu Xing element badge, source indicator (measured/estimated), lifetime beats counter
+- `frontend/src/components/oracle/LocationDisplay.tsx` — NEW: renders location element badge, hemisphere indicator (N/S, E/W), polarity (Yang/Yin), UTC offset
+- `frontend/src/components/oracle/ConfidenceMeter.tsx` — NEW: progress bar colored by level (green/blue/amber/red), score label, completeness breakdown with filled/unfilled indicators + "Add to boost" links, priority hierarchy hint
+- `frontend/src/components/oracle/OracleConsultationForm.tsx` — Added expandable "Advanced Options" section with HeartbeatInput for per-consultation BPM measurement
+- `frontend/src/components/oracle/ReadingResults.tsx` — Integrated ConfidenceMeter in summary tab header, HeartbeatDisplay and LocationDisplay in details tab
+- `frontend/src/locales/en.json` — Added 48 new i18n keys (heartbeat input/display, location display, confidence meter, gender, advanced options)
+- `frontend/src/locales/fa.json` — Added 48 matching Persian translation keys
+- `services/oracle/tests/test_heartbeat_location_bridge.py` — NEW: 12 tests across 4 classes (HeartbeatBridge 4, LocationBridge 3, ConfidenceBridge 3, FieldMapping 2)
+- `frontend/src/components/oracle/__tests__/HeartbeatInput.test.tsx` — NEW: 6 tests (manual mode default, valid BPM, reject low, reject high, clear, tap mode switch)
+- `frontend/src/components/oracle/__tests__/ConfidenceMeter.test.tsx` — NEW: 7 tests (progress width, high color, low color, completeness breakdown, checkmark/circle icons, add-to-boost links, null skeleton)
+
+**Skipped from spec:**
+
+- Database migration 012 — columns (gender, heart_rate_bpm, timezone_hours) already exist from Session 1 migration 012_framework_alignment.sql
+- ORM/Pydantic model updates — already done in Sessions 1, 3
+- UserForm gender/BPM fields — already done in Session 4
+- Bridge passthrough verification — already passing all optional data since Session 6
+
+**Tests:** 239 API pass (10 pre-existing multi_user fail) | 275 oracle pass (1 pre-existing Docker path fail) | 210 frontend pass | 123 framework pass (no regressions) | 25 new tests total (12 backend + 13 frontend)
+**Commit:** TBD
+**Issues:** None
+**Decisions:**
+
+- Skipped creating migration 012_heartbeat_location_columns.sql — the columns already exist from Session 1's 012_framework_alignment.sql migration; creating a duplicate would cause errors
+- HeartbeatInput tap-to-count uses performance.now() for sub-ms precision, keeps last 6 timestamps (5 intervals), discards gaps > 3s
+- ConfidenceMeter uses semantic color mapping: very_high=green, high=blue, medium=amber, low=red — consistent with traffic light mental model
+- Consultation BPM (from HeartbeatInput in Advanced Options) is separate from profile BPM — allows per-reading measurement without modifying profile
+- ReadingResults accepts optional heartbeat/location/confidence props — parent component passes data from framework output when available
+
+**Next:** Session 13 — Wisdom AI Connection (connect Anthropic API to framework output, create AI interpretation pipeline, reading enrichment with AI-generated text)
 
 ---
 
