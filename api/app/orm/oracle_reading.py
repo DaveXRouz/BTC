@@ -37,6 +37,8 @@ class OracleReading(Base):
     compatibility_matrix: Mapped[str | None] = mapped_column(Text)  # JSONB
     combined_energy: Mapped[str | None] = mapped_column(Text)  # JSONB
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
+    is_favorite: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class OracleReadingUser(Base):

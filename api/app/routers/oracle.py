@@ -21,6 +21,8 @@ from app.middleware.auth import get_current_user, require_scope
 from app.models.audit import AuditLogEntry, AuditLogResponse
 from pydantic import ValidationError
 
+from starlette.responses import Response as StarletteResponse
+
 from app.models.oracle import (
     DailyInsightResponse,
     DailyReadingCacheResponse,
@@ -38,6 +40,7 @@ from app.models.oracle import (
     RangeResponse,
     ReadingRequest,
     ReadingResponse,
+    ReadingStatsResponse,
     StampValidateRequest,
     StampValidateResponse,
     StoredReadingListResponse,
@@ -557,6 +560,10 @@ def list_readings(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     sign_type: str | None = Query(None),
+    search: str | None = Query(None, description="Full-text search query"),
+    date_from: str | None = Query(None, description="Filter from date (ISO 8601)"),
+    date_to: str | None = Query(None, description="Filter to date (ISO 8601)"),
+    is_favorite: bool | None = Query(None, description="Filter favorites only"),
     _user: dict = Depends(get_current_user),
     svc: OracleReadingService = Depends(get_oracle_reading_service),
     audit: AuditService = Depends(get_audit_service),
@@ -569,6 +576,10 @@ def list_readings(
         limit=limit,
         offset=offset,
         sign_type=sign_type,
+        date_from=date_from,
+        date_to=date_to,
+        is_favorite=is_favorite,
+        search_query=search,
     )
     audit.log_reading_listed(
         ip=_get_client_ip(request),
@@ -581,6 +592,20 @@ def list_readings(
         limit=limit,
         offset=offset,
     )
+
+
+@router.get(
+    "/readings/stats",
+    response_model=ReadingStatsResponse,
+    dependencies=[Depends(require_scope("oracle:read"))],
+)
+def get_reading_stats(
+    _user: dict = Depends(get_current_user),
+    svc: OracleReadingService = Depends(get_oracle_reading_service),
+):
+    """Aggregate reading statistics (total, by type, by month, favorites)."""
+    stats = svc.get_reading_stats()
+    return ReadingStatsResponse(**stats)
 
 
 @router.get(
@@ -601,6 +626,57 @@ def get_stored_reading(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
     audit.log_reading_read(
         reading_id,
+        ip=_get_client_ip(request),
+        key_hash=_user.get("api_key_hash"),
+    )
+    svc.db.commit()
+    return StoredReadingResponse(**data)
+
+
+@router.delete(
+    "/readings/{reading_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_scope("oracle:write"))],
+)
+def delete_reading(
+    reading_id: int,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+    svc: OracleReadingService = Depends(get_oracle_reading_service),
+    audit: AuditService = Depends(get_audit_service),
+):
+    """Soft-delete an oracle reading."""
+    deleted = svc.soft_delete_reading(reading_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
+    audit.log_reading_deleted(
+        reading_id,
+        ip=_get_client_ip(request),
+        key_hash=_user.get("api_key_hash"),
+    )
+    svc.db.commit()
+    return StarletteResponse(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.patch(
+    "/readings/{reading_id}/favorite",
+    response_model=StoredReadingResponse,
+    dependencies=[Depends(require_scope("oracle:write"))],
+)
+def toggle_reading_favorite(
+    reading_id: int,
+    request: Request,
+    _user: dict = Depends(get_current_user),
+    svc: OracleReadingService = Depends(get_oracle_reading_service),
+    audit: AuditService = Depends(get_audit_service),
+):
+    """Toggle the favorite status of an oracle reading."""
+    data = svc.toggle_favorite(reading_id)
+    if not data:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
+    audit.log_reading_updated(
+        reading_id,
+        ["is_favorite"],
         ip=_get_client_ip(request),
         key_hash=_user.get("api_key_hash"),
     )

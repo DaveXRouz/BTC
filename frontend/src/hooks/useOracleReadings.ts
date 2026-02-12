@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { oracle } from "@/services/api";
+import type { ReadingSearchParams } from "@/types";
 
 const HISTORY_KEY = ["oracleReadings"] as const;
+const STATS_KEY = ["readingStats"] as const;
 
 export function useSubmitReading() {
   const qc = useQueryClient();
@@ -73,13 +75,39 @@ export function useSubmitMultiUserReading() {
   });
 }
 
-export function useReadingHistory(params?: {
-  limit?: number;
-  offset?: number;
-  sign_type?: string;
-}) {
+export function useReadingHistory(params?: ReadingSearchParams) {
   return useQuery({
     queryKey: [...HISTORY_KEY, params],
     queryFn: () => oracle.history(params),
+  });
+}
+
+export function useDeleteReading() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => oracle.deleteReading(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: HISTORY_KEY });
+      qc.invalidateQueries({ queryKey: STATS_KEY });
+    },
+  });
+}
+
+export function useToggleFavorite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => oracle.toggleFavorite(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: HISTORY_KEY });
+      qc.invalidateQueries({ queryKey: STATS_KEY });
+    },
+  });
+}
+
+export function useReadingStats() {
+  return useQuery({
+    queryKey: [...STATS_KEY],
+    queryFn: () => oracle.readingStats(),
+    staleTime: 60 * 1000, // 1 min
   });
 }

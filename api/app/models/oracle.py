@@ -379,6 +379,8 @@ class StoredReadingResponse(BaseModel):
     reading_result: dict | None = None
     ai_interpretation: str | None = None
     created_at: str
+    is_favorite: bool = False
+    deleted_at: str | None = None
 
 
 class StoredReadingListResponse(BaseModel):
@@ -386,6 +388,14 @@ class StoredReadingListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class ReadingStatsResponse(BaseModel):
+    total_readings: int
+    by_type: dict[str, int]
+    by_month: list[dict]
+    favorites_count: int
+    most_active_day: str | None
 
 
 # ─── Multi-User Reading Models ──────────────────────────────────────────────

@@ -143,6 +143,34 @@ class AuditService:
             api_key_hash=key_hash,
         )
 
+    def log_reading_deleted(
+        self, reading_id: int, *, ip: str | None = None, key_hash: str | None = None
+    ):
+        return self.log(
+            "oracle_reading.delete",
+            resource_type="oracle_reading",
+            resource_id=reading_id,
+            ip_address=ip,
+            api_key_hash=key_hash,
+        )
+
+    def log_reading_updated(
+        self,
+        reading_id: int,
+        fields: list[str],
+        *,
+        ip: str | None = None,
+        key_hash: str | None = None,
+    ):
+        return self.log(
+            "oracle_reading.update",
+            resource_type="oracle_reading",
+            resource_id=reading_id,
+            ip_address=ip,
+            api_key_hash=key_hash,
+            details={"fields": fields},
+        )
+
     # ─── Auth audit methods ───────────────────────────────────────────────────
 
     def log_auth_failed(self, *, ip: str | None = None, details: dict | None = None):

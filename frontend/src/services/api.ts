@@ -99,21 +99,32 @@ export const oracle = {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  history: (params?: {
-    limit?: number;
-    offset?: number;
-    sign_type?: string;
-  }) => {
+  history: (params?: import("@/types").ReadingSearchParams) => {
     const query = new URLSearchParams();
     if (params?.limit) query.set("limit", String(params.limit));
-    if (params?.offset) query.set("offset", String(params.offset));
+    if (params?.offset !== undefined)
+      query.set("offset", String(params.offset));
     if (params?.sign_type) query.set("sign_type", params.sign_type);
+    if (params?.search) query.set("search", params.search);
+    if (params?.date_from) query.set("date_from", params.date_from);
+    if (params?.date_to) query.set("date_to", params.date_to);
+    if (params?.is_favorite !== undefined)
+      query.set("is_favorite", String(params.is_favorite));
     return request<import("@/types").StoredReadingListResponse>(
       `/oracle/readings?${query}`,
     );
   },
   getReading: (id: number) =>
     request<import("@/types").StoredReading>(`/oracle/readings/${id}`),
+  deleteReading: (id: number) =>
+    request<void>(`/oracle/readings/${id}`, { method: "DELETE" }),
+  toggleFavorite: (id: number) =>
+    request<import("@/types").StoredReading>(
+      `/oracle/readings/${id}/favorite`,
+      { method: "PATCH" },
+    ),
+  readingStats: () =>
+    request<import("@/types").ReadingStats>("/oracle/readings/stats"),
   validateStamp: (stamp: string) =>
     request<import("@/types").StampValidateResponse>("/oracle/validate-stamp", {
       method: "POST",

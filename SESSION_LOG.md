@@ -9,8 +9,8 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 16 of 45
-**Last session:** Session 16 — Reading Flow: Daily & Multi-User Readings
+**Sessions completed:** 17 of 45
+**Last session:** Session 17 — Reading History & Persistence
 **Current block:** AI & Reading Types (Sessions 13-18)
 
 ---
@@ -707,7 +707,62 @@ TEMPLATE — copy this for each new session:
 - Group analysis only appears for 3+ users (2 users = pairwise only)
 - Pairwise compatibility has 5 dimensions: life_path, element, animal, moon, pattern
 
-**Next:** Session 17 — AI Wisdom Engine (prompt builder, interpretation pipeline, learning loop)
+**Next:** Session 17 — Reading History & Persistence
+
+---
+
+### Session 17 — Reading History & Persistence
+
+**Date:** 2026-02-13
+**Block:** AI & Reading Types (Sessions 13-18)
+**Spec:** `.session-specs/SESSION_17_SPEC.md`
+**Status:** COMPLETE
+
+**Objectives:**
+
+1. Database migration — add `is_favorite`, `deleted_at`, `search_vector` columns to `oracle_readings`; GIN index + trigger for tsvector; partial indexes for favorite/deleted
+2. Soft delete — `DELETE /readings/{id}` sets `deleted_at`, excluded from list queries
+3. Toggle favorite — `PATCH /readings/{id}/favorite` toggles `is_favorite`
+4. Reading statistics — `GET /readings/stats` returns total, by_type, by_month, favorites_count, most_active_day
+5. Expanded filters — list readings supports `search`, `date_from`, `date_to`, `is_favorite`
+6. Frontend rewrite — card-based grid with search bar, date range pickers, favorites toggle, page-number pagination, ReadingCard + ReadingDetail components
+7. Bilingual i18n — 11 new EN/FA translation keys for history features
+
+**Files created (6):**
+
+- `database/migrations/017_reading_search.sql` — ALTER TABLE add columns + GIN index + trigger + backfill
+- `database/migrations/017_reading_search_rollback.sql` — Clean rollback
+- `frontend/src/components/oracle/ReadingCard.tsx` — Card component with type badge, star toggle, delete button, truncated preview
+- `frontend/src/components/oracle/ReadingDetail.tsx` — Full reading detail view with question, AI interpretation, raw JSON
+- `api/tests/test_reading_history.py` — 10 tests: list default/search/favorites/date_range, soft delete/not_found, toggle favorite/not_found, stats empty/with_data
+- `frontend/src/components/oracle/__tests__/ReadingCard.test.tsx` — 4 tests: render, star display, select callback, favorite callback
+- `frontend/src/components/oracle/__tests__/ReadingDetail.test.tsx` — 3 tests: render fields, close callback, JSON display
+
+**Files modified (11):**
+
+- `api/app/orm/oracle_reading.py` — Added `is_favorite` and `deleted_at` mapped columns
+- `api/app/models/oracle.py` — Added `is_favorite`/`deleted_at` to StoredReadingResponse; Added `ReadingStatsResponse` model
+- `api/app/services/oracle_reading.py` — Expanded `list_readings()` with 4 new filters; Added `soft_delete_reading()`, `toggle_favorite()`, `get_reading_stats()`; Updated `_decrypt_reading()` to include new fields; LIKE-based search fallback for SQLite
+- `api/app/routers/oracle.py` — Added `GET /readings/stats`, `DELETE /readings/{id}`, `PATCH /readings/{id}/favorite`; Expanded `GET /readings` with search/date/favorite params
+- `api/app/services/audit.py` — Added `log_reading_deleted()` and `log_reading_updated()` audit methods
+- `frontend/src/types/index.ts` — Added `is_favorite`/`deleted_at` to StoredReading; Added `ReadingSearchParams` and `ReadingStats` interfaces
+- `frontend/src/services/api.ts` — Expanded `history()` params; Added `deleteReading()`, `toggleFavorite()`, `readingStats()` methods
+- `frontend/src/hooks/useOracleReadings.ts` — Added `useDeleteReading()`, `useToggleFavorite()`, `useReadingStats()` hooks; Expanded `useReadingHistory()` params
+- `frontend/src/components/oracle/ReadingHistory.tsx` — Full rewrite: accordion→card grid, debounced search, date range, favorites filter, page-number pagination, stats bar
+- `frontend/src/locales/en.json` — Added 11 i18n keys (filter_time, filter_daily, filter_multi, search_placeholder, date_to_label, toggle_favorite, delete_reading, etc.)
+- `frontend/src/locales/fa.json` — Added 11 matching Persian translation keys
+- `frontend/src/components/oracle/__tests__/ReadingHistory.test.tsx` — Rewritten with 11 tests: loading, empty, filter chips, cards, search input, date range, favorites toggle, pagination, filter click, star icons, stats display
+
+**Tests:** 10 backend pass | 329 API pass (0 regressions) | 212 frontend pass (0 regressions)
+**Issues:** Full-text search uses LIKE fallback on SQLite (tsvector is PostgreSQL-only); Migration numbered 017 (spec said 014 but was taken)
+**Decisions:**
+
+- Used LIKE fallback for search instead of wrapping tsvector in try/except — simpler, works everywhere, tsvector GIN index still helps PostgreSQL
+- Card grid with 1/2/3 columns responsive breakpoints (mobile/tablet/desktop)
+- Page-size of 12 (divisible by 1/2/3 columns) instead of spec's 20
+- Stats endpoint placed before `{reading_id}` to avoid FastAPI path resolution conflict
+
+**Next:** Session 18 — AI Wisdom Engine (prompt builder, interpretation pipeline, learning loop)
 
 ---
 

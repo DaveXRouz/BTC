@@ -194,6 +194,8 @@ export interface StoredReading {
   reading_result: Record<string, unknown> | null;
   ai_interpretation: string | null;
   created_at: string;
+  is_favorite: boolean;
+  deleted_at: string | null;
 }
 
 // Paginated response — mirrors backend StoredReadingListResponse
@@ -202,6 +204,26 @@ export interface StoredReadingListResponse {
   total: number;
   limit: number;
   offset: number;
+}
+
+// Reading search/filter params
+export interface ReadingSearchParams {
+  limit?: number;
+  offset?: number;
+  sign_type?: string;
+  search?: string;
+  date_from?: string;
+  date_to?: string;
+  is_favorite?: boolean;
+}
+
+// Reading statistics — mirrors backend ReadingStatsResponse
+export interface ReadingStats {
+  total_readings: number;
+  by_type: Record<string, number>;
+  by_month: { month: string; count: number }[];
+  favorites_count: number;
+  most_active_day: string | null;
 }
 
 export type ResultsTab = "summary" | "details" | "history";

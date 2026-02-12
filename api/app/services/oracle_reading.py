@@ -938,16 +938,119 @@ class OracleReadingService:
         limit: int,
         offset: int,
         sign_type: str | None = None,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        is_favorite: bool | None = None,
+        search_query: str | None = None,
     ) -> tuple[list[dict], int]:
-        """Query readings with filters + pagination."""
-        query = self.db.query(OracleReading)
+        """Query readings with filters + pagination. Excludes soft-deleted."""
+        query = self.db.query(OracleReading).filter(OracleReading.deleted_at.is_(None))
 
         if sign_type:
             query = query.filter(OracleReading.sign_type == sign_type)
+        if date_from:
+            query = query.filter(OracleReading.created_at >= _parse_datetime(date_from))
+        if date_to:
+            query = query.filter(OracleReading.created_at <= _parse_datetime(date_to))
+        if is_favorite is not None:
+            query = query.filter(OracleReading.is_favorite == is_favorite)
+        if search_query:
+            from sqlalchemy import or_
+
+            # LIKE fallback for SQLite / PostgreSQL without tsvector
+            pattern = f"%{search_query}%"
+            query = query.filter(
+                or_(
+                    OracleReading.question.like(pattern),
+                    OracleReading.sign_value.like(pattern),
+                )
+            )
 
         total = query.count()
         rows = query.order_by(OracleReading.created_at.desc()).offset(offset).limit(limit).all()
         return [self._decrypt_reading(r) for r in rows], total
+
+    def soft_delete_reading(self, reading_id: int) -> bool:
+        """Soft-delete a reading by setting deleted_at timestamp."""
+        row = (
+            self.db.query(OracleReading)
+            .filter(OracleReading.id == reading_id, OracleReading.deleted_at.is_(None))
+            .first()
+        )
+        if not row:
+            return False
+        row.deleted_at = datetime.now(timezone.utc)
+        self.db.flush()
+        return True
+
+    def toggle_favorite(self, reading_id: int) -> dict | None:
+        """Toggle the is_favorite flag on a reading."""
+        row = (
+            self.db.query(OracleReading)
+            .filter(OracleReading.id == reading_id, OracleReading.deleted_at.is_(None))
+            .first()
+        )
+        if not row:
+            return None
+        row.is_favorite = not row.is_favorite
+        self.db.flush()
+        return self._decrypt_reading(row)
+
+    def get_reading_stats(self) -> dict:
+        """Aggregate reading statistics."""
+        from sqlalchemy import func as sqla_func
+
+        base = self.db.query(OracleReading).filter(OracleReading.deleted_at.is_(None))
+
+        total = base.count()
+        favorites = base.filter(OracleReading.is_favorite.is_(True)).count()
+
+        # Count by sign_type
+        type_counts = (
+            base.with_entities(OracleReading.sign_type, sqla_func.count())
+            .group_by(OracleReading.sign_type)
+            .all()
+        )
+        by_type = {t: c for t, c in type_counts}
+
+        # by_month and most_active_day use PostgreSQL-only functions (to_char)
+        # Gracefully handle SQLite (test env) by catching OperationalError
+        by_month: list[dict] = []
+        most_active_day: str | None = None
+        try:
+            month_counts = (
+                base.with_entities(
+                    sqla_func.to_char(OracleReading.created_at, "YYYY-MM").label("month"),
+                    sqla_func.count().label("count"),
+                )
+                .group_by("month")
+                .order_by(sqla_func.to_char(OracleReading.created_at, "YYYY-MM"))
+                .limit(12)
+                .all()
+            )
+            by_month = [{"month": m, "count": c} for m, c in month_counts]
+
+            day_counts = (
+                base.with_entities(
+                    sqla_func.to_char(OracleReading.created_at, "Day").label("day_name"),
+                    sqla_func.count().label("count"),
+                )
+                .group_by("day_name")
+                .order_by(sqla_func.count().desc())
+                .first()
+            )
+            most_active_day = day_counts[0].strip() if day_counts else None
+        except Exception:
+            # SQLite fallback — skip date-based aggregates
+            pass
+
+        return {
+            "total_readings": total,
+            "by_type": by_type,
+            "by_month": by_month,
+            "favorites_count": favorites,
+            "most_active_day": most_active_day,
+        }
 
     def _decrypt_reading(self, row: OracleReading) -> dict:
         """ORM row → dict with decrypted fields + parsed JSON."""
@@ -983,6 +1086,10 @@ class OracleReadingService:
             "reading_result": reading_result,
             "ai_interpretation": ai_interpretation,
             "created_at": created_at,
+            "is_favorite": getattr(row, "is_favorite", False),
+            "deleted_at": (
+                row.deleted_at.isoformat() if getattr(row, "deleted_at", None) else None
+            ),
         }
 
 
