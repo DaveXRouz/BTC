@@ -49,8 +49,12 @@ export function ReadingResults({
   return (
     <div className="space-y-3">
       {/* Tab bar + export */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-1" role="tablist" aria-label="Reading results">
+      <div className="flex items-center justify-between gap-2">
+        <div
+          className="flex gap-1 overflow-x-auto"
+          role="tablist"
+          aria-label="Reading results"
+        >
           {TABS.map((tab) => (
             <button
               key={tab}
@@ -60,7 +64,7 @@ export function ReadingResults({
               aria-selected={activeTab === tab}
               aria-controls={`tabpanel-${tab}`}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1 text-xs rounded transition-colors ${
+              className={`px-3 py-1 min-h-[44px] sm:min-h-0 text-xs rounded transition-colors whitespace-nowrap ${
                 activeTab === tab
                   ? "bg-nps-oracle-accent text-nps-bg font-medium"
                   : "text-nps-text-dim hover:text-nps-text"

@@ -9,9 +9,9 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 26 of 45
-**Last session:** Session 26 — RTL Layout System
-**Current block:** Frontend Advanced (Sessions 26-31) — 1 of 6 sessions complete
+**Sessions completed:** 27 of 45
+**Last session:** Session 27 — Responsive Design System
+**Current block:** Frontend Advanced (Sessions 26-31) — 2 of 6 sessions complete
 
 ---
 
@@ -1237,6 +1237,71 @@ TEMPLATE — copy this for each new session:
 - DirectionalIcon uses inline `transform: scaleX(-1)` instead of CSS class to avoid Tailwind purge issues
 
 **Next:** Session 27 — Responsive Design System (mobile breakpoints, fluid typography, touch targets, responsive Oracle layout)
+
+---
+
+## Session 27 — 2026-02-13
+
+**Objective:** Responsive Design System — mobile/tablet/desktop breakpoints, touch targets, mobile navigation drawer, mobile keyboard
+**Spec:** `.session-specs/SESSION_27_SPEC.md`
+**Block:** Frontend Advanced (Sessions 26-31) — Session 2 of 6
+
+**What was built:**
+
+1. **useBreakpoint hook** (`frontend/src/hooks/useBreakpoint.ts`) — reactive viewport detection: mobile (<640px), tablet (640-1023px), desktop (>=1024px) via `window.matchMedia`; SSR-safe with desktop default
+2. **MobileNav drawer** (`frontend/src/components/MobileNav.tsx`) — slide-out navigation drawer for mobile/tablet; slides from left (LTR) or right (RTL); 280px width; backdrop overlay; close on Escape, backdrop click, or nav item click; ARIA dialog with focus trap; includes LanguageToggle and ThemeToggle in footer
+3. **MobileKeyboard** (`frontend/src/components/oracle/MobileKeyboard.tsx`) — full-width bottom-sheet Persian keyboard for mobile; fixed to viewport bottom with slide-up animation; 44px minimum touch targets on all keys; shift support; backdrop close
+4. **Layout responsive overhaul** — sidebar uses `hidden lg:flex` (hidden below 1024px); hamburger uses `lg:hidden`; main content responsive padding `p-4 lg:p-6`; mobile header shows NPS logo; language/theme toggles moved to MobileNav drawer on mobile
+5. **Dashboard responsive grid** — StatsCards grid changed from `grid-cols-2 md:grid-cols-4` to `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` for proper 1→2→4 column progression
+6. **Oracle page responsive** — sidebar/main layout changed from `md:` to `lg:` breakpoints; user profile selector stacks vertically on mobile with full-width buttons; form panels use `p-4 lg:p-6` padding
+7. **Touch targets (44px)** — all interactive elements on mobile: LanguageToggle, StatsCard (min-h-[72px]), SignTypeSelector select, CalendarPicker day cells (h-10), month nav buttons (w-10 h-10), mode toggles, ReadingResults tab buttons, MultiUserSelector buttons, LocationSelector auto-detect button
+8. **CalendarPicker mobile bottom sheet** — calendar dropdown renders as fixed bottom sheet on mobile (`fixed inset-x-0 bottom-0`) with full width; desktop retains absolute dropdown
+9. **PersianKeyboard mobile delegation** — PersianKeyboard now delegates to MobileKeyboard component when `isMobile` from useBreakpoint
+10. **LocationSelector responsive** — auto-detect button full-width on mobile; manual coordinates stack vertically on mobile
+11. **Global slide-up animation** — `animate-slide-up` CSS keyframe added to `index.css`
+12. **Test setup matchMedia mock** — global `window.matchMedia` polyfill in `test/setup.ts` for jsdom compatibility
+
+**Files created (5):**
+
+- `frontend/src/hooks/useBreakpoint.ts`
+- `frontend/src/components/MobileNav.tsx`
+- `frontend/src/components/oracle/MobileKeyboard.tsx`
+- `frontend/src/hooks/__tests__/useBreakpoint.test.ts`
+- `frontend/src/components/__tests__/MobileNav.test.tsx`
+- `frontend/src/components/oracle/__tests__/MobileKeyboard.test.tsx`
+- `frontend/e2e/responsive.spec.ts`
+
+**Files modified (16):**
+
+- `frontend/src/components/Layout.tsx` — responsive sidebar/drawer, lg: breakpoints, MobileNav integration
+- `frontend/src/pages/Oracle.tsx` — lg: breakpoints, responsive padding, mobile-first buttons
+- `frontend/src/components/dashboard/StatsCards.tsx` — grid-cols-1 sm:grid-cols-2 lg:grid-cols-4
+- `frontend/src/components/StatsCard.tsx` — min-h-[72px], responsive text sizing
+- `frontend/src/components/LanguageToggle.tsx` — 44px touch target on mobile
+- `frontend/src/components/oracle/PersianKeyboard.tsx` — delegates to MobileKeyboard on mobile
+- `frontend/src/components/oracle/CalendarPicker.tsx` — mobile bottom sheet, 44px touch targets
+- `frontend/src/components/oracle/MultiUserSelector.tsx` — responsive stacking, 44px buttons
+- `frontend/src/components/oracle/ReadingResults.tsx` — scrollable tabs, 44px tab buttons
+- `frontend/src/components/oracle/SignTypeSelector.tsx` — 44px select on mobile
+- `frontend/src/components/oracle/LocationSelector.tsx` — full-width mobile, responsive coords
+- `frontend/src/components/__tests__/Layout.test.tsx` — added 4 responsive tests
+- `frontend/src/components/oracle/__tests__/PersianKeyboard.test.tsx` — added matchMedia mock
+- `frontend/src/index.css` — slide-up animation keyframe
+- `frontend/src/test/setup.ts` — global matchMedia polyfill
+
+**Tests:** 500 pass / 0 fail / 17 new tests (4 useBreakpoint + 6 MobileNav + 7 MobileKeyboard) + 4 Layout responsive tests + 8 Playwright E2E
+**Commit:** (pending)
+**Issues:** None — all pre-existing tsc errors unchanged
+**Decisions:**
+
+- Changed responsive breakpoint from `md:` (768px) to `lg:` (1024px) for sidebar show/hide — tablets now get mobile drawer experience, which is better UX for 768-1023px range
+- MobileNav is a separate component rather than inline in Layout — cleaner separation, independently testable, reusable
+- CalendarPicker uses fixed bottom-sheet positioning on mobile instead of absolute dropdown — prevents overflow and provides better touch UX
+- PersianKeyboard conditionally renders MobileKeyboard based on `useBreakpoint().isMobile` — desktop keyboard unchanged, mobile gets full-width bottom sheet
+- Added global `matchMedia` polyfill to test setup rather than per-file mocks — prevents regression as more components adopt useBreakpoint
+- MobileNav drawer aria-label uses `accessibility.menu_toggle` (not `layout.mobile_menu`) to avoid label collision with hamburger button
+
+**Next:** Session 28 — Accessibility (ARIA roles, keyboard navigation, focus management, screen reader support, color contrast, skip links)
 
 ---
 

@@ -12,7 +12,7 @@ export function LanguageToggle() {
   return (
     <button
       onClick={toggle}
-      className="flex items-center gap-1 px-2 py-1 text-xs rounded border border-[var(--nps-border)] hover:border-[var(--nps-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--nps-accent)] transition-colors"
+      className="flex items-center gap-1 px-2 py-1 min-h-[44px] min-w-[44px] justify-center text-xs rounded border border-[var(--nps-border)] hover:border-[var(--nps-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--nps-accent)] transition-colors lg:min-h-0 lg:min-w-0"
       aria-label={
         isFA
           ? "Switch to English"

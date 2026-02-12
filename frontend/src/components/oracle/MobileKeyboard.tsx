@@ -1,28 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   PERSIAN_ROWS,
   PERSIAN_SHIFT_ROWS,
 } from "@/utils/persianKeyboardLayout";
-import { useBreakpoint } from "@/hooks/useBreakpoint";
-import { MobileKeyboard } from "./MobileKeyboard";
 
-interface PersianKeyboardProps {
+interface MobileKeyboardProps {
   onCharacterClick: (char: string) => void;
   onBackspace: () => void;
   onClose: () => void;
 }
 
-export function PersianKeyboard({
+export function MobileKeyboard({
   onCharacterClick,
   onBackspace,
   onClose,
-}: PersianKeyboardProps) {
+}: MobileKeyboardProps) {
   const { t } = useTranslation();
-  const { isMobile } = useBreakpoint();
-  const panelRef = useRef<HTMLDivElement>(null);
   const [isShifted, setIsShifted] = useState(false);
-  const [positionAbove, setPositionAbove] = useState(false);
 
   const rows = isShifted ? PERSIAN_SHIFT_ROWS : PERSIAN_ROWS;
 
@@ -34,52 +29,48 @@ export function PersianKeyboard({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  useEffect(() => {
-    if (panelRef.current) {
-      const rect = panelRef.current.getBoundingClientRect();
-      if (rect.bottom > window.innerHeight) {
-        setPositionAbove(true);
-      }
-    }
-  }, []);
-
-  // On mobile, render full-width bottom sheet keyboard
-  if (isMobile) {
-    return (
-      <MobileKeyboard
-        onCharacterClick={onCharacterClick}
-        onBackspace={onBackspace}
-        onClose={onClose}
-      />
-    );
-  }
-
   return (
     <>
-      {/* Transparent backdrop for outside click */}
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-
+      {/* Backdrop */}
       <div
-        ref={panelRef}
+        className="fixed inset-0 bg-black/30 z-40"
+        onClick={onClose}
+        data-testid="mobile-keyboard-backdrop"
+        aria-hidden="true"
+      />
+
+      {/* Keyboard panel fixed to bottom */}
+      <div
         role="dialog"
         aria-label={t("oracle.keyboard_persian")}
         dir="rtl"
-        className={`absolute left-0 right-0 z-50 bg-nps-bg-card border border-nps-oracle-border rounded-lg p-3 shadow-lg ${
-          positionAbove ? "bottom-full mb-1" : "top-full mt-1"
-        }`}
+        className="fixed bottom-0 inset-x-0 z-50 bg-[var(--nps-bg-card)] border-t border-[var(--nps-border)] p-3 shadow-lg animate-slide-up"
+        data-testid="mobile-keyboard"
       >
         {/* Close button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-1 start-1 w-6 h-6 flex items-center justify-center text-nps-text-dim hover:text-nps-text text-xs rounded"
-          aria-label={t("oracle.keyboard_close")}
-        >
-          ✕
-        </button>
+        <div className="flex justify-end mb-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-[var(--nps-text-dim)] hover:text-[var(--nps-text)] rounded"
+            aria-label={t("oracle.keyboard_close")}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
 
         {/* Character rows */}
-        <div className="space-y-1.5 mt-2">
+        <div className="space-y-1.5">
           {rows.map((row, rowIndex) => (
             <div key={rowIndex} className="flex gap-1 justify-center flex-wrap">
               {row.map((char) => (
@@ -92,7 +83,7 @@ export function PersianKeyboard({
                     onCharacterClick(char);
                   }}
                   aria-label={char}
-                  className="w-8 h-8 text-sm bg-nps-bg-input hover:bg-nps-bg-hover active:bg-nps-oracle-accent/20 border border-nps-border rounded text-nps-text transition-colors select-none"
+                  className="min-w-[36px] min-h-[44px] text-sm bg-[var(--nps-bg-input)] hover:bg-[var(--nps-bg-hover)] active:bg-[var(--nps-accent)]/20 border border-[var(--nps-border)] rounded text-[var(--nps-text)] transition-colors select-none flex items-center justify-center"
                 >
                   {char}
                 </button>
@@ -106,10 +97,10 @@ export function PersianKeyboard({
               type="button"
               onClick={() => setIsShifted(!isShifted)}
               aria-label={t("oracle.keyboard_shift")}
-              className={`h-8 px-3 text-xs border border-nps-border rounded transition-colors select-none ${
+              className={`min-h-[44px] px-4 text-xs border rounded transition-colors select-none ${
                 isShifted
-                  ? "bg-nps-oracle-accent/30 text-nps-oracle-accent border-nps-oracle-accent"
-                  : "bg-nps-bg-input text-nps-text-dim hover:bg-nps-bg-hover"
+                  ? "bg-[var(--nps-accent)]/30 text-[var(--nps-accent)] border-[var(--nps-accent)]"
+                  : "bg-[var(--nps-bg-input)] text-[var(--nps-text-dim)] border-[var(--nps-border)] hover:bg-[var(--nps-bg-hover)]"
               }`}
             >
               {t("oracle.keyboard_shift")}
@@ -122,7 +113,7 @@ export function PersianKeyboard({
                 onCharacterClick(" ");
               }}
               aria-label={t("oracle.keyboard_space")}
-              className="h-8 px-8 text-xs bg-nps-bg-input hover:bg-nps-bg-hover border border-nps-border rounded text-nps-text-dim transition-colors select-none"
+              className="min-h-[44px] flex-1 text-xs bg-[var(--nps-bg-input)] hover:bg-[var(--nps-bg-hover)] border border-[var(--nps-border)] rounded text-[var(--nps-text-dim)] transition-colors select-none"
             >
               {t("oracle.keyboard_space")}
             </button>
@@ -134,7 +125,7 @@ export function PersianKeyboard({
                 onBackspace();
               }}
               aria-label={t("oracle.keyboard_backspace")}
-              className="h-8 px-4 text-xs bg-nps-bg-input hover:bg-nps-bg-hover border border-nps-border rounded text-nps-text-dim transition-colors select-none"
+              className="min-h-[44px] px-6 text-xs bg-[var(--nps-bg-input)] hover:bg-[var(--nps-bg-hover)] border border-[var(--nps-border)] rounded text-[var(--nps-text-dim)] transition-colors select-none"
             >
               &#x232B;
             </button>

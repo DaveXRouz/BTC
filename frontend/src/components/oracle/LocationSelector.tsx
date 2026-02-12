@@ -118,7 +118,7 @@ export function LocationSelector({ value, onChange }: LocationSelectorProps) {
         type="button"
         onClick={handleAutoDetect}
         disabled={isDetecting}
-        className="mb-2 px-3 py-2 text-sm bg-nps-oracle-accent/20 text-nps-oracle-accent border border-nps-oracle-border rounded hover:bg-nps-oracle-accent/30 transition-colors disabled:opacity-50"
+        className="mb-2 px-3 py-2 text-sm bg-nps-oracle-accent/20 text-nps-oracle-accent border border-nps-oracle-border rounded hover:bg-nps-oracle-accent/30 transition-colors disabled:opacity-50 w-full sm:w-auto min-h-[44px] sm:min-h-0"
       >
         {isDetecting ? (
           <span className="flex items-center gap-2">
@@ -209,7 +209,7 @@ export function LocationSelector({ value, onChange }: LocationSelectorProps) {
       </button>
 
       {showManualCoords && (
-        <div className="flex gap-2 mt-1">
+        <div className="flex flex-col sm:flex-row gap-2 mt-1">
           <div className="flex-1">
             <label className="block text-xs text-nps-text-dim mb-0.5">
               {t("oracle.location_latitude")}

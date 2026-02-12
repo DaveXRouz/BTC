@@ -1,7 +1,32 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PersianKeyboard } from "../PersianKeyboard";
+
+// Mock matchMedia for useBreakpoint (jsdom doesn't have it)
+// Simulate desktop viewport so PersianKeyboard renders desktop version
+beforeAll(() => {
+  Object.defineProperty(window, "innerWidth", {
+    writable: true,
+    configurable: true,
+    value: 1440,
+  });
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: vi.fn((query: string) => {
+      const match = query.match(/min-width:\s*(\d+)px/);
+      const breakpoint = match ? parseInt(match[1]) : 0;
+      return {
+        matches: 1440 >= breakpoint,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      };
+    }),
+  });
+});
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({

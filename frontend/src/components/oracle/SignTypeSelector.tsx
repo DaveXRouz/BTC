@@ -35,7 +35,7 @@ export function SignTypeSelector({
       <select
         value={value.type}
         onChange={(e) => handleTypeChange(e.target.value as SignType)}
-        className="w-full bg-nps-bg-input border border-nps-border rounded px-3 py-2 text-sm text-nps-text focus:outline-none focus:border-nps-oracle-accent mb-2"
+        className="w-full bg-nps-bg-input border border-nps-border rounded px-3 py-2 min-h-[44px] sm:min-h-0 text-sm text-nps-text focus:outline-none focus:border-nps-oracle-accent mb-2"
         aria-label={t("oracle.sign_type_label")}
       >
         {SIGN_TYPES.map((st) => (

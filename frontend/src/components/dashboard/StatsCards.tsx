@@ -28,7 +28,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   if (isLoading) {
     return (
       <div
-        className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         data-testid="stats-loading"
       >
         {Array.from({ length: 4 }).map((_, i) => (
@@ -46,7 +46,7 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
 
   return (
     <div
-      className="grid grid-cols-2 md:grid-cols-4 gap-4"
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
       data-testid="stats-cards"
     >
       <StatsCard

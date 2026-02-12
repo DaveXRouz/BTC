@@ -103,14 +103,14 @@ export function MultiUserSelector({
         <label className="block text-xs text-nps-text-dim mb-1">
           {t("oracle.primary_user")}
         </label>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 flex-wrap">
           <select
             value={selectedUsers?.primary.id ?? ""}
             onChange={(e) => {
               const val = e.target.value;
               handlePrimaryChange(val ? Number(val) : null);
             }}
-            className="bg-nps-bg-input border border-nps-oracle-border text-nps-text rounded px-3 py-2 text-sm min-w-[200px] focus:outline-none focus:border-nps-oracle-accent"
+            className="bg-nps-bg-input border border-nps-oracle-border text-nps-text rounded px-3 py-2 text-sm w-full sm:min-w-[200px] sm:w-auto min-h-[44px] sm:min-h-0 focus:outline-none focus:border-nps-oracle-accent"
             aria-label={t("oracle.select_profile")}
           >
             <option value="">
@@ -127,7 +127,7 @@ export function MultiUserSelector({
 
           <button
             onClick={onAddNew}
-            className="px-3 py-2 text-sm bg-nps-oracle-accent/20 text-nps-oracle-accent border border-nps-oracle-border rounded hover:bg-nps-oracle-accent/30 transition-colors"
+            className="px-3 py-2 text-sm bg-nps-oracle-accent/20 text-nps-oracle-accent border border-nps-oracle-border rounded hover:bg-nps-oracle-accent/30 transition-colors min-h-[44px] sm:min-h-0 w-full sm:w-auto"
           >
             + {t("oracle.add_new_profile")}
           </button>
@@ -135,7 +135,7 @@ export function MultiUserSelector({
           {selectedUsers && (
             <button
               onClick={onEdit}
-              className="px-3 py-2 text-sm text-nps-text-dim border border-nps-border rounded hover:text-nps-text hover:border-nps-oracle-border transition-colors"
+              className="px-3 py-2 text-sm text-nps-text-dim border border-nps-border rounded hover:text-nps-text hover:border-nps-oracle-border transition-colors min-h-[44px] sm:min-h-0 w-full sm:w-auto"
             >
               {t("oracle.edit_profile")}
             </button>

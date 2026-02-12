@@ -151,9 +151,9 @@ export default function Oracle() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-6">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
       {/* LEFT PANEL */}
-      <aside className="w-full md:w-80 md:flex-shrink-0 md:sticky md:top-6 md:self-start space-y-4">
+      <aside className="w-full lg:w-80 lg:flex-shrink-0 lg:sticky lg:top-6 lg:self-start space-y-4">
         {/* User Profile Card */}
         <section className="bg-[var(--nps-bg-card)] border border-[var(--nps-border)] rounded-lg p-4">
           <h3 className="text-sm font-semibold text-[var(--nps-accent)] mb-3">
@@ -170,7 +170,7 @@ export default function Oracle() {
             />
           ) : (
             <div className="space-y-2">
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-wrap">
                 <select
                   value={primaryUser?.id ?? ""}
                   onChange={(e) => {
@@ -186,7 +186,7 @@ export default function Oracle() {
                         secondary: [],
                       });
                   }}
-                  className="bg-[var(--nps-bg-input)] border border-[var(--nps-border)] text-[var(--nps-text)] rounded px-3 py-2 text-sm min-w-[160px] focus:outline-none focus:border-[var(--nps-accent)]"
+                  className="bg-[var(--nps-bg-input)] border border-[var(--nps-border)] text-[var(--nps-text)] rounded px-3 py-2 text-sm w-full sm:w-auto sm:min-w-[160px] min-h-[44px] sm:min-h-0 focus:outline-none focus:border-[var(--nps-accent)]"
                   aria-label={t("oracle.select_profile")}
                 >
                   <option value="">
@@ -203,7 +203,7 @@ export default function Oracle() {
                 <button
                   type="button"
                   onClick={() => setFormMode("create")}
-                  className="px-2 py-2 text-xs bg-[var(--nps-accent)]/20 text-[var(--nps-accent)] border border-[var(--nps-border)] rounded hover:bg-[var(--nps-accent)]/30 transition-colors"
+                  className="px-3 py-2 text-xs bg-[var(--nps-accent)]/20 text-[var(--nps-accent)] border border-[var(--nps-border)] rounded hover:bg-[var(--nps-accent)]/30 transition-colors min-h-[44px] sm:min-h-0 w-full sm:w-auto"
                 >
                   + {t("oracle.add_new_profile")}
                 </button>
@@ -211,7 +211,7 @@ export default function Oracle() {
                   <button
                     type="button"
                     onClick={() => setFormMode("edit")}
-                    className="px-2 py-2 text-xs text-[var(--nps-text-dim)] border border-[var(--nps-border)] rounded hover:text-[var(--nps-text)] transition-colors"
+                    className="px-3 py-2 text-xs text-[var(--nps-text-dim)] border border-[var(--nps-border)] rounded hover:text-[var(--nps-text)] transition-colors min-h-[44px] sm:min-h-0 w-full sm:w-auto"
                   >
                     {t("oracle.edit_profile")}
                   </button>
@@ -247,7 +247,7 @@ export default function Oracle() {
         <section
           id="oracle-form-panel"
           role="tabpanel"
-          className="bg-[var(--nps-bg-card)] border border-[var(--nps-border)] rounded-lg p-6 min-h-[300px]"
+          className="bg-[var(--nps-bg-card)] border border-[var(--nps-border)] rounded-lg p-4 lg:p-6 min-h-[300px]"
         >
           <h3 className="text-sm font-semibold text-[var(--nps-accent)] mb-4">
             {t(`oracle.type_${readingType}_title`)}
@@ -282,7 +282,7 @@ export default function Oracle() {
         {/* Results Card */}
         <section
           ref={resultsRef}
-          className="bg-[var(--nps-bg-card)] border border-[var(--nps-border)] rounded-lg p-6"
+          className="bg-[var(--nps-bg-card)] border border-[var(--nps-border)] rounded-lg p-4 lg:p-6"
         >
           <h3 className="text-sm font-semibold text-[var(--nps-accent)] mb-3">
             {t("oracle.reading_results")}

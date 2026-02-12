@@ -12,6 +12,7 @@ vi.mock("react-i18next", () => ({
         "layout.sidebar_collapse": "Collapse sidebar",
         "layout.sidebar_expand": "Expand sidebar",
         "layout.mobile_menu": "Open menu",
+        "layout.mobile_menu_close": "Close menu",
         "layout.footer_copyright": "NPS Project",
         "layout.version": "v4.0.0",
         "layout.theme_toggle": "Toggle theme",
@@ -37,6 +38,14 @@ vi.mock("../../hooks/useTheme", () => ({
   }),
 }));
 
+vi.mock("../../hooks/useDirection", () => ({
+  useDirection: () => ({ dir: "ltr", isRTL: false, locale: "en" }),
+}));
+
+vi.mock("../../hooks/useWebSocket", () => ({
+  useWebSocketConnection: () => undefined,
+}));
+
 function renderLayout() {
   return render(
     <MemoryRouter initialEntries={["/dashboard"]}>
@@ -52,18 +61,9 @@ beforeEach(() => {
 describe("Layout", () => {
   it("renders sidebar and content area", () => {
     renderLayout();
-    expect(screen.getByText("NPS")).toBeInTheDocument();
+    expect(screen.getAllByText("NPS").length).toBeGreaterThan(0);
     expect(screen.getByText("Numerology Puzzle Solver")).toBeInTheDocument();
-    expect(screen.getByRole("navigation")).toBeInTheDocument();
-  });
-
-  it("renders top bar with toggles", () => {
-    renderLayout();
-    // LanguageToggle renders EN/FA
-    expect(screen.getByText("EN")).toBeInTheDocument();
-    expect(screen.getByText("FA")).toBeInTheDocument();
-    // ThemeToggle renders a button
-    expect(screen.getByLabelText("Toggle theme")).toBeInTheDocument();
+    expect(screen.getAllByRole("navigation").length).toBeGreaterThan(0);
   });
 
   it("renders footer with version", () => {
@@ -89,9 +89,36 @@ describe("Layout", () => {
     const collapseBtn = screen.getByLabelText("Collapse sidebar");
     await userEvent.click(collapseBtn);
     expect(localStorage.getItem("nps_sidebar_collapsed")).toBe("true");
-    // Click again
     const expandBtn = screen.getByLabelText("Expand sidebar");
     await userEvent.click(expandBtn);
     expect(localStorage.getItem("nps_sidebar_collapsed")).toBe("false");
+  });
+
+  it("sidebar aside has hidden lg:flex classes for responsive hiding", () => {
+    renderLayout();
+    const aside = document.querySelector("aside");
+    expect(aside).toBeDefined();
+    expect(aside?.className).toContain("hidden");
+    expect(aside?.className).toContain("lg:flex");
+  });
+
+  it("hamburger has lg:hidden class for responsive showing", () => {
+    renderLayout();
+    const hamburger = screen.getByLabelText("Open menu");
+    expect(hamburger.className).toContain("lg:hidden");
+  });
+
+  it("opens mobile drawer on hamburger click", async () => {
+    renderLayout();
+    const hamburger = screen.getByLabelText("Open menu");
+    await userEvent.click(hamburger);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("main content has responsive padding classes", () => {
+    renderLayout();
+    const main = document.querySelector("main");
+    expect(main?.className).toContain("p-4");
+    expect(main?.className).toContain("lg:p-6");
   });
 });

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Navigation } from "./Navigation";
 import { LanguageToggle } from "./LanguageToggle";
 import { ThemeToggle } from "./ThemeToggle";
+import { MobileNav } from "./MobileNav";
 import { useWebSocketConnection } from "@/hooks/useWebSocket";
 
 export function Layout() {
@@ -14,32 +15,21 @@ export function Layout() {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("nps_sidebar_collapsed") === "true";
   });
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("nps_sidebar_collapsed", String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  const closeMobileSidebar = () => setMobileSidebarOpen(false);
-
   return (
     <div className="flex min-h-screen bg-[var(--nps-bg)]">
-      {/* Mobile backdrop */}
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={closeMobileSidebar}
-        />
-      )}
-
-      {/* Sidebar */}
+      {/* Desktop sidebar — hidden below lg */}
       <aside
         className={`
-          fixed md:static inset-y-0 z-40
-          ${mobileSidebarOpen ? "ltr:left-0 rtl:right-0" : "ltr:-left-64 rtl:-right-64 md:ltr:left-0 md:rtl:right-0"}
-          ${sidebarCollapsed ? "md:w-16" : "md:w-64"} w-64
+          hidden lg:flex flex-col
+          ${sidebarCollapsed ? "lg:w-16" : "lg:w-64"}
           bg-[var(--nps-bg-sidebar)] border-e border-[var(--nps-border)]
-          flex flex-col transition-all duration-200
+          transition-all duration-200
         `}
       >
         {/* Logo */}
@@ -55,16 +45,12 @@ export function Layout() {
         </div>
 
         {/* Navigation */}
-        <Navigation
-          collapsed={sidebarCollapsed}
-          isAdmin={false}
-          onItemClick={closeMobileSidebar}
-        />
+        <Navigation collapsed={sidebarCollapsed} isAdmin={false} />
 
-        {/* Collapse toggle (desktop only) */}
+        {/* Collapse toggle */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="hidden md:flex items-center justify-center p-3 border-t border-[var(--nps-border)] text-[var(--nps-text-dim)] hover:text-[var(--nps-text)] transition-colors"
+          className="flex items-center justify-center p-3 border-t border-[var(--nps-border)] text-[var(--nps-text-dim)] hover:text-[var(--nps-text)] transition-colors"
           aria-label={
             sidebarCollapsed
               ? t("layout.sidebar_expand")
@@ -85,14 +71,17 @@ export function Layout() {
         </button>
       </aside>
 
+      {/* Mobile drawer — visible below lg */}
+      <MobileNav isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
         <header className="h-14 bg-[var(--nps-bg-card)] border-b border-[var(--nps-border)] flex items-center justify-between px-4">
-          {/* Mobile hamburger */}
+          {/* Mobile hamburger — visible below lg */}
           <button
-            onClick={() => setMobileSidebarOpen(true)}
-            className="md:hidden flex items-center justify-center w-8 h-8 text-[var(--nps-text-dim)] hover:text-[var(--nps-text)]"
+            onClick={() => setDrawerOpen(true)}
+            className="lg:hidden flex items-center justify-center min-w-[44px] min-h-[44px] text-[var(--nps-text-dim)] hover:text-[var(--nps-text)]"
             aria-label={t("layout.mobile_menu")}
           >
             <svg
@@ -109,17 +98,22 @@ export function Layout() {
             </svg>
           </button>
 
-          <div className="hidden md:block" />
+          <div className="hidden lg:block" />
 
-          {/* Right toggles */}
-          <div className="flex items-center gap-2">
+          {/* Right toggles — hidden on mobile (they're in drawer) */}
+          <div className="hidden lg:flex items-center gap-2">
             <LanguageToggle />
             <ThemeToggle />
           </div>
+
+          {/* NPS logo on mobile header right side */}
+          <span className="lg:hidden text-sm font-bold text-[var(--nps-accent)]">
+            NPS
+          </span>
         </header>
 
         {/* Content */}
-        <main className="flex-1 p-6 md:p-6 overflow-auto">
+        <main className="flex-1 p-4 lg:p-6 overflow-auto">
           <Outlet />
         </main>
 
