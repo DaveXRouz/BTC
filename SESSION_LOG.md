@@ -1443,7 +1443,7 @@ TEMPLATE — copy this for each new session:
 - `frontend/src/components/oracle/__tests__/MultiUserSelector.test.tsx` — updated loading test for skeleton
 
 **Tests:** 572 pass / 0 fail / 40 new tests (6 Toast + 9 LoadingSkeleton + 5 ErrorBoundary + 6 EmptyState + 6 useRetry + 3 useOnlineStatus + 5 updated existing tests)
-**Commit:** (pending)
+**Commit:** d483042
 **Issues:** None — all pre-existing tsc errors unchanged
 **Decisions:**
 
