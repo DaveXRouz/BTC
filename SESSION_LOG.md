@@ -753,7 +753,8 @@ TEMPLATE — copy this for each new session:
 - `frontend/src/locales/fa.json` — Added 11 matching Persian translation keys
 - `frontend/src/components/oracle/__tests__/ReadingHistory.test.tsx` — Rewritten with 11 tests: loading, empty, filter chips, cards, search input, date range, favorites toggle, pagination, filter click, star icons, stats display
 
-**Tests:** 10 backend pass | 329 API pass (0 regressions) | 212 frontend pass (0 regressions)
+**Tests:** 10 backend pass | 329 API pass (0 regressions) | 247 frontend pass (0 regressions)
+**Commit:** 0c4e57f — [api][frontend] reading history & persistence: soft delete, favorites, search, stats (#session-17)
 **Issues:** Full-text search uses LIKE fallback on SQLite (tsvector is PostgreSQL-only); Migration numbered 017 (spec said 014 but was taken)
 **Decisions:**
 
