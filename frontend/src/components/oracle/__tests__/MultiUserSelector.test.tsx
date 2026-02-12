@@ -45,7 +45,7 @@ const defaultProps = {
 describe("MultiUserSelector", () => {
   it("shows loading state", () => {
     render(<MultiUserSelector {...defaultProps} isLoading />);
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    expect(screen.getByTestId("loading-skeleton")).toBeInTheDocument();
   });
 
   it("shows empty state when no users", () => {

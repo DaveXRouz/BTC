@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { EmptyState } from "@/components/common/EmptyState";
 
 export default function Vault() {
   const { t } = useTranslation();
@@ -10,7 +11,7 @@ export default function Vault() {
       </h2>
 
       <div className="bg-nps-bg-card border border-nps-border rounded-lg p-4">
-        <p className="text-nps-text-dim text-sm">{t("vault.description")}</p>
+        <EmptyState icon="vault" title={t("vault.empty")} />
       </div>
     </div>
   );

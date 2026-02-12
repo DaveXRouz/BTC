@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { EmptyState } from "@/components/common/EmptyState";
 
 export default function Learning() {
   const { t } = useTranslation();
@@ -25,6 +26,10 @@ export default function Learning() {
         <p className="text-xs text-nps-ai-text mt-1">
           {t("learning.xp_progress", { current: 0, max: 100 })}
         </p>
+      </div>
+
+      <div className="bg-nps-ai-bg border border-nps-ai-border rounded-lg p-4">
+        <EmptyState icon="learning" title={t("learning.empty")} />
       </div>
     </div>
   );

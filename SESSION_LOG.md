@@ -9,9 +9,9 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 28 of 45
-**Last session:** Session 28 — Accessibility (a11y)
-**Current block:** Frontend Advanced (Sessions 26-31) — 3 of 6 sessions complete
+**Sessions completed:** 29 of 45
+**Last session:** Session 29 — Error States & Loading UX
+**Current block:** Frontend Advanced (Sessions 26-31) — 4 of 6 sessions complete
 
 ---
 
@@ -1379,7 +1379,82 @@ TEMPLATE — copy this for each new session:
 - CalendarPicker uses `role="grid"` pattern (not `role="listbox"`) per WAI-ARIA date picker best practices
 - useArrowNavigation checks `document.documentElement.dir` at key-press time (not hook init) for real-time RTL awareness
 
-**Next:** Session 29 — Animations & Transitions (loading states, page transitions, micro-interactions, skeleton screens)
+**Next:** Session 29 — Error States & Loading UX
+
+---
+
+## Session 29 — 2026-02-13
+
+**Objective:** Error States & Loading UX — loading skeletons, error boundary, toast notifications, empty states, offline banner, retry with exponential backoff
+**Spec:** `.session-specs/SESSION_29_SPEC.md`
+**Block:** Frontend Advanced (Sessions 26-31) — Session 4 of 6
+
+**What was built:**
+
+1. **LoadingSkeleton** (`components/common/LoadingSkeleton.tsx`) — 6 variants (line, card, circle, grid, list, reading) with shimmer CSS animation; `aria-hidden="true"` + sr-only "Loading" text; `data-testid="loading-skeleton"`
+2. **ErrorBoundary** (`components/common/ErrorBoundary.tsx`) — React class component with `getDerivedStateFromError`; uses `withTranslation` HOC for i18n; shows error icon, title, message, collapsible error details (dev only), "Try Again" button (resets state), "Go to Dashboard" link; supports custom `fallback` prop
+3. **Toast system** (`hooks/useToast.ts` + `components/common/Toast.tsx`) — React Context + Provider pattern; FIFO eviction (max 5); auto-dismiss timers; 4 types (success/error/warning/info) with color-coded borders; RTL-aware slide animations; `ToastProvider` wraps app in `main.tsx`
+4. **EmptyState** (`components/common/EmptyState.tsx`) — 6 icon variants (readings, profiles, vault, search, learning, generic); optional action button; `data-testid="empty-state"`
+5. **OfflineBanner** (`components/common/OfflineBanner.tsx`) — fixed top banner; offline warning (yellow) or "Back online!" (green, auto-hides after 2s); uses `wasOfflineRef` for transition detection
+6. **useOnlineStatus hook** (`hooks/useOnlineStatus.ts`) — tracks `navigator.onLine` with online/offline event listeners
+7. **useRetry hook** (`hooks/useRetry.ts`) — exponential backoff retry with jitter; skips retry on client errors (4xx); configurable maxRetries, baseDelay, maxDelay, backoffFactor; onRetry callback
+8. **ApiError class** (`services/api.ts`) — typed error with `status`, `isClientError`, `isServerError`, `isNetworkError` getters; updated `request()` to throw `ApiError` with status 0 for network failures
+9. **React Query retry config** (`main.tsx`) — global retry function skips client errors; exponential retryDelay; mutations retry disabled
+10. **App-level integration** — all 6 page routes wrapped in `<ErrorBoundary>`; `<OfflineBanner>` and `<ToastContainer>` added to Layout; `<ToastProvider>` wraps app in main.tsx
+11. **Component upgrades** — ReadingHistory: skeleton loading + retry button + EmptyState; MultiUserSelector: skeleton loading; SummaryTab/DetailsTab: EmptyState; Vault/Learning: EmptyState
+12. **Tailwind animations** (`tailwind.config.ts`) — slideInRight, slideInLeft, shimmer keyframes + animations
+13. **i18n** — 7 new common keys (retry, go*home, offline_message, back_online, error_boundary*\*) + vault.empty + learning.empty in both en.json and fa.json
+
+**Files created (14):**
+
+- `frontend/src/hooks/useToast.ts`
+- `frontend/src/hooks/useOnlineStatus.ts`
+- `frontend/src/hooks/useRetry.ts`
+- `frontend/src/components/common/Toast.tsx`
+- `frontend/src/components/common/LoadingSkeleton.tsx`
+- `frontend/src/components/common/ErrorBoundary.tsx`
+- `frontend/src/components/common/EmptyState.tsx`
+- `frontend/src/components/common/OfflineBanner.tsx`
+- `frontend/src/components/common/__tests__/Toast.test.tsx`
+- `frontend/src/components/common/__tests__/LoadingSkeleton.test.tsx`
+- `frontend/src/components/common/__tests__/ErrorBoundary.test.tsx`
+- `frontend/src/components/common/__tests__/EmptyState.test.tsx`
+- `frontend/src/hooks/__tests__/useRetry.test.ts`
+- `frontend/src/hooks/__tests__/useOnlineStatus.test.ts`
+
+**Files modified (16):**
+
+- `frontend/tailwind.config.ts` — slideInRight, slideInLeft, shimmer keyframes + animations
+- `frontend/src/services/api.ts` — ApiError class, updated request() error handling
+- `frontend/src/main.tsx` — ToastProvider wrapper, React Query retry config
+- `frontend/src/App.tsx` — ErrorBoundary wrapping all 6 routes
+- `frontend/src/components/Layout.tsx` — OfflineBanner + ToastContainer
+- `frontend/src/components/oracle/ReadingHistory.tsx` — LoadingSkeleton, EmptyState, retry button
+- `frontend/src/components/oracle/MultiUserSelector.tsx` — LoadingSkeleton
+- `frontend/src/components/oracle/SummaryTab.tsx` — EmptyState
+- `frontend/src/components/oracle/DetailsTab.tsx` — EmptyState
+- `frontend/src/pages/Vault.tsx` — EmptyState
+- `frontend/src/pages/Learning.tsx` — EmptyState
+- `frontend/src/locales/en.json` — 9 new keys (common + vault + learning)
+- `frontend/src/locales/fa.json` — 9 new Persian translations
+- `frontend/src/pages/__tests__/App.test.tsx` — mocks for useWebSocket, useOnlineStatus, useToast, withTranslation
+- `frontend/src/components/__tests__/Layout.test.tsx` — mocks for useOnlineStatus, useToast
+- `frontend/src/components/oracle/__tests__/ReadingHistory.test.tsx` — updated loading test for skeleton
+- `frontend/src/components/oracle/__tests__/MultiUserSelector.test.tsx` — updated loading test for skeleton
+
+**Tests:** 572 pass / 0 fail / 40 new tests (6 Toast + 9 LoadingSkeleton + 5 ErrorBoundary + 6 EmptyState + 6 useRetry + 3 useOnlineStatus + 5 updated existing tests)
+**Commit:** (pending)
+**Issues:** None — all pre-existing tsc errors unchanged
+**Decisions:**
+
+- Used `withTranslation` HOC for ErrorBoundary (class component can't use `useTranslation` hook)
+- Toast uses `crypto.randomUUID()` for IDs and `useRef`-based state with manual subscriber pattern for performance (avoids re-rendering entire app on toast changes)
+- useRetry uses real delays with jitter formula: `min(baseDelay * backoffFactor^attempt, maxDelay) * (0.5 + random * 0.5)`
+- ApiError class with status 0 for network failures — allows retry logic to distinguish client vs server vs network errors
+- React Query global config: retry skips 4xx, uses exponential backoff, mutations never retry
+- E2E test file created but not run (requires Playwright server setup outside scope)
+
+**Next:** Session 30 — Animations & Transitions (page transitions, micro-interactions, motion system)
 
 ---
 

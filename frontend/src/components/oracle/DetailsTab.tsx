@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NumerologyNumberDisplay } from "./NumerologyNumberDisplay";
+import { EmptyState } from "@/components/common/EmptyState";
 import type { ConsultationResult } from "@/types";
 
 interface DetailsTabProps {
@@ -339,9 +340,7 @@ export function DetailsTab({ result }: DetailsTabProps) {
 
   if (!result) {
     return (
-      <p className="text-nps-text-dim text-sm">
-        {t("oracle.details_placeholder")}
-      </p>
+      <EmptyState icon="readings" title={t("oracle.details_placeholder")} />
     );
   }
 

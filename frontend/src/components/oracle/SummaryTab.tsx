@@ -5,6 +5,7 @@ import { NumerologyNumberDisplay } from "./NumerologyNumberDisplay";
 import { PatternBadge } from "./PatternBadge";
 import { ReadingHeader } from "./ReadingHeader";
 import { ReadingFooter } from "./ReadingFooter";
+import { EmptyState } from "@/components/common/EmptyState";
 import type { ConsultationResult } from "@/types";
 
 interface SummaryTabProps {
@@ -341,9 +342,7 @@ export function SummaryTab({ result }: SummaryTabProps) {
 
   if (!result) {
     return (
-      <p className="text-nps-text-dim text-sm">
-        {t("oracle.results_placeholder")}
-      </p>
+      <EmptyState icon="readings" title={t("oracle.results_placeholder")} />
     );
   }
 

@@ -46,6 +46,17 @@ vi.mock("../../hooks/useWebSocket", () => ({
   useWebSocketConnection: () => undefined,
 }));
 
+vi.mock("../../hooks/useOnlineStatus", () => ({
+  useOnlineStatus: () => true,
+}));
+
+vi.mock("../../hooks/useToast", () => ({
+  useToast: () => ({ toasts: [], addToast: vi.fn(), dismissToast: vi.fn() }),
+  ToastContext: {
+    Provider: ({ children }: { children: React.ReactNode }) => children,
+  },
+}));
+
 function renderLayout() {
   return render(
     <MemoryRouter initialEntries={["/dashboard"]}>

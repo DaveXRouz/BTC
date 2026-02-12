@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { OracleUser, SelectedUsers } from "@/types";
 import { UserChip } from "./UserChip";
+import { LoadingSkeleton } from "@/components/common/LoadingSkeleton";
 
 interface MultiUserSelectorProps {
   users: OracleUser[];
@@ -27,12 +28,7 @@ export function MultiUserSelector({
   const [showSecondaryDropdown, setShowSecondaryDropdown] = useState(false);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center gap-2 text-nps-text-dim text-sm">
-        <div className="h-4 w-4 border-2 border-nps-oracle-accent border-t-transparent rounded-full animate-spin" />
-        {t("common.loading")}
-      </div>
-    );
+    return <LoadingSkeleton variant="line" count={2} />;
   }
 
   const selectedIds = new Set<number>();

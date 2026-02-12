@@ -79,7 +79,7 @@ describe("ReadingHistory", () => {
   it("shows loading state", () => {
     mockHistory.mockReturnValue(new Promise(() => {})); // never resolves
     renderWithProviders(<ReadingHistory />);
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    expect(screen.getByTestId("loading-skeleton")).toBeInTheDocument();
   });
 
   it("shows empty state when no readings", async () => {

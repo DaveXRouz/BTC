@@ -3,34 +3,6 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import App from "../../App";
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const map: Record<string, string> = {
-        "layout.app_tagline": "Numerology Puzzle Solver",
-        "layout.sidebar_collapse": "Collapse sidebar",
-        "layout.sidebar_expand": "Expand sidebar",
-        "layout.mobile_menu": "Open menu",
-        "layout.footer_copyright": "NPS Project",
-        "layout.version": "v4.0.0",
-        "layout.theme_toggle": "Toggle theme",
-        "layout.coming_soon": "Coming Soon",
-        "nav.dashboard": "Dashboard",
-        "nav.oracle": "Oracle",
-        "nav.history": "Reading History",
-        "nav.settings": "Settings",
-        "nav.scanner": "Scanner",
-        "nav.admin": "Admin Panel",
-      };
-      return map[key] ?? key;
-    },
-    i18n: {
-      language: "en",
-      changeLanguage: vi.fn(),
-    },
-  }),
-}));
-
 vi.mock("../../hooks/useTheme", () => ({
   useTheme: () => ({
     resolvedTheme: "dark",
@@ -39,6 +11,54 @@ vi.mock("../../hooks/useTheme", () => ({
     setTheme: vi.fn(),
   }),
 }));
+
+vi.mock("../../hooks/useWebSocket", () => ({
+  useWebSocketConnection: () => undefined,
+}));
+
+vi.mock("../../hooks/useOnlineStatus", () => ({
+  useOnlineStatus: () => true,
+}));
+
+vi.mock("../../hooks/useToast", () => ({
+  useToast: () => ({ toasts: [], addToast: vi.fn(), dismissToast: vi.fn() }),
+  ToastContext: {
+    Provider: ({ children }: { children: React.ReactNode }) => children,
+  },
+}));
+
+vi.mock("react-i18next", async () => {
+  const original = await vi.importActual("react-i18next");
+  return {
+    ...original,
+    useTranslation: () => ({
+      t: (key: string) => {
+        const map: Record<string, string> = {
+          "layout.app_tagline": "Numerology Puzzle Solver",
+          "layout.sidebar_collapse": "Collapse sidebar",
+          "layout.sidebar_expand": "Expand sidebar",
+          "layout.mobile_menu": "Open menu",
+          "layout.footer_copyright": "NPS Project",
+          "layout.version": "v4.0.0",
+          "layout.theme_toggle": "Toggle theme",
+          "layout.coming_soon": "Coming Soon",
+          "nav.dashboard": "Dashboard",
+          "nav.oracle": "Oracle",
+          "nav.history": "Reading History",
+          "nav.settings": "Settings",
+          "nav.scanner": "Scanner",
+          "nav.admin": "Admin Panel",
+        };
+        return map[key] ?? key;
+      },
+      i18n: {
+        language: "en",
+        changeLanguage: vi.fn(),
+      },
+    }),
+    withTranslation: () => (Component: React.ComponentType) => Component,
+  };
+});
 
 vi.mock("../Dashboard", () => ({
   default: () => <div data-testid="dashboard-page">Dashboard Page</div>,

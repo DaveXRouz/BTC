@@ -534,7 +534,8 @@
     "no_findings": "No findings yet.",
     "total_findings": "Total Findings",
     "export_csv": "Export CSV",
-    "export_json": "Export JSON"
+    "export_json": "Export JSON",
+    "empty": "No findings yet. Start a scan to discover wallet data."
   },
   "learning": {
     "title": "AI Learning",
@@ -555,7 +556,8 @@
     "level_adept": "Adept",
     "level_master": "Master",
     "level_label": "Level {{level}} — {{name}}",
-    "xp_progress": "{{current}} / {{max}} XP"
+    "xp_progress": "{{current}} / {{max}} XP",
+    "empty": "No insights yet. Run scans and readings to train the AI."
   },
   "feedback": {
     "rate_reading": "How was this reading? Your feedback helps improve future readings.",
@@ -681,6 +683,13 @@
   "common": {
     "loading": "Loading...",
     "error": "An error occurred",
+    "retry": "Try Again",
+    "go_home": "Go to Dashboard",
+    "offline_message": "You are offline. Changes will sync when you reconnect.",
+    "back_online": "Back online!",
+    "error_boundary_title": "Something went wrong",
+    "error_boundary_message": "This section encountered an error. You can try again or return to the dashboard.",
+    "error_details": "Error Details",
     "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",
@@ -689,7 +698,6 @@
     "close": "Close",
     "back": "Back",
     "next": "Next",
-    "retry": "Retry",
     "search": "Search",
     "no_results": "No results found"
   }

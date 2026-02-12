@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Layout } from "./components/Layout";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import "./styles/rtl.css";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -33,12 +34,54 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/oracle" element={<Oracle />} />
-          <Route path="/history" element={<ReadingHistory />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/scanner" element={<Scanner />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ErrorBoundary>
+                <Dashboard />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/oracle"
+            element={
+              <ErrorBoundary>
+                <Oracle />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <ErrorBoundary>
+                <ReadingHistory />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ErrorBoundary>
+                <Settings />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ErrorBoundary>
+                <AdminPanel />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/scanner"
+            element={
+              <ErrorBoundary>
+                <Scanner />
+              </ErrorBoundary>
+            }
+          />
         </Route>
       </Routes>
     </Suspense>

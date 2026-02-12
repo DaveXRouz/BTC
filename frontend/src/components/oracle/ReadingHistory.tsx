@@ -8,6 +8,8 @@ import {
 } from "@/hooks/useOracleReadings";
 import { ReadingCard } from "./ReadingCard";
 import { ReadingDetail } from "./ReadingDetail";
+import { LoadingSkeleton } from "@/components/common/LoadingSkeleton";
+import { EmptyState } from "@/components/common/EmptyState";
 import type { StoredReading } from "@/types";
 
 const PAGE_SIZE = 12;
@@ -43,7 +45,7 @@ export function ReadingHistory() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const { data, isLoading, isError } = useReadingHistory({
+  const { data, isLoading, isError, refetch } = useReadingHistory({
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
     sign_type: filter || undefined,
@@ -90,7 +92,17 @@ export function ReadingHistory() {
 
   if (isError) {
     return (
-      <p className="text-xs text-nps-bg-danger">{t("oracle.error_history")}</p>
+      <div className="text-center py-4">
+        <p className="text-xs text-nps-error mb-2">
+          {t("oracle.error_history")}
+        </p>
+        <button
+          onClick={() => refetch()}
+          className="text-xs text-nps-accent hover:underline"
+        >
+          {t("common.retry")}
+        </button>
+      </div>
     );
   }
 
@@ -193,13 +205,11 @@ export function ReadingHistory() {
       </div>
 
       {/* Loading */}
-      {isLoading && (
-        <p className="text-xs text-nps-text-dim">{t("common.loading")}</p>
-      )}
+      {isLoading && <LoadingSkeleton variant="list" count={5} />}
 
       {/* Empty */}
       {data && data.readings.length === 0 && (
-        <p className="text-xs text-nps-text-dim">{t("oracle.history_empty")}</p>
+        <EmptyState icon="readings" title={t("oracle.history_empty")} />
       )}
 
       {/* Card grid */}

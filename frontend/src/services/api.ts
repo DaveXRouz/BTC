@@ -4,6 +4,26 @@
 
 const API_BASE = "/api";
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly detail?: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+  get isClientError(): boolean {
+    return this.status >= 400 && this.status < 500;
+  }
+  get isServerError(): boolean {
+    return this.status >= 500;
+  }
+  get isNetworkError(): boolean {
+    return this.status === 0;
+  }
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${path}`;
   const headers: Record<string, string> = {
@@ -16,13 +36,19 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     localStorage.getItem("nps_token") || import.meta.env.VITE_API_KEY;
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const response = await fetch(url, { ...options, headers });
+  let response: Response;
+  try {
+    response = await fetch(url, { ...options, headers });
+  } catch {
+    throw new ApiError("Network error", 0);
+  }
 
   if (!response.ok) {
-    const error = await response
+    const body = await response
       .json()
       .catch(() => ({ detail: response.statusText }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+    const detail = body.detail || `HTTP ${response.status}`;
+    throw new ApiError(detail, response.status, detail);
   }
 
   return response.json();
