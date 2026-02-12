@@ -11,9 +11,11 @@ function getSummaryText(result: ConsultationResult): string {
     case "reading":
       return result.data.summary;
     case "question":
-      return result.data.interpretation;
+      return result.data.ai_interpretation || "";
     case "name":
-      return result.data.interpretation;
+      return result.data.ai_interpretation || "";
+    default:
+      return "";
   }
 }
 
@@ -37,6 +39,8 @@ function getTypeBadge(
         label: t("oracle.type_name"),
         color: "bg-green-600/20 text-green-400",
       };
+    default:
+      return { label: "", color: "" };
   }
 }
 
@@ -112,17 +116,23 @@ export function SummaryTab({ result }: SummaryTabProps) {
 
       {/* Quick stats for question type */}
       {result.type === "question" && (
-        <div className="flex gap-4 text-xs">
+        <div className="flex gap-4 text-xs flex-wrap">
           <span className="text-nps-text-dim">
-            {t("oracle.answer")}:{" "}
-            <span className="text-nps-text">{result.data.answer}</span>
+            {t("oracle.question_number_label")}:{" "}
+            <span className="text-nps-text">{result.data.question_number}</span>
           </span>
           <span className="text-nps-text-dim">
-            {t("oracle.confidence")}:{" "}
-            <span className="text-nps-text">
-              {Math.round(result.data.confidence * 100)}%
+            {t("oracle.detected_script")}:{" "}
+            <span className="text-nps-text">{result.data.detected_script}</span>
+          </span>
+          {result.data.confidence && (
+            <span className="text-nps-text-dim">
+              {t("oracle.confidence")}:{" "}
+              <span className="text-nps-text">
+                {result.data.confidence.score}%
+              </span>
             </span>
-          </span>
+          )}
         </div>
       )}
 

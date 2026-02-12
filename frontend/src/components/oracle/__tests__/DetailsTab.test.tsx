@@ -30,9 +30,13 @@ vi.mock("react-i18next", () => ({
         "oracle.sign_number": "Sign Number",
         "oracle.answer": "Answer",
         "oracle.confidence": "Confidence",
-        "oracle.destiny": "Destiny",
+        "oracle.expression": "Expression",
         "oracle.soul_urge": "Soul Urge",
         "oracle.personality": "Personality",
+        "oracle.question_number_label": "Question Number",
+        "oracle.detected_script": "Detected Script",
+        "oracle.numerology_system": "Numerology System",
+        "oracle.master_number_badge": "Master Number",
       };
       return map[key] ?? key;
     },
@@ -80,14 +84,24 @@ const nameResult: ConsultationResult = {
   type: "name",
   data: {
     name: "Alice",
-    destiny_number: 7,
+    detected_script: "latin",
+    numerology_system: "pythagorean",
+    expression: 7,
     soul_urge: 3,
     personality: 4,
-    letters: [
+    life_path: null,
+    personal_year: null,
+    fc60_stamp: null,
+    moon: null,
+    ganzhi: null,
+    patterns: null,
+    confidence: null,
+    ai_interpretation: "A creative soul",
+    letter_breakdown: [
       { letter: "A", value: 1, element: "Fire" },
       { letter: "l", value: 3, element: "Water" },
     ],
-    interpretation: "A creative soul",
+    reading_id: null,
   },
 };
 
@@ -117,7 +131,7 @@ describe("DetailsTab", () => {
 
   it("shows name details with letter table", async () => {
     render(<DetailsTab result={nameResult} />);
-    expect(screen.getByText("7")).toBeInTheDocument(); // destiny
+    expect(screen.getByText("7")).toBeInTheDocument(); // expression
     // Letter Analysis is collapsed — expand it
     await userEvent.click(screen.getByText("Letter Analysis"));
     expect(screen.getByText("A")).toBeInTheDocument(); // letter

@@ -20,16 +20,21 @@ function formatAsText(result: ConsultationResult): string {
       break;
     case "question":
       lines.push(`Question: ${result.data.question}`);
-      lines.push(`Answer: ${result.data.answer}`);
-      lines.push(`Confidence: ${Math.round(result.data.confidence * 100)}%`);
-      lines.push(`Interpretation: ${result.data.interpretation}`);
+      lines.push(`Question Number: ${result.data.question_number}`);
+      lines.push(`Script: ${result.data.detected_script}`);
+      lines.push(`System: ${result.data.numerology_system}`);
+      if (result.data.ai_interpretation) {
+        lines.push(`Interpretation: ${result.data.ai_interpretation}`);
+      }
       break;
     case "name":
       lines.push(`Name: ${result.data.name}`);
-      lines.push(`Destiny: ${result.data.destiny_number}`);
+      lines.push(`Expression: ${result.data.expression}`);
       lines.push(`Soul Urge: ${result.data.soul_urge}`);
       lines.push(`Personality: ${result.data.personality}`);
-      lines.push(`Interpretation: ${result.data.interpretation}`);
+      if (result.data.ai_interpretation) {
+        lines.push(`Interpretation: ${result.data.ai_interpretation}`);
+      }
       break;
   }
   return lines.join("\n");

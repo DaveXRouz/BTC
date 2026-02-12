@@ -15,7 +15,8 @@ vi.mock("react-i18next", () => ({
         "oracle.element": "Element",
         "oracle.energy": "Energy",
         "oracle.life_path": "Life Path",
-        "oracle.answer": "Answer",
+        "oracle.question_number_label": "Question Number",
+        "oracle.detected_script": "Detected Script",
         "oracle.confidence": "Confidence",
         "oracle.generated_at": "Generated at",
         "oracle.translate": "Translate to Persian",
@@ -70,10 +71,19 @@ const questionResult: ConsultationResult = {
   type: "question",
   data: {
     question: "Will it work?",
-    answer: "Yes",
-    sign_number: 42,
-    interpretation: "Signs point to yes",
-    confidence: 0.85,
+    question_number: 7,
+    detected_script: "latin",
+    numerology_system: "pythagorean",
+    raw_letter_sum: 142,
+    is_master_number: false,
+    fc60_stamp: null,
+    numerology: null,
+    moon: null,
+    ganzhi: null,
+    patterns: null,
+    confidence: { score: 85, level: "high" },
+    ai_interpretation: "Signs point to yes",
+    reading_id: null,
   },
 };
 
@@ -104,10 +114,10 @@ describe("SummaryTab", () => {
     expect(screen.getByText("5")).toBeInTheDocument();
   });
 
-  it("shows answer and confidence for question", () => {
+  it("shows question number and confidence for question", () => {
     render(<SummaryTab result={questionResult} />);
     expect(screen.getByText("Question")).toBeInTheDocument();
-    expect(screen.getByText("Yes")).toBeInTheDocument();
-    expect(screen.getByText("85%")).toBeInTheDocument();
+    expect(screen.getByText("7")).toBeInTheDocument(); // question_number
+    expect(screen.getByText("85%")).toBeInTheDocument(); // confidence.score
   });
 });

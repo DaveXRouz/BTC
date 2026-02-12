@@ -192,17 +192,40 @@ function QuestionDetails({
   result: Extract<ConsultationResult, { type: "question" }>;
 }) {
   const { t } = useTranslation();
-  const { sign_number, answer, interpretation, confidence } = result.data;
+  const {
+    question_number,
+    detected_script,
+    numerology_system,
+    raw_letter_sum,
+    is_master_number,
+    confidence,
+    ai_interpretation,
+  } = result.data;
 
   return (
     <div className="space-y-2">
-      <DataRow label={t("oracle.sign_number")} value={sign_number} />
-      <DataRow label={t("oracle.answer")} value={answer} />
       <DataRow
-        label={t("oracle.confidence")}
-        value={`${Math.round(confidence * 100)}%`}
+        label={t("oracle.question_number_label")}
+        value={question_number}
       />
-      <div className="mt-2 text-xs text-nps-text">{interpretation}</div>
+      <DataRow label={t("oracle.detected_script")} value={detected_script} />
+      <DataRow
+        label={t("oracle.numerology_system")}
+        value={numerology_system}
+      />
+      <DataRow label="Raw Sum" value={raw_letter_sum} />
+      {is_master_number && (
+        <DataRow label={t("oracle.master_number_badge")} value="Yes" />
+      )}
+      {confidence && (
+        <DataRow
+          label={t("oracle.confidence")}
+          value={`${confidence.score}% (${confidence.level})`}
+        />
+      )}
+      {ai_interpretation && (
+        <div className="mt-2 text-xs text-nps-text">{ai_interpretation}</div>
+      )}
     </div>
   );
 }
@@ -213,13 +236,18 @@ function NameDetails({
   result: Extract<ConsultationResult, { type: "name" }>;
 }) {
   const { t } = useTranslation();
-  const { destiny_number, soul_urge, personality, letters, interpretation } =
-    result.data;
+  const {
+    expression,
+    soul_urge,
+    personality,
+    letter_breakdown,
+    ai_interpretation,
+  } = result.data;
 
   return (
     <div className="space-y-3">
       <div className="space-y-1">
-        <DataRow label={t("oracle.destiny")} value={destiny_number} />
+        <DataRow label={t("oracle.expression")} value={expression} />
         <DataRow label={t("oracle.soul_urge")} value={soul_urge} />
         <DataRow label={t("oracle.personality")} value={personality} />
       </div>
@@ -234,18 +262,25 @@ function NameDetails({
             </tr>
           </thead>
           <tbody>
-            {letters.map((l, i) => (
-              <tr key={i} className="border-b border-nps-border/30">
-                <td className="py-1 text-nps-text">{l.letter}</td>
-                <td className="py-1 text-right text-nps-text">{l.value}</td>
-                <td className="py-1 text-right text-nps-text">{l.element}</td>
-              </tr>
-            ))}
+            {letter_breakdown.map(
+              (
+                l: { letter: string; value: number; element: string },
+                i: number,
+              ) => (
+                <tr key={i} className="border-b border-nps-border/30">
+                  <td className="py-1 text-nps-text">{l.letter}</td>
+                  <td className="py-1 text-right text-nps-text">{l.value}</td>
+                  <td className="py-1 text-right text-nps-text">{l.element}</td>
+                </tr>
+              ),
+            )}
           </tbody>
         </table>
       </DetailSection>
 
-      <div className="text-xs text-nps-text">{interpretation}</div>
+      {ai_interpretation && (
+        <div className="text-xs text-nps-text">{ai_interpretation}</div>
+      )}
     </div>
   );
 }

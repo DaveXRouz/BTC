@@ -607,11 +607,12 @@ TEMPLATE — copy this for each new session:
 
 ---
 
-### Session 15 — Reading Flow: Name & Question Readings
+## Session 15 — 2026-02-13
 
-**Date:** 2026-02-13
-**Spec:** `.session-specs/SESSION_15_SPEC.md`
-**Focus:** Complete name and question reading pipelines end-to-end: question analyzer engine, framework-based backend endpoints, frontend forms, i18n
+**Terminal:** SINGLE
+**Block:** AI & Reading Types
+**Task:** Reading Flow: Name & Question Readings — complete name and question reading pipelines end-to-end: question analyzer engine, framework-based backend endpoints, frontend forms, i18n
+**Spec:** .session-specs/SESSION_15_SPEC.md
 
 **Files created (6):**
 
@@ -636,6 +637,7 @@ TEMPLATE — copy this for each new session:
 - `api/tests/test_oracle_readings.py` — Updated existing tests to match new response shapes (expression instead of destiny_number, letter_breakdown instead of letters, 422 for empty inputs)
 
 **Tests:** 23 question_analyzer pass | 26 API endpoint pass (13×2 backends) | 5 NameReadingForm pass | 6 QuestionReadingForm pass | 287 full API suite pass (0 regressions) | 10 pre-existing multi_user failures (CompatibilityAnalyzer=None, unrelated)
+**Commit:** 22c0476 — [oracle][api][frontend] name & question reading flows: question analyzer, orchestrator methods, API endpoints, form components (#session-15)
 **Issues:** Fixed UserProfile missing user_id argument; Fixed AsyncMock vs MagicMock for sync service methods; Updated old test assertions for new response shapes
 **Decisions:**
 

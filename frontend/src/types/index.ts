@@ -181,8 +181,7 @@ export interface QuestionReadingResult {
 // Union of all reading results from API
 export type ConsultationResult =
   | { type: "reading"; data: OracleReading }
-  | { type: "question"; data: QuestionResponse }
-  | { type: "question_v2"; data: QuestionReadingResult }
+  | { type: "question"; data: QuestionReadingResult }
   | { type: "name"; data: NameReading };
 
 // Stored reading from GET /oracle/readings — mirrors backend StoredReadingResponse
