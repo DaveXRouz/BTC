@@ -9,8 +9,8 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 8 of 45
-**Last session:** Session 8 — Numerology System Selection
+**Sessions completed:** 9 of 45
+**Last session:** Session 9 — Signal Processing & Patterns
 **Current block:** Calculation Engines (Sessions 6-12)
 
 ---
@@ -382,6 +382,33 @@ TEMPLATE — copy this for each new session:
 - Framework bridge resolve_numerology_system() called at the start of each typed reading function, keeping system selection centralized
 
 **Next:** Session 9 — Zodiac & Elemental Engine (Chinese zodiac animal/element calculations, Western zodiac mapping, element balance analysis)
+
+---
+
+## Session 9 — 2026-02-12
+
+**Terminal:** SINGLE
+**Block:** Calculation Engines
+**Task:** Signal Processing & Patterns — PatternFormatter class (4 static methods) for AI/frontend/database output, ConfidenceMapper for UI indicators, bridge integration enriching every reading with formatted patterns
+**Spec:** .session-specs/SESSION_9_SPEC.md
+
+**Files changed:**
+
+- `services/oracle/oracle_service/pattern_formatter.py` — NEW: PatternFormatter class (sort_by_priority, format_for_ai, format_for_frontend, format_for_frontend_full, format_for_database) with priority hierarchy, badge text generation, tooltip mapping; ConfidenceMapper class (map_to_ui) with bilingual EN/FA labels, caveats for low/medium confidence
+- `services/oracle/oracle_service/framework_bridge.py` — Added import of PatternFormatter + ConfidenceMapper; added \_enrich_with_patterns() function; integrated enrichment into generate_single_reading() so all typed reading functions automatically include patterns_ai, patterns_frontend, patterns_db, confidence_ui
+- `services/oracle/tests/test_pattern_formatter.py` — NEW: 18 tests across 6 classes (SortByPriority 3, FormatForAI 4, FormatForFrontend 5, FormatForDatabase 2, ConfidenceMapper 4)
+
+**Tests:** 233 pass / 1 pre-existing fail (Docker path) / 18 new | 123 framework pass (no regressions)
+**Commit:** pending
+**Issues:** None
+**Decisions:**
+
+- Used framework's actual PRIORITY_RANK values (1-6) from SignalCombiner, not the 1-9 range in the spec — matches real framework behavior
+- Added format_for_frontend_full() as extended version accepting combined_signals for tension/action data; basic format_for_frontend() works without combined signals
+- Pattern enrichment happens inside generate_single_reading() so all 5 typed reading functions (time, name, question, daily, multi-user) inherit it automatically
+- Confidence caveats in both EN and FA — low gets "limited data" warning, medium gets "add optional data" suggestion, high/very_high get empty string
+
+**Next:** Session 10 — Zodiac & Elemental Engine (Chinese zodiac animal/element calculations, Western zodiac mapping, element balance analysis)
 
 ---
 

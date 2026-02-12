@@ -21,6 +21,7 @@ from oracle_service.models.reading_types import (
     UserProfile,
 )
 from oracle_service.multi_user_analyzer import MultiUserAnalyzer
+from oracle_service.pattern_formatter import ConfidenceMapper, PatternFormatter
 from oracle_service.utils.script_detector import auto_select_system
 
 from numerology_ai_framework.core.base60_codec import Base60Codec
@@ -42,6 +43,36 @@ logger = logging.getLogger(__name__)
 
 class FrameworkBridgeError(Exception):
     """Raised when framework integration fails."""
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Pattern Enrichment
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+def _enrich_with_patterns(framework_output: Dict[str, Any]) -> Dict[str, Any]:
+    """Add formatted pattern data and confidence UI mapping to framework output.
+
+    Args:
+        framework_output: Raw dict from MasterOrchestrator.generate_reading().
+
+    Returns:
+        Dict with keys: 'patterns_ai', 'patterns_frontend', 'patterns_db',
+        'confidence_ui'.
+    """
+    patterns = framework_output.get("patterns", {"detected": [], "count": 0})
+    signals = framework_output.get("reading", {}).get("signals", [])
+    combined = framework_output.get("reading", {}).get("combined_signals")
+    confidence = framework_output.get("confidence", {"score": 50, "level": "low"})
+
+    return {
+        "patterns_ai": PatternFormatter.format_for_ai(patterns, signals, combined),
+        "patterns_frontend": PatternFormatter.format_for_frontend_full(
+            patterns, signals, confidence, combined
+        ),
+        "patterns_db": PatternFormatter.format_for_database(patterns, confidence),
+        "confidence_ui": ConfidenceMapper.map_to_ui(confidence),
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -110,6 +141,8 @@ def generate_single_reading(
             numerology_system=numerology_system,
             mode=mode,
         )
+        # Enrich with formatted patterns + confidence UI (Session 9)
+        result.update(_enrich_with_patterns(result))
         duration_ms = (time.perf_counter() - t0) * 1000
         logger.info("Framework reading generated in %.1fms", duration_ms)
         return result
