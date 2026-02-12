@@ -351,6 +351,52 @@ export interface StampValidateResponse {
   error: string | null;
 }
 
+// ─── Cosmic Cycles (Session 11) ───
+
+export interface MoonPhaseData {
+  phase_name: string;
+  emoji: string;
+  age: number;
+  illumination: number;
+  energy: string;
+  best_for: string;
+  avoid: string;
+}
+
+export interface GanzhiCycleData {
+  animal_name: string;
+  element: string;
+  polarity: string;
+  gz_token: string;
+  traditional_name?: string;
+}
+
+export interface GanzhiFullData {
+  year: GanzhiCycleData;
+  day: GanzhiCycleData;
+  hour?: {
+    animal_name: string;
+  };
+}
+
+export interface CurrentMomentData {
+  weekday: string;
+  planet: string;
+  domain: string;
+}
+
+export interface PlanetMoonCombo {
+  theme: string;
+  message: string;
+}
+
+export interface CosmicCycleData {
+  moon: MoonPhaseData | null;
+  ganzhi: GanzhiFullData | null;
+  current: CurrentMomentData | null;
+  planet_moon: PlanetMoonCombo | null;
+}
+
 // ─── Translation ───
 
 export interface TranslateResponse {

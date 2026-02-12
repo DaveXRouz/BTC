@@ -9,8 +9,8 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 10 of 45
-**Last session:** Session 10 — FC60 Stamp Display & Validation
+**Sessions completed:** 11 of 45
+**Last session:** Session 11 — Moon, Ganzhi & Cosmic Cycles
 **Current block:** Calculation Engines (Sessions 6-12)
 
 ---
@@ -447,7 +447,46 @@ TEMPLATE — copy this for each new session:
 - format_stamp_for_display returns null time for date-only stamps (no has_time flag)
 - StampComparison shared detection uses Set intersection across all token positions
 
-**Next:** Session 11 — Zodiac & Elemental Engine (Chinese zodiac animal/element calculations, Western zodiac mapping, element balance analysis)
+**Next:** Session 11 — Moon, Ganzhi & Cosmic Cycles
+
+---
+
+## Session 11 — 2026-02-13
+
+**Terminal:** SINGLE
+**Block:** Calculation Engines
+**Task:** Framework Integration: Moon, Ganzhi & Cosmic Cycles — CosmicFormatter backend module, expanded API models, 3 new React display components, 52 i18n keys, TypeScript interfaces
+**Spec:** .session-specs/SESSION_11_SPEC.md
+
+**Files changed:**
+
+- `services/oracle/oracle_service/cosmic_formatter.py` — NEW: CosmicFormatter class with 5 static methods (format_moon, format_ganzhi, format_current_moment, format_planet_moon_combo, format_cosmic_cycles); ConfidenceMapper integration via SignalCombiner.planet_meets_moon(); graceful fallback when framework unavailable
+- `api/app/models/oracle.py` — Expanded MoonData (added energy, best_for, avoid), expanded GanzhiData (added year_gz_token, year_traditional_name, day_animal, day_element, day_polarity, day_gz_token); added CurrentMomentData, PlanetMoonCombo, CosmicCycleResponse models
+- `frontend/src/types/index.ts` — Added 6 interfaces: MoonPhaseData, GanzhiCycleData, GanzhiFullData, CurrentMomentData, PlanetMoonCombo, CosmicCycleData
+- `frontend/src/components/oracle/MoonPhaseDisplay.tsx` — NEW: moon phase display with emoji, illumination progress bar, energy badge (8 color variants), best_for/avoid guidance, compact mode, accessibility (progressbar role, aria-labels)
+- `frontend/src/components/oracle/GanzhiDisplay.tsx` — NEW: Chinese zodiac display with year/day/hour cycles, element-colored badges, polarity indicators, GZ token display, compact mode, divider separators
+- `frontend/src/components/oracle/CosmicCyclePanel.tsx` — NEW: composed panel with MoonPhaseDisplay + GanzhiDisplay + current moment + planet-moon insight card; responsive 3-column/stack layout, graceful null handling, compact mode
+- `frontend/src/locales/en.json` — Added oracle.cosmic section with 52 keys (moon phases, animals, elements, energies, polarity, UI labels)
+- `frontend/src/locales/fa.json` — Added oracle.cosmic section with 52 matching Persian keys
+- `services/oracle/tests/test_cosmic_formatter.py` — NEW: 15 tests across 5 classes (FormatMoon 3, FormatGanzhi 4, FormatCurrentMoment 2, FormatPlanetMoonCombo 3, FormatCosmicCycles 3)
+- `frontend/src/components/oracle/__tests__/MoonPhaseDisplay.test.tsx` — NEW: 5 tests (emoji+name, illumination bar, energy badge, best_for/avoid, compact mode)
+- `frontend/src/components/oracle/__tests__/GanzhiDisplay.test.tsx` — NEW: 5 tests (year animal+element, traditional name, day cycle, hour cycle conditional, compact mode)
+- `frontend/src/components/oracle/__tests__/CosmicCyclePanel.test.tsx` — NEW: 5 tests (all sections, null moon, null ganzhi, planet-moon insight, all-null placeholder)
+
+**Tests:** 239 API pass (10 pre-existing multi_user fail) | 15 cosmic formatter pass | 197 frontend pass | 123 framework pass (no regressions) | 30 new tests total
+**Commit:** pending
+**Issues:** None
+**Decisions:**
+
+- CosmicFormatter uses @staticmethod methods (consistent with framework convention — MoonEngine, GanzhiEngine, PatternFormatter all use this pattern)
+- SignalCombiner imported with try/except graceful fallback — if framework unavailable, planet_moon combo returns None instead of crashing
+- Empty moon dict ({}) treated as None (falsy check) to avoid returning empty-string-filled dicts
+- i18n keys flat under oracle.cosmic._ (52 keys total) — consistent with existing oracle._ structure; no deep nesting
+- Element badge colors match traditional Wu Xing associations: Wood=green, Fire=red, Earth=amber, Metal=gray, Water=blue (same palette as FC60StampDisplay)
+- CosmicCyclePanel uses 3-column desktop / single-column mobile responsive layout
+- Planet-Moon insight rendered as indigo callout card — visually distinct from data sections
+
+**Next:** Session 12 — Heartbeat & Location Display (HeartbeatDisplay component, LocationSignatureDisplay component, reading results integration)
 
 ---
 

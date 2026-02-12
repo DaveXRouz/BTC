@@ -41,6 +41,9 @@ class MoonData(BaseModel):
     age_days: float = 0
     meaning: str = ""
     emoji: str = ""
+    energy: str = ""
+    best_for: str = ""
+    avoid: str = ""
 
 
 class AngelMatch(BaseModel):
@@ -59,12 +62,39 @@ class ChaldeanData(BaseModel):
 
 
 class GanzhiData(BaseModel):
+    # Year cycle
     year_name: str = ""
     year_animal: str = ""
+    year_gz_token: str = ""
+    year_traditional_name: str = ""
     stem_element: str = ""
     stem_polarity: str = ""
+    # Day cycle
+    day_animal: str = ""
+    day_element: str = ""
+    day_polarity: str = ""
+    day_gz_token: str = ""
+    # Hour cycle (optional)
     hour_animal: str = ""
     hour_branch: str = ""
+
+
+class CurrentMomentData(BaseModel):
+    weekday: str = ""
+    planet: str = ""
+    domain: str = ""
+
+
+class PlanetMoonCombo(BaseModel):
+    theme: str = ""
+    message: str = ""
+
+
+class CosmicCycleResponse(BaseModel):
+    moon: MoonData | None = None
+    ganzhi: GanzhiData | None = None
+    current: CurrentMomentData | None = None
+    planet_moon: PlanetMoonCombo | None = None
 
 
 class FC60Extended(BaseModel):
