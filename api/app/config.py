@@ -49,6 +49,19 @@ class Settings(BaseSettings):
     nps_admin_chat_id: str = ""  # Falls back to nps_chat_id if empty
     telegram_enabled: bool = True
 
+    # Database pool
+    db_pool_size: int = 10
+    db_max_overflow: int = 20
+    db_pool_recycle: int = 1800
+
+    # Cache
+    cache_enabled: bool = True
+    cache_default_ttl: int = 60
+    cache_health_ttl: int = 10
+    cache_daily_ttl: int = 300
+    cache_user_ttl: int = 30
+    cache_list_ttl: int = 60
+
     # Logging
     log_level: str = "INFO"
     log_format: str = "json"

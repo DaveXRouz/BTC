@@ -149,6 +149,20 @@ services:
     container_name: nps-postgres
     ports:
       - "5432:5432"
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "effective_cache_size=512MB"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "max_connections=100"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-nps}
       POSTGRES_USER: ${POSTGRES_USER:-nps}

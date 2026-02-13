@@ -2290,6 +2290,60 @@ Full backup/restore system with shell script enhancements, cron container, 4 adm
 
 ---
 
+### Session 44 — Performance Optimization
+
+**Date:** 2026-02-14
+**Spec:** `.session-specs/SESSION_44_SPEC.md`
+**Status:** COMPLETE
+**Commit:** (pending)
+
+**Summary:**
+
+Full-stack performance optimization: Redis-backed response cache middleware with ETag/If-None-Match/304 support, cache invalidation on writes, X-Cache and X-Response-Time headers on all responses. Database: 9 composite/partial indexes via migration 021, SQLAlchemy connection pool tuning (pool_size=10, max_overflow=20, pool_recycle=1800s from environment). PostgreSQL server tuning via docker-compose command args (shared_buffers=256MB, work_mem=16MB, effective_cache_size=512MB). Frontend: Vite build target es2020, compressed size reporting, 250KB chunk warning limit. Nginx: gzip compression (level 4), static asset caching (30d immutable), upstream keepalive, proxy buffering, sendfile/tcp_nopush/tcp_nodelay. Enhanced perf_audit.py with CLI args, warm-up, p99, concurrency, baseline comparison. New benchmark_readings.py for per-type reading throughput measurement. Fixed pre-existing TS error in BackupManager.tsx (unused import).
+
+**Files created (5):**
+
+- `api/app/middleware/cache.py` — ResponseCacheMiddleware: Redis-backed GET caching with per-user keys, ETag support, 304 Not Modified, cache invalidation on writes, X-Cache/X-Response-Time headers, graceful degradation
+- `api/tests/test_cache_middleware.py` — 19 test functions (34 with asyncio+trio + 4 sync): cache miss/hit, ETag, 304, invalidation, auth separation, graceful without Redis, error skip, TTL, response time header, helper functions
+- `integration/scripts/benchmark_readings.py` — Dedicated reading benchmark: 6 reading types, CLI args (-n, --type, --warmup, --concurrent, --output), p50/p95/p99, JSON report
+- `database/migrations/021_performance_indexes.sql` — 9 composite/partial indexes on oracle_users, oracle_readings, oracle_audit_log, oracle_daily_readings
+- `database/migrations/021_performance_indexes_rollback.sql` — Drop all 9 indexes
+- `integration/scripts/test_perf_stats.py` — 7 unit tests for compute_stats and baseline comparison functions
+- `integration/reports/SESSION_44_RESULTS.md` — Performance optimization results documentation
+
+**Files modified (8):**
+
+- `api/app/config.py` — Added 9 settings: db_pool_size, db_max_overflow, db_pool_recycle, cache_enabled, cache_default_ttl, cache_health_ttl, cache_daily_ttl, cache_user_ttl, cache_list_ttl
+- `api/app/database.py` — SQLAlchemy pool tuning: pool_size, max_overflow, pool_recycle, pool_timeout from Settings
+- `api/app/main.py` — Registered ResponseCacheMiddleware (after CORS, before rate limit)
+- `frontend/vite.config.ts` — Added target "es2020", reportCompressedSize, chunkSizeWarningLimit 250
+- `infrastructure/nginx/nginx.conf` — Full rewrite: gzip, sendfile, tcp_nopush, tcp_nodelay, keepalive upstreams, static asset caching (30d immutable), proxy buffering, HTTP/1.1 upstream
+- `docker-compose.yml` — PostgreSQL command args for server tuning (shared_buffers, work_mem, effective_cache_size, random_page_cost, effective_io_concurrency, max_connections)
+- `integration/scripts/perf_audit.py` — Major rewrite: argparse CLI (-n, --warmup, --concurrent, --output, --compare), warm-up phase, p99 metric, concurrent request support, baseline comparison with regression/improvement detection
+- `frontend/src/components/admin/BackupManager.tsx` — Removed unused `adminHealth` import (pre-existing TS error fix)
+
+**Tests:** 34 cache middleware pass (19 functions x asyncio+trio + 4 sync) / 7 perf stats pass / 566 API pass (10 pre-existing failures in test_multi_user_reading.py unrelated) / 665 frontend pass (1 pre-existing bundle-size marginal at 503KB total gzip, initial load ~114KB well within 500KB target) / All lint clean
+
+**Decisions:**
+
+- Cache key uses SHA-256 of (method + path + sorted_query_params + auth_token_prefix_16chars) — per-user cache separation without leaking full tokens.
+- ETag uses MD5 of response body (not security-sensitive, fast for cache validation).
+- Cache invalidation uses Redis SCAN + DELETE pattern matching on write operations to /oracle/users* and /oracle/reading*.
+- PostgreSQL tuning: shared_buffers=256MB (25% of 1GB container memory), work_mem=16MB, random_page_cost=1.1 (SSD assumption).
+- Nginx gzip_comp_level=4: ~95% of level 9 compression at ~50% CPU cost.
+- Frontend App.tsx already had React.lazy() and Suspense from prior sessions — no changes needed.
+- Vite config already had manualChunks — only added build target/reporting settings.
+
+**Issues:**
+
+- Bundle-size test shows 503KB total gzip (3.85KB over 500KB threshold) — caused by large lazy-loaded libraries: jspdf (128KB gzip from Session 32) and recharts/AdminMonitoring (116KB gzip from Session 39). Initial page load is only ~114KB gzip, well within target. This is a pre-existing marginal condition.
+- Live benchmark execution requires Docker stack (PostgreSQL + Redis + API). Scripts are code-complete and syntax-verified.
+- Pre-existing 10 test failures in test_multi_user_reading.py unrelated to Session 44 changes.
+
+**Next:** Session 45 — Final Deployment & Documentation.
+
+---
+
 ## Cross-Terminal Dependencies
 
 > Only used in multi-terminal mode. Track what each terminal needs from others.

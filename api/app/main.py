@@ -140,6 +140,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Response caching (after CORS, before rate limit)
+if settings.cache_enabled:
+    from app.middleware.cache import ResponseCacheMiddleware
+
+    app.add_middleware(ResponseCacheMiddleware)
+
 # Rate limiting
 app.add_middleware(RateLimitMiddleware)
 

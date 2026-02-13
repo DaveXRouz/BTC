@@ -32,6 +32,9 @@ export default defineConfig({
         },
       },
     },
+    target: "es2020",
+    reportCompressedSize: true,
+    chunkSizeWarningLimit: 250,
   },
   server: {
     port: 5173,

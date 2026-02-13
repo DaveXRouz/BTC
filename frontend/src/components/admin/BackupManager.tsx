@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { admin as adminApi, adminHealth } from "@/services/api";
+import { admin as adminApi } from "@/services/api";
 import type {
   BackupInfo,
   BackupListResponse,

@@ -21,10 +21,22 @@ def _build_engine():
 
     # Try PostgreSQL
     try:
-        eng = create_engine(url, pool_pre_ping=True)
+        eng = create_engine(
+            url,
+            pool_pre_ping=True,
+            pool_size=settings.db_pool_size,
+            max_overflow=settings.db_max_overflow,
+            pool_recycle=settings.db_pool_recycle,
+            pool_timeout=30,
+            echo=False,
+        )
         with eng.connect() as conn:
             conn.execute(text("SELECT 1"))
-        logger.info("Connected to PostgreSQL")
+        logger.info(
+            "Connected to PostgreSQL (pool_size=%d, max_overflow=%d)",
+            settings.db_pool_size,
+            settings.db_max_overflow,
+        )
         return eng
     except Exception as exc:
         logger.warning("PostgreSQL unavailable (%s), falling back to SQLite", exc)
