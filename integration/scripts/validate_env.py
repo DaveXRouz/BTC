@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Validate that all required environment variables are set and services are reachable."""
 
-import os
 import sys
 from pathlib import Path
 

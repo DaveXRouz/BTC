@@ -1,12 +1,11 @@
 """Phase 5: Security integration tests — auth, encryption, rate limiting, input validation."""
 
 import os
-import time
 
 import pytest
 import requests
 
-from conftest import API_BASE_URL, api_url
+from conftest import api_url
 
 
 @pytest.mark.security
@@ -23,9 +22,9 @@ class TestAuthSecurity:
         ]
         for method, path in endpoints:
             resp = requests.request(method, api_url(path), timeout=5)
-            assert (
-                resp.status_code == 401
-            ), f"{method} {path} returned {resp.status_code}, expected 401"
+            assert resp.status_code == 401, (
+                f"{method} {path} returned {resp.status_code}, expected 401"
+            )
 
     def test_invalid_token_returns_403(self):
         """Requests with an invalid Bearer token should get 403."""
@@ -92,9 +91,9 @@ class TestEncryptionSecurity:
         db_val = row[0]
 
         if os.environ.get("NPS_ENCRYPTION_KEY"):
-            assert db_val.startswith(
-                "ENC4:"
-            ), f"Expected ENC4: prefix, got: {db_val[:20]}"
+            assert db_val.startswith("ENC4:"), (
+                f"Expected ENC4: prefix, got: {db_val[:20]}"
+            )
 
 
 @pytest.mark.security
