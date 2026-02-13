@@ -1742,7 +1742,7 @@ TEMPLATE — copy this for each new session:
 - `services/tgbot/tests/test_client.py` — 3 tests (link success, link failure, get status)
 
 **Tests:** Backend 417 pass (10 pre-existing multi_user failures unrelated) / Frontend 627 pass / Bot 16 pass / 0 new failures / 24 new tests
-**Commit:** (pending)
+**Commit:** 8952c32
 **Issues:**
 
 - Renamed `services/telegram/` to `services/tgbot/` because `telegram` directory name collides with `python-telegram-bot`'s `telegram` module, causing import resolution failure. The third-party `from telegram import Update` resolved to our package `__init__.py` instead.
