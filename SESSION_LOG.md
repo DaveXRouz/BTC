@@ -9,9 +9,9 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 32 of 45
-**Last session:** Session 32 — Export & Share
-**Current block:** Features & Integration (Sessions 32-37) — Session 1 of 6
+**Sessions completed:** 33 of 45
+**Last session:** Session 33 — Telegram Bot Core Setup
+**Current block:** Features & Integration (Sessions 32-37) — Session 2 of 6
 
 ---
 
@@ -1683,6 +1683,79 @@ TEMPLATE — copy this for each new session:
 - ExportButton.tsx rewritten as thin re-export rather than deleted, for backwards compatibility if imported elsewhere
 
 **Next:** Session 33 — Telegram Bot integration (bot token, chat commands, reading notifications, admin alerts).
+
+---
+
+## Session 33 — 2026-02-13
+
+**Terminal:** SINGLE
+**Block:** Features & Integration (Sessions 32-37) — Session 2 of 6
+**Task:** Telegram Bot Core Setup — standalone async bot service with account linking, 5 commands, rate limiting, Docker integration
+**Spec:** `.session-specs/SESSION_33_SPEC.md`
+
+**What was built:**
+
+1. **Database migration 019** — `telegram_links` table with chat_id (BIGINT UNIQUE), user_id FK, username, linked_at, last_active, is_active
+2. **TelegramLink ORM model** — `api/app/orm/telegram_link.py` with Integer PK, BigInteger chat_id, user FK cascade
+3. **Telegram Pydantic models** — `TelegramLinkRequest`, `TelegramLinkResponse`, `TelegramUserStatus` in `api/app/models/telegram.py`
+4. **Telegram API router** — 4 endpoints: POST `/link` (no auth, validates API key body), GET `/status/{chat_id}` (auth), DELETE `/link/{chat_id}` (auth), GET `/profile/{chat_id}` (auth)
+5. **Bot config** — `services/tgbot/config.py`: BOT_TOKEN, API_BASE_URL, BOT_SERVICE_KEY, RATE_LIMIT_PER_MINUTE, LOG_LEVEL from env
+6. **Async HTTP client** — `services/tgbot/client.py`: httpx-based with link_account, get_status, get_profile methods
+7. **Rate limiter** — `services/tgbot/rate_limiter.py`: per-chat-ID sliding window with periodic cleanup
+8. **5 command handlers** — `/start` (MarkdownV2 welcome), `/link` (key validation + message deletion), `/help` (command list), `/status` (account info), `/profile` (Oracle profiles)
+9. **Bot entry point** — `services/tgbot/bot.py` with Application builder, handler registration, graceful shutdown
+10. **Docker integration** — Dockerfile (python:3.11-slim, non-root user), docker-compose `telegram-bot` service with API health dependency
+11. **Security** — API key message deletion, regex key format validation, rate limiting, structured JSON logging, error wrapping
+
+**Files created (17):**
+
+- `database/migrations/019_telegram_links.sql`
+- `database/migrations/019_telegram_links_rollback.sql`
+- `api/app/orm/telegram_link.py`
+- `api/app/models/telegram.py`
+- `api/app/routers/telegram.py`
+- `services/__init__.py`
+- `services/tgbot/__init__.py`
+- `services/tgbot/__main__.py`
+- `services/tgbot/bot.py`
+- `services/tgbot/config.py`
+- `services/tgbot/client.py`
+- `services/tgbot/rate_limiter.py`
+- `services/tgbot/run.py`
+- `services/tgbot/Dockerfile`
+- `services/tgbot/requirements.txt`
+- `services/tgbot/handlers/__init__.py`
+- `services/tgbot/handlers/core.py`
+
+**Files modified (3):**
+
+- `api/app/main.py` — registered telegram router + ORM import
+- `docker-compose.yml` — added `telegram-bot` service
+- `.env.example` — added `TELEGRAM_BOT_API_URL`, `TELEGRAM_BOT_SERVICE_KEY`, `TELEGRAM_RATE_LIMIT`
+
+**Test files created (4):**
+
+- `api/tests/test_telegram_link.py` — 8 tests (link success, invalid key, inactive user, upsert, status linked, status unlinked, unlink, profile)
+- `services/tgbot/tests/__init__.py`
+- `services/tgbot/tests/test_core_handlers.py` — 9 tests (start welcome, link no args, link success, link invalid, help commands, status linked, status unlinked, profile, rate limit spam)
+- `services/tgbot/tests/test_rate_limiter.py` — 4 tests (under limit, over limit, window expires, separate chat IDs)
+- `services/tgbot/tests/test_client.py` — 3 tests (link success, link failure, get status)
+
+**Tests:** Backend 417 pass (10 pre-existing multi_user failures unrelated) / Frontend 627 pass / Bot 16 pass / 0 new failures / 24 new tests
+**Commit:** (pending)
+**Issues:**
+
+- Renamed `services/telegram/` to `services/tgbot/` because `telegram` directory name collides with `python-telegram-bot`'s `telegram` module, causing import resolution failure. The third-party `from telegram import Update` resolved to our package `__init__.py` instead.
+- Migration numbered 019 (not 013 as spec suggested) because 013-018 already exist.
+
+**Decisions:**
+
+- Directory renamed from `services/telegram/` to `services/tgbot/` to avoid Python import collision with `python-telegram-bot` package. Docker service name stays `telegram-bot` for clarity.
+- API key format validation (regex `^[A-Za-z0-9\-_]{20,100}$`) added in bot handler before calling API, rejecting obviously invalid keys early.
+- Rate limiter has periodic global cleanup every 100 calls to prevent memory growth from stale chat_id entries.
+- POST `/api/telegram/link` requires no auth header — the API key is in the request body (validated via SHA-256 hash lookup). Other endpoints require auth.
+
+**Next:** Session 34 — Telegram Bot reading commands (/reading, /daily, /history) via bot→API calls.
 
 ---
 

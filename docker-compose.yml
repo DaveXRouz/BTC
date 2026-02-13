@@ -191,6 +191,25 @@ services:
           cpus: "0.1"
           memory: 64M
 
+  # ─── Telegram Bot ───
+  telegram-bot:
+    build:
+      context: ./services/tgbot
+      dockerfile: Dockerfile
+    container_name: nps-telegram-bot
+    env_file: .env
+    environment:
+      TELEGRAM_BOT_API_URL: http://api:8000/api
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
   # ─── Nginx Reverse Proxy ───
   nginx:
     image: nginx:1.25-alpine
