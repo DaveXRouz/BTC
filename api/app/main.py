@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.routers import (
+    admin,
     auth,
     health,
     learning,
@@ -155,6 +156,7 @@ app.include_router(location.router, prefix="/api/location", tags=["location"])
 app.include_router(settings_router.router, prefix="/api", tags=["settings"])
 app.include_router(share.router, prefix="/api/share", tags=["share"])
 app.include_router(telegram.router, prefix="/api/telegram", tags=["telegram"])
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 
 # WebSocket — authenticated oracle endpoint

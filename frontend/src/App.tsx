@@ -11,7 +11,9 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Oracle = lazy(() => import("./pages/Oracle"));
 const ReadingHistory = lazy(() => import("./pages/ReadingHistory"));
 const Settings = lazy(() => import("./pages/Settings"));
-const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
+const AdminProfiles = lazy(() => import("./pages/AdminProfiles"));
 const Scanner = lazy(() => import("./pages/Scanner"));
 const SharedReading = lazy(() => import("./pages/SharedReading"));
 
@@ -75,10 +77,14 @@ export default function App() {
             path="/admin"
             element={
               <ErrorBoundary>
-                <AdminPanel />
+                <Admin />
               </ErrorBoundary>
             }
-          />
+          >
+            <Route index element={<Navigate to="/admin/users" replace />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="profiles" element={<AdminProfiles />} />
+          </Route>
           <Route
             path="/scanner"
             element={

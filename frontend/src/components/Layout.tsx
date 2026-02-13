@@ -53,7 +53,10 @@ export const Layout = React.memo(function Layout() {
           </div>
 
           {/* Navigation */}
-          <Navigation collapsed={sidebarCollapsed} isAdmin={false} />
+          <Navigation
+            collapsed={sidebarCollapsed}
+            isAdmin={localStorage.getItem("nps_user_role") === "admin"}
+          />
 
           {/* Collapse toggle */}
           <button

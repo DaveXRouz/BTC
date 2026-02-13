@@ -9,9 +9,9 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 36 of 45
-**Last session:** Session 36 — Telegram Bot Admin Commands & Notifications
-**Current block:** Features & Integration (Sessions 32-37) — Session 5 of 6
+**Sessions completed:** 38 of 45
+**Last session:** Session 38 — Admin Panel: User & Profile Management
+**Current block:** Admin & DevOps (Sessions 38-40) — Session 1 of 3
 
 ---
 
@@ -1999,7 +1999,61 @@ Multi-user /compare command (2-5 profiles with pairwise compatibility), i18n sys
 - Error classification maps HTTP status codes to i18n keys, with per-error-type emoji prefixes.
 - Existing tests updated in place rather than rewritten to maintain continuity.
 
-**Next:** Session 38 — Admin UI: Dashboard & User Management.
+**Next:** Session 39 — Admin UI: Monitoring Dashboard & System Health.
+
+---
+
+### Session 38 — Admin Panel: User & Profile Management
+
+**Date:** 2026-02-14
+**Spec:** `.session-specs/SESSION_38_SPEC.md`
+**Status:** COMPLETE
+
+**Summary:**
+
+Full admin panel with user management (list, search, sort, role change, password reset, activate/deactivate), Oracle profile management (list with reading counts, search, delete with cascade), system statistics dashboard, and admin route guard — all with bilingual EN/FA translations.
+
+**Files created (12):**
+
+- `api/app/models/admin.py` — 9 Pydantic models (SystemUserResponse, RoleUpdateRequest, StatusUpdateRequest, PasswordResetResponse, AdminStatsResponse, AdminOracleProfileResponse, etc.)
+- `api/app/services/admin_service.py` — AdminService class with 8 methods (list_users, get_user_detail, update_role, reset_password, update_status, get_stats, list_oracle_profiles, delete_oracle_profile)
+- `api/app/routers/admin.py` — 8 endpoints all admin-scoped (GET/PATCH/POST/DELETE for users and profiles)
+- `api/tests/test_admin.py` — 21 API tests covering CRUD, auth, edge cases, audit
+- `frontend/src/hooks/useAdmin.ts` — 8 React Query hooks (useAdminUsers, useAdminProfiles, useAdminStats, useUpdateRole, useResetPassword, useUpdateStatus, useDeleteProfile)
+- `frontend/src/components/admin/AdminGuard.tsx` — Route guard checking localStorage role
+- `frontend/src/components/admin/UserTable.tsx` — Sortable, searchable, paginated user table
+- `frontend/src/components/admin/UserActions.tsx` — Role dropdown, password reset, activate/deactivate with confirmation modals
+- `frontend/src/components/admin/ProfileTable.tsx` — Sortable profile table with reading counts and deleted badges
+- `frontend/src/components/admin/ProfileActions.tsx` — Delete with cascade warning confirmation
+- `frontend/src/pages/Admin.tsx` — Admin shell with stats cards and tab navigation
+- `frontend/src/pages/AdminUsers.tsx` — User management page with state management
+- `frontend/src/pages/AdminProfiles.tsx` — Profile management page with include-deleted toggle
+- `frontend/src/components/admin/__tests__/AdminGuard.test.tsx` — 3 tests (admin access, non-admin forbidden, no role)
+- `frontend/src/components/admin/__tests__/UserTable.test.tsx` — 5 tests (render, search, status badges, empty state, typing)
+- `frontend/src/components/admin/__tests__/ProfileTable.test.tsx` — 3 tests (render, deleted badge, empty state)
+
+**Files modified (7):**
+
+- `api/app/main.py` — Added admin router registration
+- `api/app/services/audit.py` — Added 4 admin audit methods (role_changed, password_reset, status_changed, profile_deleted)
+- `frontend/src/types/index.ts` — Added admin types (SystemUser, AdminOracleProfile, AdminStats, etc.)
+- `frontend/src/services/api.ts` — Added admin namespace with 8 typed fetch methods
+- `frontend/src/App.tsx` — Replaced flat admin route with nested routes (Admin > AdminUsers, AdminProfiles)
+- `frontend/src/components/Layout.tsx` — Made isAdmin dynamic from localStorage
+- `frontend/src/locales/en.json` — Replaced placeholder with ~50 admin keys
+- `frontend/src/locales/fa.json` — Matching ~50 Persian admin keys
+
+**Tests:** 21 API tests pass, 11 frontend tests pass (3 AdminGuard + 5 UserTable + 3 ProfileTable). All 646 frontend tests pass. All 466 API tests pass (10 pre-existing failures in test_multi_user_reading.py unrelated to this session).
+
+**Decisions:**
+
+- Admin endpoints use `require_scope("admin")` dependency — same pattern as existing auth.
+- Password reset generates `secrets.token_urlsafe(16)` + bcrypt hash — no plaintext storage.
+- Profile delete is hard-delete with cascade cleanup (OracleReadingUser, OracleDailyReading, OracleReading).
+- Self-modification guards prevent admin from changing own role or deactivating own account.
+- Admin route uses nested `<Outlet />` pattern for tab navigation (users/profiles).
+
+**Next:** Session 39 — Admin UI: Monitoring Dashboard & System Health.
 
 ---
 

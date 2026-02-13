@@ -382,6 +382,78 @@ class AuditService:
             },
         )
 
+    # ─── Admin audit methods ─────────────────────────────────────────────────
+
+    def log_admin_role_changed(
+        self,
+        target_user_id: str,
+        old_role: str,
+        new_role: str,
+        *,
+        ip: str | None = None,
+        key_hash: str | None = None,
+    ) -> OracleAuditLog:
+        return self.log(
+            "admin.role_changed",
+            resource_type="user",
+            details={
+                "target_user_id": target_user_id,
+                "old_role": old_role,
+                "new_role": new_role,
+            },
+            ip_address=ip,
+            api_key_hash=key_hash,
+        )
+
+    def log_admin_password_reset(
+        self,
+        target_user_id: str,
+        *,
+        ip: str | None = None,
+        key_hash: str | None = None,
+    ) -> OracleAuditLog:
+        return self.log(
+            "admin.password_reset",
+            resource_type="user",
+            details={"target_user_id": target_user_id},
+            ip_address=ip,
+            api_key_hash=key_hash,
+        )
+
+    def log_admin_status_changed(
+        self,
+        target_user_id: str,
+        new_status: bool,
+        *,
+        ip: str | None = None,
+        key_hash: str | None = None,
+    ) -> OracleAuditLog:
+        return self.log(
+            "admin.status_changed",
+            resource_type="user",
+            details={
+                "target_user_id": target_user_id,
+                "new_status": new_status,
+            },
+            ip_address=ip,
+            api_key_hash=key_hash,
+        )
+
+    def log_admin_profile_deleted(
+        self,
+        profile_id: int,
+        *,
+        ip: str | None = None,
+        key_hash: str | None = None,
+    ) -> OracleAuditLog:
+        return self.log(
+            "admin.profile_deleted",
+            resource_type="oracle_user",
+            resource_id=profile_id,
+            ip_address=ip,
+            api_key_hash=key_hash,
+        )
+
     # ─── Query methods ────────────────────────────────────────────────────────
 
     def get_user_activity(self, oracle_user_id: int, limit: int = 50) -> list[OracleAuditLog]:

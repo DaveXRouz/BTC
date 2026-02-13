@@ -308,3 +308,67 @@ export const learning = {
       ),
   },
 };
+
+// ─── Admin ───
+
+export const admin = {
+  listUsers: (params?: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    sort_by?: string;
+    sort_order?: string;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.offset !== undefined)
+      query.set("offset", String(params.offset));
+    if (params?.search) query.set("search", params.search);
+    if (params?.sort_by) query.set("sort_by", params.sort_by);
+    if (params?.sort_order) query.set("sort_order", params.sort_order);
+    return request<import("@/types").SystemUserListResponse>(
+      `/admin/users?${query}`,
+    );
+  },
+  getUser: (id: string) =>
+    request<import("@/types").SystemUser>(`/admin/users/${id}`),
+  updateRole: (id: string, role: string) =>
+    request<import("@/types").SystemUser>(`/admin/users/${id}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
+  resetPassword: (id: string) =>
+    request<import("@/types").PasswordResetResult>(
+      `/admin/users/${id}/reset-password`,
+      { method: "POST" },
+    ),
+  updateStatus: (id: string, is_active: boolean) =>
+    request<import("@/types").SystemUser>(`/admin/users/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_active }),
+    }),
+  stats: () => request<import("@/types").AdminStats>("/admin/stats"),
+  listProfiles: (params?: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    sort_by?: string;
+    sort_order?: string;
+    include_deleted?: boolean;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.offset !== undefined)
+      query.set("offset", String(params.offset));
+    if (params?.search) query.set("search", params.search);
+    if (params?.sort_by) query.set("sort_by", params.sort_by);
+    if (params?.sort_order) query.set("sort_order", params.sort_order);
+    if (params?.include_deleted)
+      query.set("include_deleted", String(params.include_deleted));
+    return request<import("@/types").AdminOracleProfileListResponse>(
+      `/admin/profiles?${query}`,
+    );
+  },
+  deleteProfile: (id: number) =>
+    request<void>(`/admin/profiles/${id}`, { method: "DELETE" }),
+};

@@ -882,6 +882,70 @@ export interface User {
   role: string;
 }
 
+// ─── Admin ───
+
+export interface SystemUser {
+  id: string;
+  username: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+  last_login: string | null;
+  is_active: boolean;
+  reading_count: number;
+}
+
+export interface SystemUserListResponse {
+  users: SystemUser[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AdminOracleProfile {
+  id: number;
+  name: string;
+  name_persian: string | null;
+  birthday: string;
+  country: string | null;
+  city: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  reading_count: number;
+}
+
+export interface AdminOracleProfileListResponse {
+  profiles: AdminOracleProfile[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface PasswordResetResult {
+  temporary_password: string;
+  message: string;
+}
+
+export interface AdminStats {
+  total_users: number;
+  active_users: number;
+  inactive_users: number;
+  total_oracle_profiles: number;
+  total_readings: number;
+  readings_today: number;
+  users_by_role: Record<string, number>;
+}
+
+export type UserSortField =
+  | "username"
+  | "role"
+  | "created_at"
+  | "last_login"
+  | "is_active";
+export type ProfileSortField = "name" | "birthday" | "created_at";
+export type SortOrder = "asc" | "desc";
+
 // ─── Currency (from legacy theme.py) ───
 
 export const CURRENCY_SYMBOLS: Record<
