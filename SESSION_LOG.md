@@ -1858,7 +1858,7 @@ TEMPLATE — copy this for each new session:
 - `.env.example` — added TELEGRAM_FRONTEND_URL
 
 **Tests:** Backend 431 pass (10 pre-existing multi_user failures unrelated) / Frontend 627 pass / Bot 69 pass (21 new) / API Telegram 30 pass (14 new) / 0 new failures
-**Commit:** (pending)
+**Commit:** b864790
 **Issues:**
 
 - Spec references `services/telegram/` but Session 33 renamed to `services/tgbot/` — all paths adapted.
