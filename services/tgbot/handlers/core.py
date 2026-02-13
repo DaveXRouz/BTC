@@ -119,11 +119,12 @@ async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             "  /status — Check account status\n"
             "  /help — Show this help\n\n"
             "Oracle:\n"
-            "  /profile — View your Oracle profiles\n\n"
-            "Coming Soon:\n"
-            "  /reading — Request an Oracle reading\n"
-            "  /daily — Get your daily reading\n"
-            "  /history — View reading history"
+            "  /profile — View your Oracle profiles\n"
+            "  /time [HH:MM] [YYYY-MM-DD] — Time reading\n"
+            "  /name [name] — Name reading\n"
+            "  /question <text> — Question reading\n"
+            "  /daily — Daily insight\n"
+            "  /history — Reading history"
         )
         await update.message.reply_text(text)
     except Exception:

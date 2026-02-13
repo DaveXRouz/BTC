@@ -9,9 +9,9 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 33 of 45
-**Last session:** Session 33 — Telegram Bot Core Setup
-**Current block:** Features & Integration (Sessions 32-37) — Session 2 of 6
+**Sessions completed:** 34 of 45
+**Last session:** Session 34 — Telegram Bot Reading Commands
+**Current block:** Features & Integration (Sessions 32-37) — Session 3 of 6
 
 ---
 
@@ -1756,6 +1756,62 @@ TEMPLATE — copy this for each new session:
 - POST `/api/telegram/link` requires no auth header — the API key is in the request body (validated via SHA-256 hash lookup). Other endpoints require auth.
 
 **Next:** Session 34 — Telegram Bot reading commands (/reading, /daily, /history) via bot→API calls.
+
+---
+
+## Session 34 — 2026-02-14
+
+**Terminal:** SINGLE
+**Block:** Features & Integration (Sessions 32-37) — Session 3 of 6
+**Task:** Telegram Bot Reading Commands — 5 reading commands (/time, /name, /question, /daily, /history), MarkdownV2 formatters, inline keyboards, progressive message editing, callback query handler
+**Spec:** `.session-specs/SESSION_34_SPEC.md`
+
+**What was built:**
+
+1. **Per-user API client** — `services/tgbot/api_client.py`: `NPSAPIClient` class with per-user Bearer auth, 7 API methods (create_reading, create_question, create_name_reading, get_daily, list_readings, get_reading, close), standardized `APIResponse` dataclass, timeout/auth/rate-limit error handling
+2. **Telegram MarkdownV2 formatters** — `services/tgbot/formatters.py`: `_escape()` for all 18 MarkdownV2 special chars, `_truncate()` at 3800 chars with "See more" note, `format_time_reading()` with 9 sections (FC60, numerology, moon, zodiac, Chinese, angel, synchronicities, AI), `format_question_reading()` with yes/no/maybe emoji logic, `format_name_reading()` with expression/soul/personality + letter breakdown, `format_daily_insight()` with lucky numbers in backticks, `format_history_list()` with type emojis and favorites, `format_progress()` with emoji sequence + progress bar
+3. **Inline keyboard builders** — `services/tgbot/keyboards.py`: `reading_actions_keyboard()` (Full Details, Rate, Share, New Reading), `history_keyboard()` (per-reading View buttons, Load More pagination), `reading_type_keyboard()` (Time/Question/Name/Daily chooser)
+4. **Progressive message editing** — `services/tgbot/progress.py`: `update_progress()` with BadRequest handling for deleted messages, 0.3s rate limit protection between edits
+5. **5 reading command handlers** — `services/tgbot/handlers/readings.py`: `/time [HH:MM] [YYYY-MM-DD]` with format validation, `/name [name]` with profile fallback, `/question <text>` with usage enforcement, `/daily` for daily insight, `/history` with paginated list
+6. **Callback query handler** — handles `reading:details:{id}`, `reading:rate:{id}` (stub), `reading:share:{id}`, `reading:new`, `reading:type:{type}`, `history:view:{id}`, `history:more:{offset}`
+7. **Per-user reading rate limiter** — 10 readings/hour per chat_id sliding window (separate from the per-minute command rate limiter)
+8. **Bot registration** — registered 5 command handlers + CallbackQueryHandler in bot.py, updated help text
+
+**Files created (5):**
+
+- `services/tgbot/api_client.py` — per-user async HTTP client with APIResponse
+- `services/tgbot/formatters.py` — MarkdownV2 formatters for all reading types + progress
+- `services/tgbot/keyboards.py` — inline keyboard builders
+- `services/tgbot/progress.py` — progressive message editing helper
+- `services/tgbot/handlers/readings.py` — 5 command handlers + callback handler + rate limiter + helpers
+
+**Files modified (2):**
+
+- `services/tgbot/bot.py` — registered 5 reading commands + CallbackQueryHandler
+- `services/tgbot/handlers/core.py` — updated /help text with new reading commands
+
+**Test files created (3):**
+
+- `services/tgbot/tests/test_readings.py` — 15 tests (time basic, time+date, time no args, time invalid, name+arg, name profile, question, question no text, daily, history, unlinked user, rate limit, 3 helper tests)
+- `services/tgbot/tests/test_formatters.py` — 12 tests (escape, time all sections, time missing, question yes, question no, name, daily, history, progress, truncation under, truncation over, Persian)
+- `services/tgbot/tests/test_api_client.py` — 5 tests (success, auth error, timeout, question body, pagination)
+
+**Tests:** Backend 417 pass (10 pre-existing multi_user failures unrelated) / Frontend 627 pass / Bot 48 pass (32 new) / 0 new failures
+**Commit:** PENDING
+**Issues:**
+
+- Spec references `services/telegram/` but Session 33 renamed it to `services/tgbot/` — all paths adapted accordingly.
+- The `/telegram/status/{chat_id}` API endpoint needs to return `api_key` field for reading commands to work in production. Currently the bot retrieves the user's API key via this status endpoint. If the endpoint doesn't expose the key, reading commands will fail with "link first" even for linked users.
+
+**Decisions:**
+
+- Created `api_client.py` (per-user auth) separate from existing `client.py` (bot service key auth) to maintain clean separation between bot-level and user-level API access.
+- Question answer logic: odd question_number = Yes (✅), even = No (❌), zero = Maybe (🤔). This matches the numerological interpretation where odd numbers are affirmative.
+- Rating callback (`reading:rate:{id}`) is a stub that logs the intent — full implementation deferred to a future session.
+- Share callback generates a plain-text excerpt from the reading's AI interpretation, truncated to 3800 chars.
+- MarkdownV2 parse errors have a fallback: if formatting fails, the bot sends a plain text version instead of crashing.
+
+**Next:** Session 35 — Telegram Bot: Daily Auto-Insight (scheduled daily readings, /daily_on, /daily_off, /daily_time commands, background scheduler).
 
 ---
 
