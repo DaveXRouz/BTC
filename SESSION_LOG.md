@@ -1917,7 +1917,7 @@ TEMPLATE — copy this for each new session:
 - `.env.example` — added NPS_ADMIN_CHAT_ID variable
 
 **Tests:** Backend 445 pass (10 pre-existing multi_user failures unrelated) / Frontend 627 pass / Bot 99 pass (30 new) / API Telegram Admin 14 pass (7 new) / 0 new failures
-**Commit:** TBD
+**Commit:** a57f2c8
 **Issues:**
 
 - Spec references `services/telegram/` but Session 33 renamed to `services/tgbot/` — all paths adapted.
