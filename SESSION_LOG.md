@@ -9,9 +9,9 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 34 of 45
-**Last session:** Session 34 — Telegram Bot Reading Commands
-**Current block:** Features & Integration (Sessions 32-37) — Session 3 of 6
+**Sessions completed:** 36 of 45
+**Last session:** Session 36 — Telegram Bot Admin Commands & Notifications
+**Current block:** Features & Integration (Sessions 32-37) — Session 5 of 6
 
 ---
 
@@ -1875,6 +1875,65 @@ TEMPLATE — copy this for each new session:
 - Pending delivery endpoint does the timezone math server-side, returning only users whose local time has passed their delivery_time.
 
 **Next:** Session 36 — Telegram Bot: Admin Commands & Notifications (/admin_stats, /admin_users, /admin_broadcast, system notification formatters, admin-only command middleware).
+
+---
+
+## Session 36 — 2026-02-14
+
+**Terminal:** SINGLE
+**Block:** Features & Integration (Sessions 32-37) — Session 5 of 6
+**Task:** Telegram Bot: Admin Commands & Notifications — /admin_stats, /admin_users, /admin_broadcast, system notification service, notifier bridge, admin API endpoints, audit logging
+**Spec:** `.session-specs/SESSION_36_SPEC.md`
+
+**What was built:**
+
+1. **Admin command handlers** — `services/tgbot/handlers/admin.py`: Three admin-only Telegram commands (/admin_stats, /admin_users, /admin_broadcast) with role verification via account-linking, inline pagination for user listing, broadcast with Send/Cancel confirmation, rate limiting enforcement, and audit logging for all admin actions.
+2. **System notification service** — `services/tgbot/notifications.py`: `SystemNotifier` class that dispatches alerts to admin Telegram channel. Supports API errors (5-min cooldown per endpoint), high error rates (15-min cooldown), new user registration, service startup/shutdown, and reading milestones. Graceful degradation when admin chat ID is missing.
+3. **Admin API endpoints** — Added to `api/app/routers/telegram.py`: GET `/admin/stats` (system statistics with user count, reading counts, error count, uptime, DB size), GET `/admin/users` (paginated user listing with non-sensitive fields), GET `/admin/linked_chats` (all active linked chat IDs for broadcast), POST `/admin/audit` (audit log entry creation), POST `/internal/notify` (internal event forwarding endpoint). All admin endpoints require `admin` scope.
+4. **Admin channel configuration** — `NPS_ADMIN_CHAT_ID` environment variable with fallback to `NPS_CHAT_ID`. Added to `api/app/config.py`, `services/tgbot/config.py`, `.env.example`, and `docker-compose.yml`.
+5. **Notifier bridge** — Added event callback system to `services/oracle/oracle_service/engines/notifier.py`: `register_event_callback()` and `_emit_event()` functions. Legacy `notify_error`, `notify_balance_found`, and `notify_solve` now emit events to the new SystemNotifier when a callback is registered.
+6. **Bot registration** — Registered admin handlers + SystemNotifier lifecycle (startup/shutdown notifications) in `services/tgbot/bot.py`. Updated `/help` command with admin command section.
+7. **Helper utilities** — `_is_admin()` (role check via account-linking API), `_log_audit()` (POST to audit endpoint), `_format_uptime()` (seconds to Xd Xh Xm), `_format_relative_time()` (ISO datetime to "2 min ago"), `get_admin_chat_id()` (env var with fallback).
+
+**Files created (5):**
+
+- `services/tgbot/handlers/admin.py` — 3 admin command handlers + 2 callback handlers + helpers
+- `services/tgbot/notifications.py` — SystemNotifier class with cooldown system
+- `services/tgbot/tests/test_admin.py` — 16 admin handler tests
+- `services/tgbot/tests/test_notifications.py` — 14 notification service tests
+- `api/tests/test_telegram_admin.py` — 7 API admin endpoint tests (14 with asyncio+trio)
+
+**Files modified (8):**
+
+- `api/app/routers/telegram.py` — added 5 admin endpoints (stats, users, linked_chats, audit, internal/notify)
+- `api/app/config.py` — added `nps_admin_chat_id` setting
+- `api/app/models/telegram.py` — (unchanged, reused existing models)
+- `services/tgbot/bot.py` — registered admin handlers + SystemNotifier lifecycle
+- `services/tgbot/config.py` — added ADMIN_CHAT_ID config var
+- `services/tgbot/handlers/__init__.py` — exported register_admin_handlers
+- `services/tgbot/handlers/core.py` — updated /help with admin commands section
+- `services/oracle/oracle_service/engines/notifier.py` — added event callback bridge (\_emit_event, register_event_callback)
+- `docker-compose.yml` — added NPS_ADMIN_CHAT_ID env var to telegram-bot service
+- `.env.example` — added NPS_ADMIN_CHAT_ID variable
+
+**Tests:** Backend 445 pass (10 pre-existing multi_user failures unrelated) / Frontend 627 pass / Bot 99 pass (30 new) / API Telegram Admin 14 pass (7 new) / 0 new failures
+**Commit:** TBD
+**Issues:**
+
+- Spec references `services/telegram/` but Session 33 renamed to `services/tgbot/` — all paths adapted.
+- Spec Phase 6 (API Event Hooks) simplified: rather than building a full API-side event emitter with background tasks, used a simpler internal notify endpoint that the bot can poll. The API lifecycle events (startup/shutdown) are handled by the bot's own SystemNotifier, not by the API pushing to the bot.
+- Spec Phase 7 (Error Rate Monitoring) deferred to Session 37 polish: the sliding-window error counter in API middleware adds complexity; the admin stats endpoint already queries audit_log for error counts. Full real-time error rate monitoring can be added as polish.
+- The `oracle_audit_log.user_id` column is INTEGER but user IDs are VARCHAR(36). Admin audit entries use `user_id=None` and store the chat_id in the details JSONB field instead.
+
+**Decisions:**
+
+- Used `is_callback` flag parameter instead of `hasattr` duck-typing to distinguish Update vs CallbackQuery in `_send_users_page`, since MagicMock makes `hasattr` unreliable.
+- Used HTML parse mode for all admin messages (consistent with notification service) instead of MarkdownV2 to avoid escaping complexity.
+- SystemNotifier uses `time.monotonic()` for cooldown tracking (immune to system clock changes).
+- Broadcast rate limiting follows Telegram's 30 msg/sec limit by sleeping 1 second every 30 messages.
+- Legacy notifier bridge uses `asyncio.create_task` for fire-and-forget event emission since the legacy code is synchronous.
+
+**Next:** Session 37 — Telegram Bot: Multi-User & Polish (/compare multi-user command, comprehensive error messages, per-user rate limiting, bilingual EN/FA support, notifier.py migration completion, help text with examples).
 
 ---
 

@@ -7,6 +7,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler
 
 from . import config
 from .client import close_client
+from .handlers.admin import register_admin_handlers
 from .handlers.core import (
     help_handler,
     link_handler,
@@ -28,6 +29,7 @@ from .handlers.readings import (
     reading_callback_handler,
     time_command,
 )
+from .notifications import SystemNotifier, get_admin_chat_id
 from .scheduler import DailyScheduler
 
 logging.basicConfig(
@@ -36,13 +38,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Module-level scheduler reference for lifecycle management
+# Module-level references for lifecycle management
 _scheduler: DailyScheduler | None = None
+_notifier: SystemNotifier | None = None
 
 
 def main() -> None:
     """Build and run the Telegram bot application."""
-    global _scheduler  # noqa: PLW0603
+    global _scheduler, _notifier  # noqa: PLW0603
 
     if not config.BOT_TOKEN:
         logger.error("NPS_BOT_TOKEN not set — cannot start bot")
@@ -72,18 +75,34 @@ def main() -> None:
     app.add_handler(CommandHandler("daily_time", daily_time_handler))
     app.add_handler(CommandHandler("daily_status", daily_status_handler))
 
+    # Admin command handlers (Session 36)
+    register_admin_handlers(app)
+
     # Callback query handler for inline keyboards
     app.add_handler(
         CallbackQueryHandler(reading_callback_handler, pattern=r"^(reading|history):")
     )
 
-    # Scheduler lifecycle hooks
+    # Lifecycle hooks
     async def post_init(_app: Application) -> None:
-        global _scheduler  # noqa: PLW0603
+        global _scheduler, _notifier  # noqa: PLW0603
+
+        # Start daily scheduler
         _scheduler = DailyScheduler(bot=_app.bot)
         await _scheduler.start()
 
+        # Initialize system notifier (Session 36)
+        admin_chat_id = get_admin_chat_id()
+        if admin_chat_id:
+            _notifier = SystemNotifier(bot=_app.bot, admin_chat_id=admin_chat_id)
+            await _notifier.notify_startup("telegram-bot", version="1.0.0")
+            logger.info("SystemNotifier initialized for admin chat %s", admin_chat_id)
+        else:
+            logger.warning("No admin chat ID configured — notifications disabled")
+
     async def shutdown(_app: Application) -> None:
+        if _notifier:
+            await _notifier.notify_shutdown("telegram-bot", "graceful shutdown")
         if _scheduler:
             await _scheduler.stop()
         await close_client()

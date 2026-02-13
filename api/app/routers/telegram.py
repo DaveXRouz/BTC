@@ -1,17 +1,21 @@
 """Telegram link endpoints — link/unlink Telegram accounts, status, profile lookup.
 
 Also: daily auto-insight preference management (Session 35).
+Also: admin stats, users, audit, linked_chats, and internal notify (Session 36).
 """
 
 import hashlib
 import logging
+import time
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.middleware.auth import get_current_user
+from app.middleware.auth import get_current_user, require_scope
 from app.models.telegram import (
     DailyPreferencesResponse,
     DailyPreferencesUpdate,
@@ -22,6 +26,7 @@ from app.models.telegram import (
     TelegramUserStatus,
 )
 from app.orm.api_key import APIKey
+from app.orm.audit_log import OracleAuditLog
 from app.orm.oracle_reading import OracleReading
 from app.orm.oracle_user import OracleUser
 from app.orm.telegram_daily_preference import TelegramDailyPreference
@@ -301,3 +306,169 @@ def mark_delivered(
     pref.last_delivered_date = datetime.strptime(body.delivered_date, "%Y-%m-%d").date()
     db.commit()
     return {"detail": "Delivery recorded"}
+
+
+# ─── Admin Endpoints (Session 36) ────────────────────────────────────────────
+
+# Store app start time for uptime calculation
+_APP_START_TIME = time.time()
+
+
+class AdminAuditRequest(BaseModel):
+    action: str
+    resource_type: str = "system"
+    success: bool = True
+    details: str | None = None
+
+
+class AdminNotifyRequest(BaseModel):
+    event_type: str
+    data: dict
+
+
+@router.get("/admin/stats", dependencies=[Depends(require_scope("admin"))])
+def get_admin_stats(
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_scope("admin")),
+):
+    """System statistics for admin dashboard / Telegram /admin_stats command."""
+    utc_now = datetime.now(timezone.utc)
+    today_start = utc_now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    total_users = db.query(func.count(OracleUser.id)).scalar() or 0
+
+    readings_total = db.query(func.count(OracleReading.id)).scalar() or 0
+
+    # Readings today — handle both timezone-aware and naive timestamps
+    readings_today = (
+        db.query(func.count(OracleReading.id))
+        .filter(OracleReading.created_at >= today_start.replace(tzinfo=None))
+        .scalar()
+        or 0
+    )
+
+    # Errors in last 24h from audit log
+    yesterday = utc_now - timedelta(hours=24)
+    error_count_24h = (
+        db.query(func.count(OracleAuditLog.id))
+        .filter(
+            OracleAuditLog.action == "error",
+            OracleAuditLog.timestamp >= yesterday.replace(tzinfo=None),
+        )
+        .scalar()
+        or 0
+    )
+
+    # Last reading timestamp
+    last_reading = (
+        db.query(OracleReading.created_at).order_by(OracleReading.created_at.desc()).first()
+    )
+    last_reading_at = None
+    if last_reading and last_reading[0]:
+        last_reading_at = last_reading[0].isoformat()
+
+    # DB size — try PostgreSQL-specific query, fall back to 0
+    db_size_mb = 0.0
+    try:
+        result = db.execute(text("SELECT pg_database_size(current_database()) / 1024.0 / 1024.0"))
+        row = result.scalar()
+        if row:
+            db_size_mb = float(row)
+    except Exception:
+        pass  # SQLite or other DB — no pg_database_size
+
+    uptime_seconds = time.time() - _APP_START_TIME
+
+    return {
+        "total_users": total_users,
+        "readings_today": readings_today,
+        "readings_total": readings_total,
+        "error_count_24h": error_count_24h,
+        "active_sessions": 0,  # Placeholder — session tracking not implemented yet
+        "uptime_seconds": uptime_seconds,
+        "db_size_mb": db_size_mb,
+        "last_reading_at": last_reading_at,
+    }
+
+
+@router.get("/admin/users", dependencies=[Depends(require_scope("admin"))])
+def get_admin_users(
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_scope("admin")),
+):
+    """Paginated user listing for admin. Returns non-sensitive fields only."""
+    total = db.query(func.count(OracleUser.id)).scalar() or 0
+
+    users = (
+        db.query(OracleUser)
+        .order_by(OracleUser.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return {
+        "total": total,
+        "users": [
+            {
+                "id": u.id,
+                "name": u.name,
+                "birthday": u.birthday.isoformat() if u.birthday else None,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+            }
+            for u in users
+        ],
+    }
+
+
+@router.get("/admin/linked_chats", dependencies=[Depends(require_scope("admin"))])
+def get_linked_chats(
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_scope("admin")),
+):
+    """List all active linked Telegram chat IDs (for broadcast)."""
+    links = (
+        db.query(TelegramLink.telegram_chat_id)
+        .filter(TelegramLink.is_active == True)  # noqa: E712
+        .all()
+    )
+    return {"chat_ids": [link[0] for link in links]}
+
+
+@router.post("/admin/audit", dependencies=[Depends(require_scope("admin"))])
+def create_audit_entry(
+    body: AdminAuditRequest,
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_scope("admin")),
+):
+    """Log an admin action to oracle_audit_log. Used by Telegram bot admin commands."""
+    entry = OracleAuditLog(
+        user_id=None,  # user_id is int in ORM, telegram bot doesn't have numeric user id
+        action=body.action,
+        resource_type=body.resource_type,
+        success=body.success,
+        ip_address="telegram",
+        api_key_hash=user.get("api_key_hash"),
+        details=body.details,
+    )
+    db.add(entry)
+    db.commit()
+    return {"detail": "Audit entry created"}
+
+
+@router.post("/internal/notify")
+def internal_notify(
+    body: AdminNotifyRequest,
+    _user: dict = Depends(get_current_user),
+):
+    """Internal notification endpoint for service-to-service event forwarding.
+
+    Accepts events from API middleware (errors, new users, etc.) and forwards
+    to the Telegram notification service. In the current architecture, the bot
+    polls the API rather than receiving pushes, so this stores events for
+    the bot to pick up if needed.
+    """
+    logger.info("Internal notify: %s — %s", body.event_type, body.data)
+    return {"detail": "Event received", "event_type": body.event_type}

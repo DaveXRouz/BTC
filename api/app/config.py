@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     # Telegram
     nps_bot_token: str = ""
     nps_chat_id: str = ""
+    nps_admin_chat_id: str = ""  # Falls back to nps_chat_id if empty
     telegram_enabled: bool = True
 
     # Logging

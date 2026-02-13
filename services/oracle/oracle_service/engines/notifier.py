@@ -94,6 +94,47 @@ _consecutive_failures = 0
 _bot_disabled = False
 _BOT_DISABLE_THRESHOLD = 5
 
+# ================================================================
+# Event Callback Bridge (Session 36)
+# ================================================================
+# Allows the new python-telegram-bot notification service to receive
+# events from this legacy notifier. Register a callback via
+# register_event_callback() to forward events to SystemNotifier.
+
+_event_callback = None
+
+
+def register_event_callback(callback):
+    """Register an async callback for notification events.
+
+    The callback signature: async def callback(event_type: str, data: dict) -> None
+
+    Event types: "error", "balance_found", "solve", "daily_status"
+    """
+    global _event_callback
+    _event_callback = callback
+    logger.info("Event callback registered for legacy notifier bridge")
+
+
+def _emit_event(event_type, data):
+    """Emit an event to the registered callback, if any.
+
+    Since the callback is async, we use a best-effort fire-and-forget approach.
+    """
+    if _event_callback is None:
+        return
+    try:
+        import asyncio
+
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            loop.create_task(_event_callback(event_type, data))
+        else:
+            loop.run_until_complete(_event_callback(event_type, data))
+    except RuntimeError:
+        # No event loop running — log and skip
+        logger.debug("Could not emit event %s: no event loop", event_type)
+
 
 def is_bot_healthy():
     """Return True if the bot has not been auto-disabled due to consecutive failures."""
@@ -429,7 +470,12 @@ def poll_telegram_commands(timeout=10):
 
 
 def notify_solve(puzzle_id, private_key, address):
-    """Notify about a puzzle solve."""
+    """Notify about a puzzle solve.
+
+    Also emits event to new notification bridge (Session 36).
+    """
+    _emit_event("solve", {"puzzle_id": puzzle_id, "address": address})
+
     if not is_configured():
         return False
 
@@ -446,7 +492,15 @@ def notify_solve(puzzle_id, private_key, address):
 
 
 def notify_balance_found(address, balance_btc, source="unknown"):
-    """Notify about a balance discovery."""
+    """Notify about a balance discovery.
+
+    Also emits event to new notification bridge (Session 36).
+    """
+    _emit_event(
+        "balance_found",
+        {"address": address, "balance_btc": str(balance_btc), "source": source},
+    )
+
     if not is_configured():
         return False
 
@@ -470,7 +524,13 @@ def notify_balance_found(address, balance_btc, source="unknown"):
 
 
 def notify_error(error_msg, context=""):
-    """Notify about an error. Rate-limited to 10/hour."""
+    """Notify about an error. Rate-limited to 10/hour.
+
+    Also emits event to new notification bridge (Session 36).
+    """
+    # Bridge: emit to new notification service (deprecated path — use SystemNotifier directly)
+    _emit_event("error", {"error": error_msg, "context": context})
+
     if not is_configured():
         return False
 

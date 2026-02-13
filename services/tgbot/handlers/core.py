@@ -129,7 +129,11 @@ async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             "  /daily_on — Enable daily delivery\n"
             "  /daily_off — Disable daily delivery\n"
             "  /daily_time HH:MM — Set delivery time\n"
-            "  /daily_status — View daily settings"
+            "  /daily_status — View daily settings\n\n"
+            "Admin (admin role required):\n"
+            "  /admin_stats — System statistics\n"
+            "  /admin_users — List users\n"
+            "  /admin_broadcast <msg> — Broadcast message"
         )
         await update.message.reply_text(text)
     except Exception:

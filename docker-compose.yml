@@ -200,6 +200,7 @@ services:
     env_file: .env
     environment:
       TELEGRAM_BOT_API_URL: http://api:8000/api
+      NPS_ADMIN_CHAT_ID: ${NPS_ADMIN_CHAT_ID:-}
     depends_on:
       api:
         condition: service_healthy
