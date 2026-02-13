@@ -124,7 +124,12 @@ async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             "  /name [name] — Name reading\n"
             "  /question <text> — Question reading\n"
             "  /daily — Daily insight\n"
-            "  /history — Reading history"
+            "  /history — Reading history\n\n"
+            "Daily Auto-Insight:\n"
+            "  /daily_on — Enable daily delivery\n"
+            "  /daily_off — Disable daily delivery\n"
+            "  /daily_time HH:MM — Set delivery time\n"
+            "  /daily_status — View daily settings"
         )
         await update.message.reply_text(text)
     except Exception:

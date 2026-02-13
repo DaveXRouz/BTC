@@ -1815,6 +1815,69 @@ TEMPLATE — copy this for each new session:
 
 ---
 
+## Session 35 — 2026-02-14
+
+**Terminal:** SINGLE
+**Block:** Features & Integration (Sessions 32-37) — Session 4 of 6
+**Task:** Telegram Bot: Daily Auto-Insight — /daily_on, /daily_off, /daily_time, /daily_status commands, background scheduler, telegram_daily_preferences table, daily preference API endpoints, scheduled daily insight formatter
+**Spec:** `.session-specs/SESSION_35_SPEC.md`
+
+**What was built:**
+
+1. **Database schema** — `telegram_daily_preferences` table with chat_id, user_id FK, daily_enabled, delivery_time, timezone_offset_minutes, last_delivered_date, indexes on enabled+chat_id. Migration 020 + rollback.
+2. **ORM model** — `api/app/orm/telegram_daily_preference.py`: `TelegramDailyPreference` with BigInteger chat_id, Time delivery_time, Date last_delivered_date, auto timestamps.
+3. **Pydantic models** — Added to `api/app/models/telegram.py`: `DailyPreferencesResponse`, `DailyPreferencesUpdate` (with HH:MM field_validator), `PendingDelivery`, `DeliveryConfirmation`.
+4. **6 API endpoints** — Added to `api/app/routers/telegram.py`: GET/PUT `/telegram/daily/preferences/{chat_id}` (preference CRUD), GET `/telegram/daily/pending` (users due for delivery with timezone math), POST `/telegram/daily/delivered` (mark delivery complete). All require auth.
+5. **4 daily command handlers** — `services/tgbot/handlers/daily.py`: `/daily_on` (enable with confirmation showing time+tz), `/daily_off` (disable with re-enable tip), `/daily_time HH:MM` (24h regex validation), `/daily_status` (show enabled/disabled, time, timezone, last delivered). All use rate limiter, communicate via bot service HTTP client.
+6. **Background scheduler** — `services/tgbot/scheduler.py`: `DailyScheduler` class with asyncio task loop (60s cycles), queries `/telegram/daily/pending` for due users, generates lightweight daily insight (personal day number + moon phase), sends HTML messages with "See Full Reading" URL button, marks delivered, auto-disables on Forbidden (blocked bot), 1s rate limiting between sends, 5-consecutive-failure escalation logging.
+7. **Scheduled daily insight formatter** — Added `format_scheduled_daily_insight()` to `services/tgbot/formatters.py`: HTML parse mode (avoids MarkdownV2 escaping in scheduled sends), includes date header, personal day number + meaning, moon phase + emoji, /daily CTA.
+8. **Bot registration** — Registered 4 daily commands + scheduler lifecycle (post_init/post_shutdown) in `services/tgbot/bot.py`.
+9. **Updated help text** — Added "Daily Auto-Insight" section to `/help` command with all 4 new commands.
+10. **Environment variable** — Added `TELEGRAM_FRONTEND_URL` to `.env.example` for "See Full Reading" links.
+
+**Files created (8):**
+
+- `database/schemas/telegram_daily_preferences.sql` — table schema
+- `database/migrations/020_telegram_daily_preferences.sql` — migration
+- `database/migrations/020_telegram_daily_preferences_rollback.sql` — rollback
+- `api/app/orm/telegram_daily_preference.py` — SQLAlchemy ORM model
+- `services/tgbot/handlers/daily.py` — 4 daily command handlers + helpers
+- `services/tgbot/scheduler.py` — DailyScheduler background task
+- `services/tgbot/tests/test_daily_handlers.py` — 14 handler tests
+- `services/tgbot/tests/test_scheduler.py` — 7 scheduler tests
+- `api/tests/test_telegram_daily.py` — 7 API endpoint tests
+
+**Files modified (5):**
+
+- `api/app/models/telegram.py` — added 4 daily preference Pydantic models
+- `api/app/routers/telegram.py` — added 6 daily preference endpoints
+- `api/app/main.py` — registered ORM import for telegram_daily_preference
+- `services/tgbot/bot.py` — registered 4 daily handlers + scheduler lifecycle
+- `services/tgbot/handlers/core.py` — updated /help with daily auto-insight commands
+- `services/tgbot/formatters.py` — added format_scheduled_daily_insight()
+- `.env.example` — added TELEGRAM_FRONTEND_URL
+
+**Tests:** Backend 431 pass (10 pre-existing multi_user failures unrelated) / Frontend 627 pass / Bot 69 pass (21 new) / API Telegram 30 pass (14 new) / 0 new failures
+**Commit:** (pending)
+**Issues:**
+
+- Spec references `services/telegram/` but Session 33 renamed to `services/tgbot/` — all paths adapted.
+- Spec uses migration number 013 but that was taken. Used 020 instead (after 019_telegram_links).
+- Spec references `user_id INTEGER REFERENCES oracle_users(id)` but the actual linking system uses `users.id` which is `VARCHAR(36)`. Adapted to match codebase pattern.
+- Scheduler generates a simplified daily insight (personal day + moon phase) rather than calling Oracle framework directly, since the bot runs as a separate service without framework imports. Full personalized readings are available via /daily.
+
+**Decisions:**
+
+- Used HTML parse mode for scheduled daily messages instead of MarkdownV2 to avoid escaping complexity in background sends.
+- Scheduler runs inside the bot process as an asyncio task (not a separate container) — started via Application.post_init hook, stopped via post_shutdown.
+- Daily preference API endpoints use the same auth as other telegram endpoints (bot service key or JWT).
+- Timezone offset is stored as integer minutes to handle half-hour offsets (e.g., Tehran UTC+3:30 = 210).
+- Pending delivery endpoint does the timezone math server-side, returning only users whose local time has passed their delivery_time.
+
+**Next:** Session 36 — Telegram Bot: Admin Commands & Notifications (/admin_stats, /admin_users, /admin_broadcast, system notification formatters, admin-only command middleware).
+
+---
+
 ## Cross-Terminal Dependencies
 
 > Only used in multi-terminal mode. Track what each terminal needs from others.

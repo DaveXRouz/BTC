@@ -317,6 +317,29 @@ def format_history_list(readings: list[dict], total: int) -> str:
     return "\n".join(lines)
 
 
+def format_scheduled_daily_insight(
+    reading_date: str,
+    personal_day: int,
+    personal_day_meaning: str,
+    moon_phase: str,
+    moon_emoji: str,
+) -> str:
+    """Format a brief daily insight for scheduled Telegram delivery (HTML parse mode).
+
+    This uses HTML instead of MarkdownV2 to avoid escaping complexity in scheduled sends.
+    """
+    lines: list[str] = []
+    lines.append(f"\U0001f305 <b>Daily Insight \u2014 {reading_date}</b>")
+    lines.append("")
+    lines.append(
+        f"\U0001f52e Personal Day: <b>{personal_day}</b> \u2014 {personal_day_meaning}"
+    )
+    lines.append(f"{moon_emoji} Moon: {moon_phase}")
+    lines.append("")
+    lines.append("Use /daily for your full personalized reading.")
+    return "\n".join(lines)
+
+
 def format_progress(step: int, total: int, message: str) -> str:
     """Format a progress update message.
 

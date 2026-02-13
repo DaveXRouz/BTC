@@ -14,6 +14,12 @@ from .handlers.core import (
     start_handler,
     status_handler,
 )
+from .handlers.daily import (
+    daily_off_handler,
+    daily_on_handler,
+    daily_status_handler,
+    daily_time_handler,
+)
 from .handlers.readings import (
     daily_command,
     history_command,
@@ -22,6 +28,7 @@ from .handlers.readings import (
     reading_callback_handler,
     time_command,
 )
+from .scheduler import DailyScheduler
 
 logging.basicConfig(
     level=getattr(logging, config.LOG_LEVEL, logging.INFO),
@@ -29,9 +36,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Module-level scheduler reference for lifecycle management
+_scheduler: DailyScheduler | None = None
+
 
 def main() -> None:
     """Build and run the Telegram bot application."""
+    global _scheduler  # noqa: PLW0603
+
     if not config.BOT_TOKEN:
         logger.error("NPS_BOT_TOKEN not set — cannot start bot")
         sys.exit(1)
@@ -54,15 +66,29 @@ def main() -> None:
     app.add_handler(CommandHandler("daily", daily_command))
     app.add_handler(CommandHandler("history", history_command))
 
+    # Daily preference command handlers (Session 35)
+    app.add_handler(CommandHandler("daily_on", daily_on_handler))
+    app.add_handler(CommandHandler("daily_off", daily_off_handler))
+    app.add_handler(CommandHandler("daily_time", daily_time_handler))
+    app.add_handler(CommandHandler("daily_status", daily_status_handler))
+
     # Callback query handler for inline keyboards
     app.add_handler(
         CallbackQueryHandler(reading_callback_handler, pattern=r"^(reading|history):")
     )
 
-    # Graceful shutdown — close httpx client
+    # Scheduler lifecycle hooks
+    async def post_init(_app: Application) -> None:
+        global _scheduler  # noqa: PLW0603
+        _scheduler = DailyScheduler(bot=_app.bot)
+        await _scheduler.start()
+
     async def shutdown(_app: Application) -> None:
+        if _scheduler:
+            await _scheduler.stop()
         await close_client()
 
+    app.post_init = post_init
     app.post_shutdown = shutdown
 
     logger.info("Bot handlers registered, starting polling")

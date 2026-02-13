@@ -42,6 +42,7 @@ import app.orm.oracle_feedback  # noqa: F401
 import app.orm.user_settings  # noqa: F401
 import app.orm.share_link  # noqa: F401
 import app.orm.telegram_link  # noqa: F401
+import app.orm.telegram_daily_preference  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
