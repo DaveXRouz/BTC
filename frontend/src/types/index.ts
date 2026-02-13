@@ -874,6 +874,85 @@ export interface HealthStatus {
   checks: Record<string, string>;
 }
 
+// ─── Admin Health / Monitoring (Session 39) ───
+
+export interface ServiceStatus {
+  status: string;
+  error?: string;
+  version?: string;
+  mode?: string;
+  note?: string;
+  used_memory_human?: string;
+  size_bytes?: number;
+}
+
+export interface DetailedHealth {
+  status: string;
+  uptime_seconds: number;
+  services: Record<string, ServiceStatus>;
+  system: {
+    python_version: string;
+    process_memory_mb: number;
+    cpu_count: number;
+    platform: string;
+  };
+}
+
+export interface AuditLogEntry {
+  id: number;
+  timestamp: string;
+  action: string;
+  severity: string;
+  resource_type: string | null;
+  resource_id: number | null;
+  success: boolean;
+  ip_address: string | null;
+  details: Record<string, unknown> | null;
+}
+
+export interface LogsResponse {
+  logs: AuditLogEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface ReadingsPerDay {
+  date: string;
+  count: number;
+}
+
+export interface ReadingsByType {
+  type: string;
+  count: number;
+}
+
+export interface ConfidenceTrend {
+  date: string;
+  avg_confidence: number;
+}
+
+export interface PopularHour {
+  hour: number;
+  count: number;
+}
+
+export interface AnalyticsTotals {
+  total_readings: number;
+  avg_confidence: number;
+  most_popular_type: string | null;
+  most_active_hour: number | null;
+  error_count: number;
+}
+
+export interface AnalyticsResponse {
+  readings_per_day: ReadingsPerDay[];
+  readings_by_type: ReadingsByType[];
+  confidence_trend: ConfidenceTrend[];
+  popular_hours: PopularHour[];
+  totals: AnalyticsTotals;
+}
+
 // ─── Auth ───
 
 export interface User {

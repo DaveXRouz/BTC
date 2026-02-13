@@ -23,6 +23,7 @@ from flask import Flask, jsonify, render_template
 logger = logging.getLogger(__name__)
 
 ORACLE_HTTP_URL = os.environ.get("ORACLE_HTTP_URL", "http://localhost:9090")
+NPS_API_URL = os.environ.get("NPS_API_URL", "http://localhost:8000")
 DASHBOARD_PORT = int(os.environ.get("DASHBOARD_PORT", "9000"))
 
 app = Flask(
@@ -62,6 +63,20 @@ def api_status():
         metrics = {"rpcs": {}, "errors": {"total_count": 0, "rate_percent": 0}}
 
     return jsonify({"health": health, "metrics": metrics})
+
+
+@app.route("/api/nps-health")
+def nps_health():
+    """Proxy NPS API health check for the dashboard."""
+    url = f"{NPS_API_URL}/api/health"
+    try:
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return jsonify(data)
+    except Exception as exc:
+        logger.debug("Failed to fetch NPS health: %s", exc)
+        return jsonify({"status": "unreachable", "error": str(exc)})
 
 
 if __name__ == "__main__":

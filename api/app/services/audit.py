@@ -456,6 +456,36 @@ class AuditService:
 
     # ─── Query methods ────────────────────────────────────────────────────────
 
+    def query_logs_extended(
+        self,
+        *,
+        action: str | None = None,
+        resource_type: str | None = None,
+        success: bool | None = None,
+        search: str | None = None,
+        hours: int = 24,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[list[OracleAuditLog], int]:
+        """Extended log query with additional filters for admin monitoring."""
+        since = datetime.now(timezone.utc) - timedelta(hours=hours)
+        query = self.db.query(OracleAuditLog).filter(OracleAuditLog.timestamp >= since)
+        if action:
+            query = query.filter(OracleAuditLog.action == action)
+        if resource_type:
+            query = query.filter(OracleAuditLog.resource_type == resource_type)
+        if success is not None:
+            query = query.filter(OracleAuditLog.success == success)
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                OracleAuditLog.action.ilike(search_pattern)
+                | OracleAuditLog.details.ilike(search_pattern)
+            )
+        total = query.count()
+        entries = query.order_by(OracleAuditLog.timestamp.desc()).offset(offset).limit(limit).all()
+        return entries, total
+
     def get_user_activity(self, oracle_user_id: int, limit: int = 50) -> list[OracleAuditLog]:
         return (
             self.db.query(OracleAuditLog)

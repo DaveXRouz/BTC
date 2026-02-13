@@ -372,3 +372,29 @@ export const admin = {
   deleteProfile: (id: number) =>
     request<void>(`/admin/profiles/${id}`, { method: "DELETE" }),
 };
+
+// ─── Admin Health / Monitoring (Session 39) ───
+
+export const adminHealth = {
+  detailed: () => request<import("@/types").DetailedHealth>("/health/detailed"),
+  logs: (params?: {
+    limit?: number;
+    offset?: number;
+    severity?: string;
+    search?: string;
+    hours?: number;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.limit) query.set("limit", String(params.limit));
+    if (params?.offset !== undefined)
+      query.set("offset", String(params.offset));
+    if (params?.severity) query.set("severity", params.severity);
+    if (params?.search) query.set("search", params.search);
+    if (params?.hours) query.set("hours", String(params.hours));
+    return request<import("@/types").LogsResponse>(`/health/logs?${query}`);
+  },
+  analytics: (days = 30) =>
+    request<import("@/types").AnalyticsResponse>(
+      `/health/analytics?days=${days}`,
+    ),
+};

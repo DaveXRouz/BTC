@@ -9,9 +9,9 @@
 
 **Plan:** 45-session Oracle rebuild (hybrid approach)
 **Strategy:** Keep infrastructure, rewrite Oracle logic
-**Sessions completed:** 38 of 45
-**Last session:** Session 38 — Admin Panel: User & Profile Management
-**Current block:** Admin & DevOps (Sessions 38-40) — Session 1 of 3
+**Sessions completed:** 39 of 45
+**Last session:** Session 39 — Admin UI: Monitoring Dashboard & System Health
+**Current block:** Admin & DevOps (Sessions 38-40) — Session 2 of 3
 
 ---
 
@@ -2054,6 +2054,54 @@ Full admin panel with user management (list, search, sort, role change, password
 - Admin route uses nested `<Outlet />` pattern for tab navigation (users/profiles).
 
 **Next:** Session 39 — Admin UI: Monitoring Dashboard & System Health.
+
+---
+
+### Session 39 — Admin UI: Monitoring Dashboard & System Health
+
+**Date:** 2026-02-14
+**Spec:** `.session-specs/SESSION_39_SPEC.md`
+**Status:** COMPLETE
+**Commit:** <!-- filled after git commit -->
+
+**Summary:**
+
+Full admin monitoring dashboard with 3 sub-tabs (Health, Logs, Analytics), 3 new admin-only API endpoints, recharts charting library, auto-refresh polling, bilingual i18n support, and devops dashboard proxy for NPS API health.
+
+**Files created (5):**
+
+- `frontend/src/pages/AdminMonitoring.tsx` — Tab navigation component with Health/Logs/Analytics tabs (i18n)
+- `frontend/src/components/admin/HealthDashboard.tsx` — 7 service status cards, system info bar, uptime, auto-refresh 10s
+- `frontend/src/components/admin/LogViewer.tsx` — Paginated audit log viewer with severity filter, search, time window, expandable detail rows
+- `frontend/src/components/admin/AnalyticsCharts.tsx` — 4 recharts visualizations (bar, pie, line), period selector, summary totals, auto-refresh 30s
+- `api/tests/test_health_admin.py` — 18 test functions (36 with asyncio+trio) covering all 3 admin endpoints + auth guards
+- `frontend/src/components/admin/__tests__/AdminMonitoring.test.tsx` — 4 tests (tab render, heading, default tab, tab switch)
+
+**Files modified (9):**
+
+- `api/app/routers/health.py` — Added 3 admin-only endpoints: GET /detailed, GET /logs, GET /analytics
+- `api/app/services/audit.py` — Added `query_logs_extended()` method with search, time window, success filters
+- `frontend/src/types/index.ts` — Added 10 monitoring types (ServiceStatus, DetailedHealth, AuditLogEntry, LogsResponse, AnalyticsResponse, etc.)
+- `frontend/src/services/api.ts` — Added `adminHealth` namespace with detailed(), logs(), analytics() methods
+- `frontend/src/App.tsx` — Added /admin/monitoring route with lazy-loaded AdminMonitoring
+- `frontend/src/pages/Admin.tsx` — Added Monitoring tab to admin navigation
+- `frontend/src/locales/en.json` — Added ~20 monitoring translation keys
+- `frontend/src/locales/fa.json` — Added matching ~20 Persian monitoring keys
+- `devops/dashboards/simple_dashboard.py` — Added NPS API proxy endpoint (/api/nps-health)
+- `devops/dashboards/templates/dashboard.html` — Added NPS API system info section with auto-refresh
+
+**Tests:** 36 API tests pass (18 functions × asyncio+trio). 4 frontend tests pass. All 654 frontend tests pass. All 502 API tests pass (10 pre-existing failures in test_multi_user_reading.py unrelated).
+
+**Decisions:**
+
+- Admin endpoints use `require_scope("admin")` — consistent with Session 38 pattern.
+- Severity derived from audit log properties (success + action name) since audit_log table has no severity column.
+- JSONB path extraction for confidence trend wrapped in try/except for SQLite test compatibility.
+- `recharts` added as frontend dependency for data visualization.
+- HealthDashboard polls every 10s, AnalyticsCharts every 30s — different refresh rates for different data freshness needs.
+- DevOps dashboard proxies NPS API health (not admin endpoints) — no auth needed for basic health check.
+
+**Next:** Session 40 — Admin: Backup, Restore & System Configuration.
 
 ---
 

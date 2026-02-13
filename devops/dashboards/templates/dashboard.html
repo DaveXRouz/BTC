@@ -47,6 +47,21 @@
             </div>
         </div>
 
+        <!-- NPS API System Info -->
+        <div class="rpc-section">
+            <h2>NPS API</h2>
+            <div class="metrics-grid" id="nps-info-grid">
+                <div class="metric-card">
+                    <div class="label">API Status</div>
+                    <div class="value" id="nps-status">--</div>
+                </div>
+                <div class="metric-card">
+                    <div class="label">Version</div>
+                    <div class="value" id="nps-version">--</div>
+                </div>
+            </div>
+        </div>
+
         <!-- RPC performance table -->
         <div class="rpc-section">
             <h2>RPC Performance</h2>
@@ -179,9 +194,22 @@
         }
     }
 
+    async function refreshNps() {
+        try {
+            const resp = await fetch('/api/nps-health');
+            const data = await resp.json();
+            document.getElementById('nps-status').textContent = data.status || 'unknown';
+            document.getElementById('nps-version').textContent = data.version || '--';
+        } catch {
+            document.getElementById('nps-status').textContent = 'unreachable';
+        }
+    }
+
     // Initial load + auto-refresh
     refresh();
+    refreshNps();
     setInterval(refresh, 5000);
+    setInterval(refreshNps, 10000);
     </script>
 </body>
 </html>

@@ -16,6 +16,7 @@ const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminProfiles = lazy(() => import("./pages/AdminProfiles"));
 const Scanner = lazy(() => import("./pages/Scanner"));
 const SharedReading = lazy(() => import("./pages/SharedReading"));
+const AdminMonitoring = lazy(() => import("./pages/AdminMonitoring"));
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -84,6 +85,7 @@ export default function App() {
             <Route index element={<Navigate to="/admin/users" replace />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="profiles" element={<AdminProfiles />} />
+            <Route path="monitoring" element={<AdminMonitoring />} />
           </Route>
           <Route
             path="/scanner"
